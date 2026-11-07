@@ -61,8 +61,9 @@ them for ideas only. (Turbo Pascal's own runtime source is in
 programs to see how they behave:
 
 - `fpc -Mtp` gives most tests' expected output (`tests/gen_expected.sh`).
-- Turbo Pascal 7 runs in DOSBox, whose C: drive is `c/` (in
-  `.gitignore`), to settle what TP really did where Free Pascal differs.
+- Turbo Pascal 7 runs in DOSBox (`brew install --cask dosbox`), whose
+  C: drive is `c/` (in `.gitignore`), to settle what TP really did where
+  Free Pascal differs.
 
 ## Who it's for
 
