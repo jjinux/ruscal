@@ -933,15 +933,15 @@ window meanwhile (§19).
   implementation-only ones are private. `uses A, B` → `use crate::a::*;
   use crate::b::*;`; sema resolves conflicts by Pascal's rule (the later unit
   wins) and emits qualified paths when needed.
-- **Ruscal's own units** (`PR...`, the user's naming: units start with
-  `PR`, their types follow TP's `T`/`P` convention inside) that can be
+- **Ruscal's own units** (`Rsc...`, the user's naming: units start with
+  `Rsc`, their types follow TP's `T`/`P` convention inside) that can be
   written in Turbo Pascal are: `crates/ruscal/units/*.pas`, put into the
   `ruscal` binary with `include_str!` (`driver::RUSCAL_UNITS`), and
   loaded like a program's own unit when `uses` finds no file of that name.
   So they're translated with the program, compile in TP 7 too, and show
-  off the translation. `PRJson` (JSON, as linked records on the heap) and
-  `PRTurtle` (turtle graphics on `Graph`) are two. A unit's variables are
-  passed to its routines like any globals, so `PRTurtle` keeps all its
+  off the translation. `RscJson` (JSON, as linked records on the heap) and
+  `RscTurtle` (turtle graphics on `Graph`) are two. A unit's variables are
+  passed to its routines like any globals, so `RscTurtle` keeps all its
   state in one record, `Turtle: TTurtleContext` (the user's idea and
   name), and a call is `forwd(&mut turtle, 100)` rather than thirteen
   arguments, while programs still call `Forwd(100)` as in Graph3. `tests/gen_expected.sh`

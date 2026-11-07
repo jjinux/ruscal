@@ -1,4 +1,4 @@
-{ Turtles: three drawings with PRTurtle, Ruscal's turtle graphics unit,
+{ Turtles: three drawings with RscTurtle, Ruscal's turtle graphics unit,
   to watch being drawn. Press a key after each one.
 
   - A Koch snowflake: each side is four sides a third as long, again and
@@ -7,10 +7,10 @@
   - A spiral of squares, each a little bigger and turned a little more.
 
   Written for Ruscal; it also compiles in Turbo Pascal 7 with
-  PRTurtle.pas from Ruscal. }
+  RscTurtle.pas from Ruscal. }
 program Turtles;
 
-uses Crt, Graph, PRTurtle;
+uses Crt, Graph, RscTurtle;
 
 var
    Driver, Mode: Integer;

@@ -1,9 +1,9 @@
-{ PRJson, Ruscal's own unit for JSON: parsing, looking at values,
+{ RscJson, Ruscal's own unit for JSON: parsing, looking at values,
   building them, writing them compactly and indented, a round trip
-  through a file, and errors. Output from fpc -Mtp (PRJson is Turbo
+  through a file, and errors. Output from fpc -Mtp (RscJson is Turbo
   Pascal). }
-program PRJsonTest;
-uses PRJson;
+program RscJsonTest;
+uses RscJson;
 var
    Doc, People, P: PJsonValue;
    I: Integer;
@@ -63,14 +63,14 @@ begin
    JsonAdd(People, JsonNewNull);
    WriteLn(JsonToString(People));
    { A round trip through a file. }
-   JsonSave('pr_json.json', People, 3);
+   JsonSave('rsc_json.json', People, 3);
    JsonFree(People);
-   Doc := JsonLoad('pr_json.json');
+   Doc := JsonLoad('rsc_json.json');
    WriteLn(JsonCount(Doc), ' ', JsonGetString(JsonItem(Doc, 1), 'id'), ' ', JsonGetNumber(JsonItem(Doc, 2), 'half'):0:1);
    JsonWrite(Output, Doc, 3);
    WriteLn;
    JsonFree(Doc);
-   Assign(F, 'pr_json.json');
+   Assign(F, 'rsc_json.json');
    Erase(F);
    { A string whose escaped form is longer than 255 characters is written
      whole, and reads back. }
@@ -79,9 +79,9 @@ begin
    for I := 1 to 150 do
       P^.Str := P^.Str + '"';
    JsonAdd(Doc, P);
-   JsonSave('pr_json.json', Doc, 0);
+   JsonSave('rsc_json.json', Doc, 0);
    JsonFree(Doc);
-   Doc := JsonLoad('pr_json.json');
+   Doc := JsonLoad('rsc_json.json');
    WriteLn('150 quotes: ', Length(JsonString(JsonItem(Doc, 0))));
    JsonFree(Doc);
    Erase(F);

@@ -1,6 +1,6 @@
-# PRTurtle: turtle graphics on top of Graph
+# RscTurtle: turtle graphics on top of Graph
 
-`PRTurtle` is one of Ruscal's own units (their names start with `PR`).
+`RscTurtle` is one of Ruscal's own units (their names start with `Rsc`).
 It gives a program turtle graphics, with the routines Turbo Pascal 3.0's
 turtle had (in TP 4.0 to 7.0, the `Graph3` unit), drawn with the `Graph`
 unit. So a Graph3 turtle program ports by changing its `uses` line and
@@ -8,7 +8,7 @@ starting graphics with `InitGraph`; a new program can use it too.
 
 ```pascal
 program Square;
-uses Graph, PRTurtle;
+uses Graph, RscTurtle;
 var
    Driver, Mode, I: Integer;
 begin
@@ -28,8 +28,8 @@ For more, [`examples/ruscal/turtles.pas`](../examples/ruscal/turtles.pas)
 draws a Koch snowflake, a tree and a spiral (`cargo run -p ruscal --
 run examples/ruscal/turtles.pas`).
 
-The unit is written in Turbo Pascal (`crates/ruscal/units/PRTurtle.pas`)
-and comes with Ruscal: `uses PRTurtle` finds it unless there's a file of
+The unit is written in Turbo Pascal (`crates/ruscal/units/RscTurtle.pas`)
+and comes with Ruscal: `uses RscTurtle` finds it unless there's a file of
 that name next to the program. It's translated with the program, like any
 unit, so it also compiles in Turbo Pascal 7 itself.
 
@@ -62,7 +62,7 @@ whole screen until `TurtleWindow` sets another.
 
 TP 3's graphics were CGA's: 320×200 in 4 colours or 640×200 in 2, set up
 with `GraphColorMode` or `HiRes`, and with `Plot`, `Draw` and friends
-alongside the turtle. PRTurtle has only the turtle; the rest is `Graph`'s
+alongside the turtle. RscTurtle has only the turtle; the rest is `Graph`'s
 (`InitGraph`, `PutPixel`, `Line`, ...), on its 640×480 screen. As in TP 3,
 the turtle is hidden until `ShowTurtle`. The turtle leaves `Graph`'s
 colour (`SetColor`) as it was, but its write mode at `NormalPut` (TP has

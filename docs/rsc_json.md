@@ -1,14 +1,14 @@
-# PRJson: reading and writing JSON
+# RscJson: reading and writing JSON
 
-`PRJson` is one of Ruscal's own units (their names start with `PR`).
-It reads and writes JSON from Turbo Pascal. Like `PRTurtle`, it's
-written in Turbo Pascal (`crates/ruscal/units/PRJson.pas`), comes with
-Ruscal (`uses PRJson` finds it unless there's a file of that name next
+`RscJson` is one of Ruscal's own units (their names start with `Rsc`).
+It reads and writes JSON from Turbo Pascal. Like `RscTurtle`, it's
+written in Turbo Pascal (`crates/ruscal/units/RscJson.pas`), comes with
+Ruscal (`uses RscJson` finds it unless there's a file of that name next
 to the program), and also compiles in Turbo Pascal 7 and Free Pascal.
 
 ```pascal
 program People;
-uses PRJson;
+uses RscJson;
 var
    Doc, Person: PJsonValue;
    I: Integer;

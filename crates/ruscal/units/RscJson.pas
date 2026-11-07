@@ -1,4 +1,4 @@
-{ PRJson: read and write JSON. Part of Ruscal (MIT); written in Turbo
+{ RscJson: read and write JSON. Part of Ruscal (MIT); written in Turbo
   Pascal, so it also compiles in TP 7 itself.
 
   A JSON value is a record on the heap, reached through a PJsonValue; an
@@ -10,7 +10,7 @@
   Strings are Turbo Pascal strings, so a JSON string (or key) of more
   than 255 characters is cut to 255. A \u escape above 255 reads as '?'.
   Numbers are Reals. Array items count from 0, as TCollection's do. }
-unit PRJson;
+unit RscJson;
 
 interface
 

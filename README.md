@@ -96,7 +96,7 @@ RUSCAL_DRIVE_A=examples cargo run -p ruscal -- run examples/tictac/tictac.pas
 `examples/ruscal/` holds examples written for Ruscal:
 
 ```sh
-# Turtle graphics with PRTurtle: a Koch snowflake, a tree and a spiral
+# Turtle graphics with RscTurtle: a Koch snowflake, a tree and a spiral
 cargo run -p ruscal -- run examples/ruscal/turtles.pas
 
 # Turbo Pascal calling Rust: calls_rust.pas links calls_rust.rs with {$L},
@@ -217,10 +217,10 @@ file. The standard units `Crt`, `Dos` and `Graph` are built into the runtime.
   `build.rs` translates a unit as part of `cargo build` (or `ruscal
   build --lib unit.pas` makes a library of it), and
   `ruscal_runtime::call` turns its runtime errors into `Err`s.
-- Ruscal's own units, whose names start with `PR`, written in Turbo
+- Ruscal's own units, whose names start with `Rsc`, written in Turbo
   Pascal and translated with the program that uses them:
-  [PRJson](docs/pr_json.md), reading and writing JSON, and
-  [PRTurtle](docs/pr_turtle.md), turtle graphics on top of `Graph`, with
+  [RscJson](docs/rsc_json.md), reading and writing JSON, and
+  [RscTurtle](docs/rsc_turtle.md), turtle graphics on top of `Graph`, with
   Turbo Pascal 3.0's turtle routines ([an example](examples/ruscal/turtles.pas)).
 
 ## What's supported
@@ -250,8 +250,8 @@ to 7.0 as students used it. It runs every program in `examples/`. The
   data files it wrote decades ago. `{$I-}` and `IOResult` work.
 - **Standard units:** `Crt`, `Dos`, `Graph` (in a window), `Printer`,
   `Overlay`, `Strings` and `WinDos`.
-- **Ruscal's own units:** [`PRJson`](docs/pr_json.md) for reading and
-  writing JSON, and [`PRTurtle`](docs/pr_turtle.md) for turtle graphics,
+- **Ruscal's own units:** [`RscJson`](docs/rsc_json.md) for reading and
+  writing JSON, and [`RscTurtle`](docs/rsc_turtle.md) for turtle graphics,
   with Turbo Pascal 3.0's turtle routines on top of `Graph`.
 - **Turbo Pascal's behavior:** runtime errors print Turbo Pascal's message
   and exit code (`Runtime error 201: Range check error ...`), `{$Q+}`
@@ -293,7 +293,7 @@ Never supported, since they need a real DOS PC:
 - `Exec` of a real DOS program. `Exec('GAME.EXE')` runs `game`, a
   program built with `tpc`.
 - The `Graph3` and `Turbo3` units, kept for Turbo Pascal 3.0 programs.
-  `PRTurtle` has `Graph3`'s turtle routines.
+  `RscTurtle` has `Graph3`'s turtle routines.
 
 ## Developing
 

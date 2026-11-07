@@ -493,11 +493,11 @@ Graph unit (BGI, as used in the examples)
   the original programs still draw. `ImageSize` of 64K or more is 0 with
   `GraphResult` `grError`. A buffer too small is runtime error 201.
   `PutImage` is clipped to the viewport (with `ClipOn`)
-- `PRJson`, Ruscal's own unit for reading and writing JSON (JSON
-  strings up to 255 characters); see [PRJson](pr_json.md)
-- `PRTurtle`, Ruscal's own unit of turtle graphics on top of `Graph`,
+- `RscJson`, Ruscal's own unit for reading and writing JSON (JSON
+  strings up to 255 characters); see [RscJson](rsc_json.md)
+- `RscTurtle`, Ruscal's own unit of turtle graphics on top of `Graph`,
   with Graph3's turtle routines (`Forwd`, `TurnRight`, `PenUp`, `Wrap`,
-  `TurtleWindow`, ...); see [PRTurtle](pr_turtle.md)
+  `TurtleWindow`, ...); see [RscTurtle](rsc_turtle.md)
 - `label` and `goto` (names or numbers, `10:`): some uses, not all.
   Ruscal supports the ones Rust can say directly, with a labeled block
   or loop: a jump forward, to a label later in the same statement list

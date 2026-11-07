@@ -55,8 +55,8 @@ const STANDARD_UNITS: &[&str] = &["system", "crt", "dos", "graph", "printer", "o
 /// name next to the program wins. (`include_str!` puts the file's text into
 /// the `ruscal` binary when it's compiled.)
 pub const RUSCAL_UNITS: &[(&str, &str, &str)] = &[
-    ("prjson", "PRJson.pas", include_str!("../units/PRJson.pas")),
-    ("prturtle", "PRTurtle.pas", include_str!("../units/PRTurtle.pas")),
+    ("rscjson", "RscJson.pas", include_str!("../units/RscJson.pas")),
+    ("rscturtle", "RscTurtle.pas", include_str!("../units/RscTurtle.pas")),
 ];
 
 /// Transpile the Pascal program at `path`, together with every unit it uses.

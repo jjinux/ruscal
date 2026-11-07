@@ -1,6 +1,6 @@
-{ PRTurtle: turtle graphics on top of the Graph unit, with the routines
+{ RscTurtle: turtle graphics on top of the Graph unit, with the routines
   of Turbo Pascal 3.0's turtle (Graph3), so a turtle program can use
-  Graph and PRTurtle instead. Part of Ruscal (MIT); written in Turbo
+  Graph and RscTurtle instead. Part of Ruscal (MIT); written in Turbo
   Pascal, so it also compiles in TP 7 itself.
 
   The turtle starts at the centre of its window, heading north (up).
@@ -8,7 +8,7 @@
   coordinates have their origin at the window's centre, with y going up.
   Call InitGraph first; the window is the whole screen until
   TurtleWindow says otherwise. }
-unit PRTurtle;
+unit RscTurtle;
 
 interface
 
