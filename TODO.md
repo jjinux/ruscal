@@ -39,7 +39,7 @@ have Turbo Pascal 7 (in DOSBox, say), these settle what it can't. Tell
 Claude what TP does, and it makes Ruscal match.
 
 - [ ] `w + 1` with `w: Word = 65535`: 0 (Ruscal) or 65536?
-- [ ] With `{$Q+}`, is `Inc(b)` at 255 for a Byte (or `w + 1` at 65535 for a Word) error 215, as Ruscal says, or 0? (TP's `INTO` tests the signed overflow flag, so it may only catch `Inc(b)` at 127, says Fable.)
+- [x] With `{$Q+}`, is `Inc(b)` at 255 for a Byte (or `w + 1` at 65535 for a Word) error 215, as Ruscal says, or 0? TP 7 (in DOSBox, 2026-11-07): `Inc` and `Dec` are never checked, for any type (`Inc(i)` at 32767 is -32768, `Inc(b)` at 255 is 0); `w := w + 1` at 65535 and `i := i + 1` at 32767 are error 215; `b := b + 1` at 255 is 0 (worked out in Integer); `Succ`, `Pred`, `Abs`, `Sqr`, negation and LongInt `*` are checked. Ruscal checked `Inc`/`Dec`; fixed.
 - [ ] `s := s + Bump` where the function `Bump` changes `s`: which runs first?
 - [ ] `type Small = 0..10; const X = Small(300);`: an error, or 44 (Ruscal)?
 - [ ] Graph: does `SetBkColor` use the current `SetPalette` entry? Do XOR-mode rectangles lose their corners?

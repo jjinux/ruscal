@@ -274,26 +274,18 @@ impl<'a> Codegen<'a> {
                 if let (true, None, Some(n), Some(step)) = (named, negated, number, args.get(1))
                     && !in_range(n)
                 {
-                    let checked = matches!(target_ty.concrete(), Type::Int(_)) && self.overflow_checked_at(span);
-                    if n < 0 && in_range(-n) && checked {
-                        // (`{$Q+}` on a Byte: `checked_sub(NEG as u8)` would
-                        // call -3 an overflow; it's added in a wider type,
-                        // as a variable step is.)
-                        number = None;
+                    let amount = self.coerce(step, &target_ty).0;
+                    let wrapped = n & ((1_i64 << bits) - 1);
+                    let wrapped = if matches!(target_ty.concrete(), Type::Int(kind) if kind.contains(-1))
+                        && wrapped >= 1 << (bits - 1)
+                    {
+                        wrapped - (1 << bits)
                     } else {
-                        let amount = self.coerce(step, &target_ty).0;
-                        let wrapped = n & ((1_i64 << bits) - 1);
-                        let wrapped = if matches!(target_ty.concrete(), Type::Int(kind) if kind.contains(-1))
-                            && wrapped >= 1 << (bits - 1)
-                        {
-                            wrapped - (1 << bits)
-                        } else {
-                            wrapped
-                        };
-                        self.pending.push(format!(
-                            "// `{amount}` keeps the low bits: {n} is {wrapped} in {target_ty} arithmetic, as in Turbo Pascal."
-                        ));
-                    }
+                        wrapped
+                    };
+                    self.pending.push(format!(
+                        "// `{amount}` keeps the low bits: {n} is {wrapped} in {target_ty} arithmetic, as in Turbo Pascal."
+                    ));
                 }
                 if let Some(n) = number
                     && !named
@@ -335,60 +327,9 @@ impl<'a> Codegen<'a> {
                     (Some(n), _) => self.coerce(n, &target_ty).0,
                     (None, _) => "1".to_string(),
                 };
-                if let Type::Int(target) = target_ty.concrete()
-                    && self.overflow_checked_at(span)
-                {
-                    // A variable step whose type holds values the target
-                    // can't (`Inc(b, s)`, `s` a ShortInt, `b` a Byte): the
-                    // sum is worked out in a signed type wide enough for
-                    // both, and only a result that doesn't fit the target
-                    // is error 215. (`s as u8` would turn -5 into 251.)
-                    if let (Some(step), None) = (args.get(1), number)
-                        && let Type::Int(from) = ty(self, step).concrete()
-                        && !target.holds(from)
-                        // (`Ord(c)` of a Char is a Byte's value, though typed Integer.)
-                        && !(target.holds(IntKind::Byte) && self.ord_of_byte(step).is_some())
-                    {
-                        let wide = if target == IntKind::LongInt || from == IntKind::LongInt { "i64" } else { "i32" };
-                        let op = if b == Inc { "+" } else { "-" };
-                        let read = self.coerce(&args[0], &target_ty).0;
-                        let step = self.expr(step).0;
-                        if self.first_time("overflow_wide") {
-                            self.pending.push(
-                                "// `{$Q+}`: a step whose type holds values the target's can't is added in a wider type;"
-                                    .to_string(),
-                            );
-                            self.pending.push(
-                                "// `try_from` fails, and `overflow` stops with runtime error 215, when the result doesn't fit."
-                                    .to_string(),
-                            );
-                        }
-                        let value = format!(
-                            "{}::try_from({wide}::from({read}) {op} {wide}::from({step})).unwrap_or_else(|_| overflow())",
-                            target.rust()
-                        );
-                        if place.contains(".get_mut()") {
-                            return format!("{{ let updated = {value}; {place} = updated; }}");
-                        }
-                        return format!("{place} = {value};");
-                    }
-                    let method = if up { "checked_add" } else { "checked_sub" };
-                    // A place reached through a call (`p.get_mut().n`, a heap
-                    // record) is read, then written, in two statements: in
-                    // one, the read's borrow would still be alive for the
-                    // write. (A `let place = &mut ...` can't hold it either
-                    // when the path has two calls: `r.get().q.get_mut()`
-                    // borrows from a temporary that the `let` drops.)
-                    if place.contains(".get_mut()") {
-                        let read = self.coerce(&args[0], &target_ty);
-                        let value = self.checked_op(read, method, &amount).0;
-                        return format!("{{ let updated = {value}; {place} = updated; }}");
-                    }
-                    // (`*n` for a `var` parameter needs parentheses: `(*n).checked_add(1)`.)
-                    let precedence = if place.starts_with('*') { prec::UNARY } else { prec::POSTFIX };
-                    let value = self.checked_op((place.clone(), precedence), method, &amount).0;
-                    return format!("{place} = {value};");
-                }
+                // `{$Q+}` doesn't check `Inc` and `Dec` in Turbo Pascal 7 (only
+                // arithmetic like `i := i + 1`), so they wrap, as Rust's `+=`
+                // does here (the generated Cargo.toml turns overflow checks off).
                 let op = if up { "+=" } else { "-=" };
                 format!("{place} {op} {amount};")
             }

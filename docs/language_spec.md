@@ -44,15 +44,14 @@ Program structure
   [Calling Rust](calling_rust.md). An `.OBJ` file can't be linked
 - Compiler directives `{$...}`: `{$I-}`/`{$I+}` switch I/O checking (see
   Files). `{$Q+}`/`{$Q-}` switch overflow checking: in `{$Q+}` code,
-  integer `+`, `-`, `*`, negation, `Abs`, `Sqr`, `Succ`, `Pred`, `Inc` and
-  `Dec` stop with runtime error 215 when the result doesn't fit its type
+  integer `+`, `-`, `*`, negation, `Abs`, `Sqr`, `Succ` and `Pred` stop
+  with runtime error 215 when the result doesn't fit its type
   (`i.checked_add(1).unwrap_or_else(overflow)`); elsewhere they wrap, as in
-  TP's default `{$Q-}`. A constant expression (`2 + 3`, `C * 2`) is never
+  TP's default `{$Q-}`. `Inc` and `Dec` are never checked: they wrap even
+  under `{$Q+}`, as Turbo Pascal 7 does (checked in DOSBox: `Inc(i)` at
+  32767 is -32768, while `i := i + 1` is error 215). A constant expression (`2 + 3`, `C * 2`) is never
   checked: TP works it out when it compiles. (`div` or `mod` by a
-  constant 0 is a compile error, as in TP.) `Inc(b, s)` with a variable
-  step of a type the target can't hold (a ShortInt into a Byte) adds the
-  two as numbers: 10 + -5 is 5, and only a result out of range is an
-  error. The others are parsed and ignored, with a warning
+  constant 0 is a compile error, as in TP.) The others are parsed and ignored, with a warning
   for ones that change semantics (`{$B+}`, `{$R+}`); `{$M}`, `{$N+}` and the
   overlay ones (`{$O+}`, `{$O UnitName}`, `{$F+}`) are ignored silently;
   include files (`{$I name}`) are an error

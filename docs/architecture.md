@@ -265,7 +265,9 @@ like `{$I-}`: the driver works out which source ranges it covers
 (`switch_regions`), and there codegen writes the checked operations,
 `i.checked_add(1).unwrap_or_else(overflow)`, where the runtime's generic
 `overflow()` raises error 215. The check is in the type Ruscal computes
-in, which follows TP's (an `Integer` sum in 16 bits). Only the code that
+in, which follows TP's (an `Integer` sum in 16 bits). `Inc` and `Dec` stay
+`+=` and `-=` even there: Turbo Pascal 7 never checks them (tried in
+DOSBox), only arithmetic like `i := i + 1`. Only the code that
 asks for checks pays for the longer form; `x := x + 1` isn't turned into
 `x += 1` there. A constant expression (`is_constant`: anything sema's
 `eval_const` can work out, such as `K * 2`, `Ord('A')` or `Word(3)`; sema
@@ -302,9 +304,7 @@ declaration that can't be written as an expression (`Chr(Ord('A') + K)`)
 is its value with the Pascal in a comment. An `Inc`/`Dec` step that names
 a constant keeps it (`Dec(i, Neg)` is `i -= NEG`, `Dec(b, -K)` is
 `b += K as u8`), cut down with `as` when it doesn't fit, with a comment
-(`b += BIG as u8`, "300 is 44 in Byte arithmetic"); under `{$Q+}` a
-negative one on a Byte or Word is added in a wider type, as a variable
-step is. `High`/`Low` of an array with an integer index are its bounds,
+(`b += BIG as u8`, "300 is 44 in Byte arithmetic"). `High`/`Low` of an array with an integer index are its bounds,
 `a.high()` or `TArr::HIGH` (`PArray`'s), so they follow the declaration;
 `High(Integer)` is Rust's `i16::MAX` (`High(Char)` `u8::MAX`; a constant `const Top = High(Word)` has the type it names, as in TP: `const TOP: u16 = u16::MAX`), and `High(Index)` of a subrange type `Index = 1..N` is `N`, wherever the type they're used as is known (inside a sum typed like a literal, `High(Integer) + 1`, the number stays, as `i16::MAX + 1` would overflow). `SizeOf` is TP's layout, which isn't the Rust value's size in memory (`std::mem::size_of`: a `Real` is an 8-byte `f64`, a `PString` holds any `string[n]`), so it's called the *serialized* size, the bytes a typed file stores (sema's `serialized_size`, the runtime's `FileRecord::serialized_size()`). `SizeOf(Rec)` of a record or object the program declares is `Rec::SERIALIZED_SIZE`, an inherent constant codegen gives each type `SizeOf` measures (and the types theirs are built from), one term per field: `2 + serialized_string_size(10) + 3 * Point::SERIALIZED_SIZE`, plus the parent's and the VMT's 2 bytes for an object, and a variant part's largest variant as a number. So it follows the declaration when someone editing the Rust adds a field. `SizeOf` of a `string[n]` is the runtime's `const fn serialized_string_size(n)`, of an array of those `n * ...`. The constant is a `usize`, so it's written only where the integer type wanted is known, cast to it (`Rec::SERIALIZED_SIZE as i16`; in a constant `const K: i16 = Rec::SERIALIZED_SIZE as i16 * 2`), and as it is in `Write`. That's most places, not all: elsewhere (a sum with `High(a)`, a runtime routine's `impl Into<i32>` argument such as `Seek`'s, an array bound, `{$Q+}` arithmetic, a Real context) the number stays; TODO.md lists them. Basic types, sets, files and the runtime's records (`DateTime`) stay numbers too. An array's bounds keep
 their constants too (sema's `bounds_rust`, kept in `ArrayType` but not

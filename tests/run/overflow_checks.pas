@@ -1,6 +1,7 @@
-{ The $Q+ switch: integer +, -, *, negation, Abs, Sqr, Succ, Pred, Inc
-  and Dec stop with runtime error 215 when the result doesn't fit, as in
-  TP 7; code compiled with $Q- wraps around. Expected output by hand:
+{ The $Q+ switch: integer +, -, *, negation, Abs, Sqr, Succ and Pred
+  stop with runtime error 215 when the result doesn't fit, as in TP 7;
+  code compiled with $Q- wraps around. (Inc and Dec are never checked:
+  see overflow_inc_dec.pas.) Expected output by hand:
   Free Pascal works in 32 or 64 bits, so 32767 + 1 doesn't overflow
   there. }
 program OverflowChecks;

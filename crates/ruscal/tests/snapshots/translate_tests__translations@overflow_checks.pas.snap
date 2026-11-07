@@ -16,9 +16,10 @@ input_file: tests/translate/overflow_checks.pas
 
 use ruscal_runtime::prelude::*;
 
-// The $Q+ switch: integer +, -, *, negation, Abs, Sqr, Succ, Pred, Inc
-// and Dec stop with runtime error 215 when the result doesn't fit, as in
-// TP 7; code compiled with $Q- wraps around. Expected output by hand:
+// The $Q+ switch: integer +, -, *, negation, Abs, Sqr, Succ and Pred
+// stop with runtime error 215 when the result doesn't fit, as in TP 7;
+// code compiled with $Q- wraps around. (Inc and Dec are never checked:
+// see overflow_inc_dec.pas.) Expected output by hand:
 // Free Pascal works in 32 or 64 bits, so 32767 + 1 doesn't overflow
 // there.
 
@@ -45,9 +46,7 @@ struct Outer {
 
 /// Pascal: `procedure Bump(var N: Integer; by: Integer);`
 fn bump(n: &mut i16, by: i16) {
-    // `{$Q+}`: `checked_add` and the like give `None` when the result doesn't fit,
-    // and `overflow` stops with runtime error 215, as in Turbo Pascal.
-    *n = (*n).checked_add(by).unwrap_or_else(overflow);
+    *n += by;
 }
 
 /// The main program: the `begin ... end.` block of `OverflowChecks`.
@@ -65,6 +64,8 @@ fn pascal_main() {
     j = i + 1;
     pwriteln!(j);
     l = 100000;
+    // `{$Q+}`: `checked_add` and the like give `None` when the result doesn't fit,
+    // and `overflow` stops with runtime error 215, as in Turbo Pascal.
     pwriteln!(
         i.checked_sub(1).unwrap_or_else(overflow),
         " ",
@@ -79,8 +80,8 @@ fn pascal_main() {
         j.checked_add(1).unwrap_or_else(overflow).checked_sub(1).unwrap_or_else(overflow)
     );
     b = 254;
-    b = b.checked_add(1).unwrap_or_else(overflow);
-    b = b.checked_sub(255).unwrap_or_else(overflow);
+    b += 1;
+    b -= 255;
     j = 181;
     bump(&mut j, 0);
     pwriteln!(
@@ -92,26 +93,17 @@ fn pascal_main() {
     );
     p = Ptr::alloc();
     p.get_mut().n = 1;
-    {
-        let updated = p.get().n.checked_add(1).unwrap_or_else(overflow);
-        p.get_mut().n = updated;
-    }
+    p.get_mut().n += 1;
     // Pascal `with`: Rust has no equivalent, so each field is written out in full.
-    {
-        let updated = p.get().n.checked_add(2).unwrap_or_else(overflow);
-        p.get_mut().n = updated;
-    }
+    p.get_mut().n += 2;
     pwriteln!(p.get().n, " ", 5_i16.checked_mul(j).unwrap_or_else(overflow));
     r = Ptr::alloc();
     r.get_mut().q = p.clone();
-    {
-        let updated = r.get().q.get().n.checked_add(40).unwrap_or_else(overflow);
-        r.get().q.get_mut().n = updated;
-    }
+    r.get().q.get_mut().n += 40;
     pwriteln!(p.get().n);
     // A constant (2 + 3) is worked out when TP compiles, so it isn't checked.
     b = 10;
-    b = b.checked_sub(2 + 3).unwrap_or_else(overflow);
+    b -= 2 + 3;
     w_ = 10;
     w_ = w_.checked_mul(2 + 3).unwrap_or_else(overflow);
     pwriteln!(
@@ -127,31 +119,22 @@ fn pascal_main() {
     );
     // A constant step that's negative turns round, as -5 does: up by 5.
     b = 250;
-    b = b.checked_add(K as u8).unwrap_or_else(overflow);
-    {
-        let updated = p.get().n.checked_add(K).unwrap_or_else(overflow);
-        p.get_mut().n = updated;
-    }
+    b += K as u8;
+    p.get_mut().n += K;
     pwriteln!(i16::from(b), " ", p.get().n);
     // A variable step that's negative adds as a number: 10 + -5 is 5.
     b = 10;
     s = -5;
-    // `{$Q+}`: a step whose type holds values the target's can't is added in a wider type;
-    // `try_from` fails, and `overflow` stops with runtime error 215, when the result doesn't fit.
-    b = u8::try_from(i32::from(b) + i32::from(s)).unwrap_or_else(|_| overflow());
-    {
-        let updated = r.get().q.get().n.checked_sub(i16::from(s)).unwrap_or_else(overflow);
-        r.get().q.get_mut().n = updated;
-    }
+    b += s as u8;
+    r.get().q.get_mut().n -= i16::from(s);
     w_ = 3;
-    w_ = u16::try_from(i32::from(w_) + i32::from(i16::from(s).checked_add(2).unwrap_or_else(overflow)))
-        .unwrap_or_else(|_| overflow());
+    w_ += i16::from(s).checked_add(2).unwrap_or_else(overflow) as u16;
     pwriteln!(i16::from(b), " ", p.get().n, " ", w_);
     // Ord, Succ and typecasts of constants are constants too.
     b = 1;
-    b = b.checked_add(b'A').unwrap_or_else(overflow);
-    b = b.checked_add((K + 1) as u8).unwrap_or_else(overflow);
-    b = b.checked_add(3_u16 as u8).unwrap_or_else(overflow);
+    b += b'A';
+    b += (K + 1) as u8;
+    b += 3_u16 as u8;
     l = 1;
     l = l.checked_add(i32::from(i16::from(b'A') + 1)).unwrap_or_else(overflow);
     pwriteln!(i16::from(b), " ", l);
