@@ -24,8 +24,8 @@ your old Turbo Pascal code natively.
 Ruscal was written by Claude Code Opus with help from Claude Code Fable and
 JJ Behrens.
 
-By the way, Ruscal is pronounced "rust CAL", which matches the pronunciation
-of "Pascal".
+By the way, Ruscal is pronounced "rust-CAL", with the stress on "CAL", as in
+"Pascal".
 
 ## Inspiration
 
