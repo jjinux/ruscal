@@ -54,9 +54,15 @@ cargo fmt --all && cargo clippy --workspace --all-targets -- -D warnings
 
 ## Licensing
 
-Ruscal is MIT. Don't copy code or tests from GPL projects (Free Pascal,
-p2c, GNU Pascal): read them for ideas only. Running `fpc` as an external
-program to produce expected output (`tests/gen_expected.sh`) is fine.
+Ruscal is MIT. Important: don't copy code or tests from Free Pascal,
+Turbo Pascal, p2c, GNU Pascal or any other Pascal implementation: read
+them for ideas only. (Turbo Pascal's own runtime source is in
+`c/TP/SOURCE`; it's Borland's, not ours.) You may run them on your own
+programs to see how they behave:
+
+- `fpc -Mtp` gives most tests' expected output (`tests/gen_expected.sh`).
+- Turbo Pascal 7 runs in DOSBox, whose C: drive is `c/` (in
+  `.gitignore`), to settle what TP really did where Free Pascal differs.
 
 ## Who it's for
 

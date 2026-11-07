@@ -28,6 +28,7 @@ Turbo Pascal. These need you; tell Claude what you find, and it fixes it.
 
 - [x] Rename the project "Ruscal" per Julie's suggestion (done 2026-11-07: the repository, crates, command, environment variables (`RUSCAL_*`) and docs). Julie's artwork for it, at the top of the README: https://chatgpt.com/s/m_6aeea40a95dc8191bdc0e0822d186814
 - [x] Ruscal's own units' names start with `Rsc`, not `PR` (the user, 2026-11-07; `PR` was left over from the old project name): `PRTurtle` is `RscTurtle` and `PRJson` is `RscJson`, with their docs (`docs/rsc_turtle.md`, `docs/rsc_json.md`) and tests renamed to match. Older items below keep the old names.
+- [ ] Add DOSBox and the Turbo Pascal 7 copy the user runs in it (https://archive.org/details/tp_20240418) to the README's Acknowledgements (the user, 2026-11-07: "at some point").
 - [ ] Announce Ruscal to the Pascal community (the user, 2026-11-06: theirs to do): find which Pascal compiler projects are still alive (Free Pascal, Lazarus, and others), their mailing lists or forums and what each allows for announcements, and send a short announcement to each (what Ruscal is, that it's MIT, a link to the repository). Claude can help draft them if asked.
 
 ## Check with a real Turbo Pascal
