@@ -3,3 +3,5 @@ out/
 *.swp
 .DS_Store
 *.snap.new
+# DOSBox C: drive (Turbo Pascal 7, to check what TP really did)
+/c/
