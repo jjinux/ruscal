@@ -94,6 +94,7 @@ const RESERVED: &[&str] = &[
     "w",
     "wd",
     "pstr",
+    "serialized_string_size",
     "halt",
     "rte",
     "run",

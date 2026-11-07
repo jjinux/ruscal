@@ -80,7 +80,7 @@ variant is 16 where TP says 11) and `SizeOf(Func)` is 8 (TP: 4).
   byte range. `ByteView` (`runtime/src/bytes.rs`) builds untyped `var`
   parameters, `Move`/`FillChar`, `BlockRead`/`BlockWrite` and `GetMem`
   memory on it, with the `Bytes` guard that copies in and writes back on
-  `Drop`. `tp_size` in `sema/types.rs` is what `SizeOf` returns.
+  `Drop`. `serialized_size` in `sema/types.rs` is what `SizeOf` returns.
 - Lifting (`sema/lift.rs`): a routine receives every global it or anything
   it calls touches, as `&mut T` / `&T` / by value, computed as a fixed
   point over `ProcInfo::calls`. Virtual methods already solve "several
@@ -267,7 +267,7 @@ In `bytes.rs` (or a new `variants.rs`):
   and `field_path` work unchanged; a `Field` in a byte-backed part carries
   `offset` (and, for a string, its capacity) so codegen knows which
   accessor to emit.
-- `tp_size(record)` = fixed fields + tag + max over variants, recursively;
+- `serialized_size(record)` = fixed fields + tag + max over variants, recursively;
   `SizeOf` folds as today.
 - Checks: labels are constants of the tag type, distinct, every label's
   variant is listed once (as `case` labels are checked now); duplicate
@@ -581,7 +581,7 @@ and a Fable review after steps 3 and 6.
 
 1. **Tagged variant records, flattened.** Parser and AST for a variant
    part (optional tag, constant-list labels, nested parts), sema's
-   `VariantPart` and `tp_size`, the checks on labels and typed constants,
+   `VariantPart` and `serialized_size`, the checks on labels and typed constants,
    codegen's struct and the `case` clause of `file_record!`; `with` and
    `var` arguments of variant fields fall out. Tests: `variant_records`
    (a `TPolygon`-style record: assign, read, `with`, pass fields by `var`,

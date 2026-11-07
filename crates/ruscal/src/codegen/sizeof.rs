@@ -97,6 +97,7 @@ impl Codegen<'_> {
     /// `impl Rec { pub const SERIALIZED_SIZE: usize = ...; }`, if `SizeOf`
     /// needs it: one term per field, so it follows the declaration.
     pub(super) fn serialized_size_const(&mut self, ty: &Type) {
+        let variant = matches!(ty, Type::Record(r) if r.variant.is_some());
         let (name, mut terms, vmt) = match ty {
             Type::Record(r) if self.sized_types.contains(&r.rust_name) => {
                 let mut terms: Vec<String> = r.fixed_fields().iter().map(|f| self.field_term(&f.ty)).collect();
@@ -127,6 +128,9 @@ impl Codegen<'_> {
         if self.first_time("serialized_size") {
             self.line("/// That's also what a typed file stores, so it's called the serialized");
             self.line("/// size; the Rust value's size in memory (`std::mem::size_of`) differs.");
+        }
+        if variant {
+            self.line("/// The last term is the variant part: the bytes of its largest variant.");
         }
         if vmt {
             self.line("/// The last `2` is TP's hidden pointer to the object's virtual method table.");

@@ -94,6 +94,7 @@ struct Variant {
 
 impl Variant {
     /// Pascal's `SizeOf(Variant)`: its bytes in Turbo Pascal's layout.
+    /// The last term is the variant part: the bytes of its largest variant.
     pub const SERIALIZED_SIZE: usize = 1 + 1 + 5;
 }
 

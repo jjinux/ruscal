@@ -1008,11 +1008,12 @@ impl<'a> Codegen<'a> {
             return self.checked_op(left, method, &right.0);
         }
         // `x as i16 < y` would parse `<` as the start of generic arguments,
-        // so a cast on the left of `<` or `<<` always gets parentheses.
+        // so a cast on the left of `<` or `<<` always gets parentheses, as
+        // does a sum that ends with one (`(i - K as i16) < 0`).
         // Comparisons don't chain in Rust, so both sides need higher
         // precedence; arithmetic is left-associative, so only the right side
         // does.
-        let left_min = if left.1 == prec::AS && op == Lt {
+        let left_min = if (left.1 == prec::AS || ends_with_cast(&left.0)) && op == Lt {
             prec::UNARY
         } else if p == prec::CMP {
             p + 1
@@ -1072,11 +1073,14 @@ impl<'a> Codegen<'a> {
         // A literal needs its type spelled out (`-300_i16`) to be cast or to
         // have a method called on it.
         let small_count = matches!(rt, Type::IntLit(n) if (0..width).contains(n));
-        let left = if matches!(lt, Type::IntLit(_)) && (unsigned.is_some() || !small_count) {
-            (format!("{}_{}", left.0, kind.rust()), prec::POSTFIX)
-        } else {
-            left
-        };
+        // (Only a literal: a constant like `SizeOf(Rec)` is written as a
+        // name, `Rec::SERIALIZED_SIZE as i16`, that says its type already.)
+        let left =
+            if matches!(lt, Type::IntLit(_)) && super::is_literal(&left.0) && (unsigned.is_some() || !small_count) {
+                (format!("{}_{}", left.0, kind.rust()), prec::POSTFIX)
+            } else {
+                left
+            };
         let left = match unsigned {
             Some(unsigned) => (format!("{} as {unsigned}", paren(left, prec::AS)), prec::AS),
             None => left,
@@ -1085,7 +1089,7 @@ impl<'a> Codegen<'a> {
             let rust_op = if op == BinaryOp::Shl { "<<" } else { ">>" };
             // `x as i16 << y` would parse `<` as the start of generic
             // arguments, so a cast on the left of `<<` gets parentheses.
-            let left_min = if left.1 == prec::AS { prec::UNARY } else { prec::AS };
+            let left_min = if left.1 == prec::AS || ends_with_cast(&left.0) { prec::UNARY } else { prec::AS };
             // (Arithmetic on either side gets parentheses, as a person writes
             // it: `(i + 1) << 1`, though Rust wouldn't need them.)
             (format!("{} {rust_op} {}", paren(left, left_min), paren(right, prec::AS)), prec::SHIFT)
@@ -1587,9 +1591,7 @@ impl<'a> Codegen<'a> {
             SymKind::Builtin(b) => Some(b),
             _ => None,
         });
-        // `x as u8` at the end, outside any brackets.
-        let ends_with_cast =
-            code.rsplit_once(" as ").is_some_and(|(_, ty)| ty.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+        let ends_with_cast = ends_with_cast(code);
         match builtin {
             // (`!b.is_multiple_of(2)` for a Byte or Word.)
             Some(Builtin::Odd) if code.starts_with('!') && code.ends_with(".is_multiple_of(2)") => prec::UNARY,
@@ -2227,4 +2229,9 @@ fn reads_pointer(e: &Expr) -> bool {
 pub(super) enum Limit {
     Named(String, Type),
     Bound(Expr),
+}
+
+/// Does `code` end with a cast, `x as u8`, outside any brackets?
+fn ends_with_cast(code: &str) -> bool {
+    code.rsplit_once(" as ").is_some_and(|(_, ty)| ty.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'))
 }
