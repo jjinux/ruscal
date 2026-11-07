@@ -139,7 +139,8 @@ macro_rules! impl_pas_write_int {
         )*
     };
 }
-impl_pas_write_int!(i8, i16, i32, i64, u16, u32, u64);
+// (`usize` for `SizeOf(Rec)`, which is `Rec::SERIALIZED_SIZE`.)
+impl_pas_write_int!(i8, i16, i32, i64, u16, u32, u64, usize);
 
 /// Turbo Pascal prints a `Real` with no width in scientific notation, 17
 /// characters wide: ` 1.2345000000E+02`. That's at most 11 significant

@@ -24,6 +24,13 @@ struct Point {
     name: PString,
 }
 
+impl Point {
+    /// Pascal's `SizeOf(Point)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = 2 + 2 + serialized_string_size(10);
+}
+
 /// Pascal: `procedure Check(ok: Boolean; what: string);`
 ///
 /// The global variables this procedure uses are passed in as parameters,

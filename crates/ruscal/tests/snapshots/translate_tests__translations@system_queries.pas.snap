@@ -50,6 +50,13 @@ struct Point {
     y: i16,
 }
 
+impl Point {
+    /// Pascal's `SizeOf(Point)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = 2 + 2;
+}
+
 /// Pascal: `Person = record ... end`
 #[derive(Clone, Copy, Debug, Default)]
 struct Person {
@@ -57,6 +64,11 @@ struct Person {
     age: u8,
     height: f64,
     born: i32,
+}
+
+impl Person {
+    /// Pascal's `SizeOf(Person)`: its bytes in Turbo Pascal's layout.
+    pub const SERIALIZED_SIZE: usize = serialized_string_size(20) + 1 + 6 + 4;
 }
 
 /// Pascal: `array[1..4, 1..5] of Integer`
@@ -117,10 +129,10 @@ fn pascal_main() {
     check(&mut checks, &mut failures, 1 == 1, pstr("SizeOf(Boolean)"));
     check(&mut checks, &mut failures, 6 == 6, pstr("SizeOf(Real)"));
     check(&mut checks, &mut failures, 1 == 1, pstr("SizeOf(Color)"));
-    check(&mut checks, &mut failures, 256 == 256, pstr("SizeOf(string)"));
-    check(&mut checks, &mut failures, 31 == 31, pstr("SizeOf(string[30])"));
-    check(&mut checks, &mut failures, 4 == 4, pstr("SizeOf(Point)"));
-    check(&mut checks, &mut failures, 32 == 21 + 1 + 6 + 4, pstr("SizeOf(Person)"));
+    check(&mut checks, &mut failures, serialized_string_size(255) as i16 == 256, pstr("SizeOf(string)"));
+    check(&mut checks, &mut failures, serialized_string_size(30) as i16 == 31, pstr("SizeOf(string[30])"));
+    check(&mut checks, &mut failures, Point::SERIALIZED_SIZE as i16 == 4, pstr("SizeOf(Point)"));
+    check(&mut checks, &mut failures, Person::SERIALIZED_SIZE as i16 == 21 + 1 + 6 + 4, pstr("SizeOf(Person)"));
     check(&mut checks, &mut failures, 40 == 40, pstr("SizeOf(Grid)"));
     check(&mut checks, &mut failures, GRID_BYTES == 40, pstr("SizeOf in a constant"));
     check(&mut checks, &mut failures, 4 == 4, pstr("SizeOf(pointer)"));

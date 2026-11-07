@@ -92,6 +92,13 @@ impl Pun {
 // implements that (the `FileRecord` trait) field by field.
 file_record!(Pun { tag, variants });
 
+impl Pun {
+    /// Pascal's `SizeOf(Pun)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = 1 + 4;
+}
+
 /// Pascal: `array[1..100] of Byte`
 type TBytes = PArray<u8, 1, 100>;
 
@@ -130,7 +137,7 @@ fn pascal_main() {
     let mut f: PFile<Pun> = PFile::default();
     p.tag = b'x';
     p.set_l(305419896);
-    pwriteln!(p.lo(), " ", p.hi(), " ", i16::from(p.b()[1]), " ", i16::from(p.b()[4]), " ", 5);
+    pwriteln!(p.lo(), " ", p.hi(), " ", i16::from(p.b()[1]), " ", i16::from(p.b()[4]), " ", Pun::SERIALIZED_SIZE);
     *p.hi_mut() += 1;
     pwriteln!(p.l());
     p.b_mut()[1] = 0;
@@ -144,7 +151,7 @@ fn pascal_main() {
     n = 1000000;
     q.set_l(n);
     pwriteln!(q.lo(), " ", q.hi());
-    pwriteln!(sum(&mut p, 5));
+    pwriteln!(sum(&mut p, Pun::SERIALIZED_SIZE as i16));
     q = p;
     pwriteln!(q.s(), " ", q.tag);
     f.assign("variant_punning.dat");

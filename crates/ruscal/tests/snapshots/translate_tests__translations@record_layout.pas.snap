@@ -32,6 +32,13 @@ struct People {
 // implements that (the `FileRecord` trait) field by field.
 file_record!(People { name: string 30, id, index });
 
+impl People {
+    /// Pascal's `SizeOf(People)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = serialized_string_size(30) + 4 + 6;
+}
+
 /// Pascal: `(Red, Green, Blue)`
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 enum Color {
@@ -63,6 +70,11 @@ struct Paint {
 
 file_record!(Paint { id, colors: set 1 });
 
+impl Paint {
+    /// Pascal's `SizeOf(Paint)`: its bytes in Turbo Pascal's layout.
+    pub const SERIALIZED_SIZE: usize = 2 + 1;
+}
+
 /// Pascal: `procedure Check(ok: Boolean; what: string);`
 ///
 /// The global variables this procedure uses are passed in as parameters,
@@ -93,7 +105,7 @@ fn pascal_main() {
     let mut again: Paint = Paint::default();
     checks = 0;
     failures = 0;
-    check(&mut checks, &mut failures, 41 == 41, pstr("SizeOf(People) is 41"));
+    check(&mut checks, &mut failures, People::SERIALIZED_SIZE as i16 == 41, pstr("SizeOf(People) is 41"));
     p.name = pstr("Shannon Behrens");
     p.id = 1;
     p.index = 2930802.0;
@@ -139,7 +151,12 @@ fn pascal_main() {
     pf.close();
     raw.assign("paint.dat");
     raw.reset();
-    check(&mut checks, &mut failures, 3 == 3 && raw.file_size() == 3, pstr("a set of three colours takes one byte"));
+    check(
+        &mut checks,
+        &mut failures,
+        Paint::SERIALIZED_SIZE as i16 == 3 && raw.file_size() == 3,
+        pstr("a set of three colours takes one byte"),
+    );
     raw.close();
     pf.reset();
     pf.read(&mut again);

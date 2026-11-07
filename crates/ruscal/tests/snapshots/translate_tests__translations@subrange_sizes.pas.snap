@@ -30,6 +30,13 @@ struct Date {
 // implements that (the `FileRecord` trait) field by field.
 file_record!(Date { month, day, offset, spare, year, count });
 
+impl Date {
+    /// Pascal's `SizeOf(Date)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = 1 + 1 + 1 + 1 + 2 + 2;
+}
+
 // A subrange takes the smallest integer type that holds its bounds, as in
 // TP: 1..12 is a byte, -5..5 a ShortInt, 0..1000 an Integer, 0..65535 a
 // Word. That's what SizeOf says and what a record in a file holds; and
@@ -44,7 +51,7 @@ fn pascal_main() {
     let mut b: PFile<u8> = PFile::default();
     let mut x: u8 = 0;
     let mut total: i16 = 0;
-    pwriteln!(1, " ", 8);
+    pwriteln!(1, " ", Date::SERIALIZED_SIZE);
     d.month = 12;
     d.day = 31;
     d.offset = -5;

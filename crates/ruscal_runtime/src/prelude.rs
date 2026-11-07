@@ -18,7 +18,7 @@ pub use crate::printer::Lst;
 pub use crate::ptr::{AnyPtr, ProcVar, Ptr};
 pub use crate::run::{halt, io_result, io_unchecked, nonzero, overflow, rte, run_error};
 pub use crate::set::PSet;
-pub use crate::string::{PString, pos, pstr};
+pub use crate::string::{PString, pos, pstr, serialized_string_size};
 pub use crate::system::{
     ch_dir, exit_code, file_mode, get_dir, max_avail, mem_avail, mk_dir, param_count, param_str, pas_str, rand_seed,
     random, random_real, random_word, randomize, rm_dir, set_exit_code, set_file_mode, set_rand_seed, val,

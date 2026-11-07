@@ -197,6 +197,9 @@ pub struct Analysis {
     pub subrange_exprs: HashMap<SymId, (crate::ast::Expr, crate::ast::Expr)>,
     /// Calls sema worked out, by the call's id: `SizeOf`, `High`, `Low`.
     pub folded: HashMap<NodeId, ConstVal>,
+    /// The type each `SizeOf` call measures, by the call's id, so codegen
+    /// can write `SizeOf(Rec)` as `Rec::SERIALIZED_SIZE` rather than a number.
+    pub sizeof_types: HashMap<NodeId, Type>,
     /// `external` routines, written in Rust (`{$L sound.rs}`): each one's
     /// procedure and where its name is. The driver points `rust_name` at
     /// the Rust file's module (`sound::beep`).

@@ -660,6 +660,17 @@ impl<'a> Codegen<'a> {
             // (Borrowed for a width: the copy is still written back after.)
             _ if self.is_lent(value) && width.is_some() => format!("&{}", self.lent_pchar(value)),
             _ if self.is_lent(value) => self.lent_pchar(value),
+            // `SizeOf(Rec)`: `Rec::SERIALIZED_SIZE`, a `usize`, prints the same.
+            _ if let Some((code, _)) = self.sizeof_code(value) => code,
+            // A constant sum of them, `SizeOf(Rec) - 2 * SizeOf(Point)`, in
+            // the integer type TP works it out in.
+            Type::IntLit(_)
+                if matches!(value.kind, ExprKind::Binary { .. })
+                    && self.uses_sizeof(value)
+                    && !self.uses_array_bound(value) =>
+            {
+                self.coerce(value, &ty.concrete()).0
+            }
             _ => self.expr(value).0,
         };
         match (width, decimals) {

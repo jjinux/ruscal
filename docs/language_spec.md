@@ -134,7 +134,9 @@ Built-ins (System unit)
   References), `MaxInt`, `MaxLongInt`
 - `SizeOf` (TP's sizes: `Real` is 6 bytes, `string[n]` n+1, records
   unpadded, objects with TP's 2-byte VMT field when they have a
-  constructor, destructor or virtual method), `High`/`Low` (arrays, strings, ordinal types), all three
+  constructor, destructor or virtual method; in the Rust, `SizeOf(Rec)`
+  is `Rec::SERIALIZED_SIZE`, a constant built from the fields' sizes, and
+  `SizeOf` of a `string[n]` is `serialized_string_size(n)`), `High`/`Low` (arrays, strings, ordinal types), all three
   constants; `Swap` (TP 7 documents "X is an expression of type Integer
   or Word; result type same as parameter". As TP's compiler and Free
   Pascal do, a Byte swaps as a Word and a ShortInt as an Integer; a

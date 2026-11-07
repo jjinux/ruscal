@@ -14,6 +14,7 @@
 mod builtins;
 mod comments;
 mod expr;
+mod sizeof;
 
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -94,8 +95,10 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         self_expr: None,
         comments: comments::Comments::new(map, program, units, comments),
         decl_starts: HashMap::new(),
+        sized_types: HashSet::new(),
     };
     g.newtypes = g.self_naming_classes();
+    g.sized_types = g.serialized_size_types();
     // `decls` also maps a `for` statement's variable to its symbol, so keep
     // the earliest place each symbol is named: its declaration.
     for (&start, &sym) in &analysis.decls {
@@ -199,6 +202,9 @@ struct Codegen<'a> {
     comments: comments::Comments,
     /// Where each variable was declared: its comments' anchor.
     decl_starts: HashMap<SymId, usize>,
+    /// The records and objects that get a `SERIALIZED_SIZE` constant, for
+    /// `SizeOf` (see `sizeof.rs`).
+    sized_types: HashSet<String>,
 }
 
 /// Labels for a loop where plain `break`/`continue` won't do: a `repeat
@@ -945,6 +951,7 @@ impl<'a> Codegen<'a> {
             } else if !matches!(ty, Type::Proc(_)) && self.stored_in_files().contains(&ty.rust()) {
                 self.file_record(ty);
             }
+            self.serialized_size_const(ty);
         }
         // The types that made no item (`TInt = Integer`: Rust uses `i16`
         // directly) still keep their comments.

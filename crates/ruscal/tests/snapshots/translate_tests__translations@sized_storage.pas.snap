@@ -113,12 +113,12 @@ fn pascal_main() {
     g.close();
     b.assign("fa.dat");
     b.reset();
-    pwriteln!("arr bytes ", b.file_size(), " sizeof ", 12);
+    pwriteln!("arr bytes ", b.file_size(), " sizeof ", 2 * serialized_string_size(5));
     b.close();
     names[1] = pstr("ab");
     names[2] = pstr("c");
     names[3] = pstr("defg");
-    dump(&mut sized_bytes(&mut names, 4), 15);
+    dump(&mut sized_bytes(&mut names, 4), (3 * serialized_string_size(4)) as u16);
     dump(&mut bytes_from(&mut sized_bytes(&mut names, 4), 5), 10);
     move_bytes(&sized_view_bytes(&names, 4), &mut buf, 15);
     for i in 1_i16..=15 {

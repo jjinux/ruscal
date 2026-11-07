@@ -34,6 +34,13 @@ struct Rec {
 // implements that (the `FileRecord` trait) field by field.
 file_record!(Rec { name: string 5, n });
 
+impl Rec {
+    /// Pascal's `SizeOf(Rec)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = serialized_string_size(5) + 2;
+}
+
 /// Pascal: `procedure Dump(var Data; Size: Word);`
 fn dump(data: &mut dyn ByteView, size: u16) {
     // An untyped parameter is the caller's variable as Turbo Pascal's bytes;
@@ -89,7 +96,7 @@ fn pascal_main() {
     let mut buf: PArray<u8, 1, 8> = PArray::default();
     r.name = pstr("abc");
     r.n = 258;
-    dump(&mut r, 8);
+    dump(&mut r, Rec::SERIALIZED_SIZE as u16);
     w_ = 4660;
     pass(&mut w_, 2);
     s = pstr("hello");

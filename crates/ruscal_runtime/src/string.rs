@@ -124,6 +124,14 @@ impl PString {
     }
 }
 
+/// Pascal `SizeOf` of a `string[capacity]`: the bytes it takes in Turbo
+/// Pascal's layout (and in a typed file), a length byte and then the
+/// characters. A `PString` holds any `string[n]`, so its size in Rust's
+/// memory says nothing about this. (`const fn`: usable in a `const`.)
+pub const fn serialized_string_size(capacity: usize) -> usize {
+    capacity + 1
+}
+
 /// Pascal `Pos(substr, s)`: the 1-based position of the first occurrence, or
 /// 0 if there is none.
 pub fn pos(substr: impl Into<PString>, s: impl Into<PString>) -> i16 {

@@ -2254,31 +2254,7 @@ impl Checker {
     /// `SizeOf(x)`, `High(x)` or `Low(x)`, where `x` is a type or a
     /// variable: the value, and its type.
     pub(super) fn type_query(&self, b: Builtin, arg: &Expr) -> Option<(ConstVal, Type)> {
-        // A type name, possibly a subrange (whose bounds matter here)...
-        let mut bounds = None;
-        let ty = match &arg.kind {
-            ExprKind::Name(id) => match self.resolve(&id.key()) {
-                Some(Resolved::Sym(sym)) => match &self.a.symbols[sym].kind {
-                    SymKind::TypeName(ty) => {
-                        bounds = self.subrange_types.get(&sym).map(|&(_, lo, hi)| (lo, hi));
-                        Some(ty.clone())
-                    }
-                    // A variable declared with a subrange type.
-                    SymKind::Var(_) => {
-                        bounds = self.var_bounds.get(&sym).copied();
-                        None
-                    }
-                    _ => None,
-                },
-                _ => None,
-            },
-            _ => None,
-        };
-        // ...or a variable.
-        let ty = match ty {
-            Some(ty) => ty,
-            None => self.place_type(arg)?,
-        };
+        let (ty, bounds) = self.query_arg(arg)?;
         // An integer answer is typed like an integer literal, so it fits
         // whatever it's compared with or assigned to.
         if b == Builtin::SizeOf {
@@ -2307,6 +2283,37 @@ impl Checker {
         let value = if b == Builtin::High { hi } else { lo };
         let ty = if ty.is_integer() { Type::IntLit(value) } else { ty };
         Some((ConstVal::Int(value), ty))
+    }
+
+    /// The type `SizeOf(x)`, `High(x)` or `Low(x)` asks about: `x` is a
+    /// type or a variable. Also its bounds, if it's a subrange.
+    pub(super) fn query_arg(&self, arg: &Expr) -> Option<(Type, Option<(i64, i64)>)> {
+        // A type name, possibly a subrange (whose bounds matter here)...
+        let mut bounds = None;
+        let ty = match &arg.kind {
+            ExprKind::Name(id) => match self.resolve(&id.key()) {
+                Some(Resolved::Sym(sym)) => match &self.a.symbols[sym].kind {
+                    SymKind::TypeName(ty) => {
+                        bounds = self.subrange_types.get(&sym).map(|&(_, lo, hi)| (lo, hi));
+                        Some(ty.clone())
+                    }
+                    // A variable declared with a subrange type.
+                    SymKind::Var(_) => {
+                        bounds = self.var_bounds.get(&sym).copied();
+                        None
+                    }
+                    _ => None,
+                },
+                _ => None,
+            },
+            _ => None,
+        };
+        // ...or a variable.
+        let ty = match ty {
+            Some(ty) => ty,
+            None => self.place_type(arg)?,
+        };
+        Some((ty, bounds))
     }
 
     /// Resolve a `for` loop's control variable and start tracking it.
@@ -4035,6 +4042,11 @@ impl Checker {
                 match self.type_query(b, &args[0]) {
                     Some((value, ty)) => {
                         self.a.folded.insert(e.id, value);
+                        if b == SizeOf
+                            && let Some((measured, _)) = self.query_arg(&args[0])
+                        {
+                            self.a.sizeof_types.insert(e.id, measured);
+                        }
                         // Codegen writes `High(a)` as `a.high()`, so it needs
                         // the name (and a nested procedure needs the variable).
                         if b != SizeOf

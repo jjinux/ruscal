@@ -28,6 +28,13 @@ struct TPlain {
     y: i16,
 }
 
+impl TPlain {
+    /// Pascal's `SizeOf(TPlain)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = 2 + 2;
+}
+
 /// Pascal: `object X, Y: Integer; constructor Init; end`
 #[derive(Clone, Copy, Debug, Default)]
 struct TCtor {
@@ -35,10 +42,22 @@ struct TCtor {
     y: i16,
 }
 
+impl TCtor {
+    /// Pascal's `SizeOf(TCtor)`: its bytes in Turbo Pascal's layout.
+    /// The last `2` is TP's hidden pointer to the object's virtual method table.
+    pub const SERIALIZED_SIZE: usize = 2 + 2 + 2;
+}
+
 /// Pascal: `object X: Integer; destructor Done; end`
 #[derive(Clone, Copy, Debug, Default)]
 struct TDtor {
     x: i16,
+}
+
+impl TDtor {
+    /// Pascal's `SizeOf(TDtor)`: its bytes in Turbo Pascal's layout.
+    /// The last `2` is TP's hidden pointer to the object's virtual method table.
+    pub const SERIALIZED_SIZE: usize = 2 + 2;
 }
 
 /// Pascal: `TShape = object ... end`
@@ -52,6 +71,12 @@ struct TShape {
 // implements that (the `FileRecord` trait) field by field.
 file_record!(TShape { x, y; vmt });
 
+impl TShape {
+    /// Pascal's `SizeOf(TShape)`: its bytes in Turbo Pascal's layout.
+    /// The last `2` is TP's hidden pointer to the object's virtual method table.
+    pub const SERIALIZED_SIZE: usize = 2 + 2 + 2;
+}
+
 /// Pascal: `object(TShape) R: Integer; procedure Draw; virtual; end`
 #[derive(Clone, Copy, Debug, Default)]
 struct TCircle {
@@ -64,11 +89,22 @@ struct TCircle {
 
 file_record!(TCircle { base, r });
 
+impl TCircle {
+    /// Pascal's `SizeOf(TCircle)`: its bytes in Turbo Pascal's layout.
+    pub const SERIALIZED_SIZE: usize = TShape::SERIALIZED_SIZE + 2;
+}
+
 /// Pascal: `object(TPlain) Z: Integer; constructor Init; end`
 #[derive(Clone, Copy, Debug, Default)]
 struct TPlainChild {
     base: TPlain,
     z: i16,
+}
+
+impl TPlainChild {
+    /// Pascal's `SizeOf(TPlainChild)`: its bytes in Turbo Pascal's layout.
+    /// The last `2` is TP's hidden pointer to the object's virtual method table.
+    pub const SERIALIZED_SIZE: usize = TPlain::SERIALIZED_SIZE + 2 + 2;
 }
 
 // A Pascal object's methods go in an `impl` block. Each takes `&mut self`,
@@ -158,7 +194,19 @@ fn pascal_main() {
     let mut b: PFile<u8> = PFile::default();
     let mut c: TCircle = TCircle::default();
     let mut value: u8 = 0;
-    pwriteln!(4, " ", 6, " ", 4, " ", 6, " ", 8, " ", 8);
+    pwriteln!(
+        TPlain::SERIALIZED_SIZE,
+        " ",
+        TCtor::SERIALIZED_SIZE,
+        " ",
+        TDtor::SERIALIZED_SIZE,
+        " ",
+        TShape::SERIALIZED_SIZE,
+        " ",
+        TCircle::SERIALIZED_SIZE,
+        " ",
+        TPlainChild::SERIALIZED_SIZE
+    );
     c.base.init(1, 2);
     c.r = 3;
     f.assign("object_vmt.dat");

@@ -421,6 +421,11 @@ impl<'a> Codegen<'a> {
                     (format!("{}::from({name})", kind.rust()), prec::POSTFIX)
                 })
             }
+            // `SizeOf(Rec)` is a `usize`: `Rec::SERIALIZED_SIZE as i16`.
+            ExprKind::Call { .. } => {
+                let code = self.sizeof_code(e)?;
+                Some((format!("{} as {}", paren(code, prec::AS), kind.rust()), prec::AS))
+            }
             ExprKind::Unary { op: UnaryOp::Plus, operand } => self.const_expr_in(operand, kind, in_const),
             ExprKind::Unary { op: UnaryOp::Neg, operand } => {
                 let inner = self.const_expr_in(operand, kind, in_const)?;
@@ -525,7 +530,7 @@ impl<'a> Codegen<'a> {
     }
 
     /// Does `e` use `High` or `Low` of an array ([`Self::array_bound`])?
-    fn uses_array_bound(&mut self, e: &Expr) -> bool {
+    pub(super) fn uses_array_bound(&mut self, e: &Expr) -> bool {
         match &e.kind {
             ExprKind::Call { .. } => self.array_bound(e).is_some(),
             ExprKind::Unary { operand, .. } => self.uses_array_bound(operand),
@@ -542,7 +547,8 @@ impl<'a> Codegen<'a> {
             ExprKind::Name(_) => self.a.refs.get(&e.id).is_some_and(|&s| {
                 matches!(&self.a.sym(s).kind, SymKind::Const { ty, .. } if !matches!(ty, Type::Enum(_) | Type::Bool))
             }),
-            ExprKind::Call { args, .. } => args.iter().any(|a| self.names_constant(a)),
+            // `SizeOf(Rec)` names `Rec::SERIALIZED_SIZE`.
+            ExprKind::Call { args, .. } => self.sizeof_code(e).is_some() || args.iter().any(|a| self.names_constant(a)),
             ExprKind::Unary { operand, .. } => self.names_constant(operand),
             ExprKind::Binary { lhs, rhs, .. } => self.names_constant(lhs) || self.names_constant(rhs),
             _ => false,
@@ -675,6 +681,14 @@ impl<'a> Codegen<'a> {
             let code = self.expr(e);
             return (format!("{} as {}", paren(code, prec::AS), kind.rust()), prec::AS);
         }
+        // The same for `SizeOf(Rec)` (a `usize`): `Rec::SERIALIZED_SIZE as i16`.
+        // (A sum of it, `SizeOf(Rec) * K`, is a constant expression: below.)
+        if !matches!(to, Type::IntLit(_))
+            && let Type::Int(kind) = to.concrete()
+            && let Some(code) = self.sizeof_code(e)
+        {
+            return (format!("{} as {}", paren(code, prec::AS), kind.rust()), prec::AS);
+        }
         // `High(Integer)` is `i16::MAX`, and `High(Index)` (`Index = 1..N`)
         // is `N`: names rather than numbers. (Only where the type is known:
         // inside a sum typed like a literal, `High(Integer) + 1`, the
@@ -695,11 +709,15 @@ impl<'a> Codegen<'a> {
         if let Type::Int(kind) = to.concrete()
             && matches!(e.kind, ExprKind::Binary { .. } | ExprKind::Unary { .. })
             && let Some(ConstVal::Int(n)) = self.a.consts.get(&e.id).cloned()
-            && !(self.intermediates_fit(e, kind) && from.concrete() == Type::Int(kind))
+            && (!(self.intermediates_fit(e, kind) && from.concrete() == Type::Int(kind)) || self.uses_sizeof(e))
         {
             if self.names_constant(e) {
                 if let Some(code) = self.const_expr(e, kind, false) {
                     return code;
+                }
+                // (`SizeOf(Rec)`, a `usize`, can't be mixed in as it is.)
+                if self.uses_sizeof(e) && kind.contains(n) {
+                    return (n.to_string(), if n < 0 { prec::UNARY } else { prec::ATOM });
                 }
             } else if !self.intermediates_fit(e, kind) && kind.contains(n) {
                 return (n.to_string(), if n < 0 { prec::UNARY } else { prec::ATOM });

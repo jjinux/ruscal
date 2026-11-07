@@ -44,6 +44,13 @@ struct Shape {
 // padded with zeros to the 8 bytes the variants share in TP.
 file_record!(Shape { id, kind; case kind: 8 { 0 => [radius], 1 => [width, filled; case filled: 4 { 0 => [outline], 1 => [color, pattern], _ => [] }], _ => [] } });
 
+impl Shape {
+    /// Pascal's `SizeOf(Shape)`: its bytes in Turbo Pascal's layout.
+    /// That's also what a typed file stores, so it's called the serialized
+    /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
+    pub const SERIALIZED_SIZE: usize = 2 + 2 + 8;
+}
+
 /// Pascal: `record A, B: Word; end`
 #[derive(Clone, Copy, Debug, Default)]
 struct Record {
@@ -52,6 +59,11 @@ struct Record {
 }
 
 file_record!(Record { a, b });
+
+impl Record {
+    /// Pascal's `SizeOf(Record)`: its bytes in Turbo Pascal's layout.
+    pub const SERIALIZED_SIZE: usize = 2 + 2;
+}
 
 /// Pascal: `Pun = record ... end`
 ///
@@ -127,6 +139,11 @@ impl Pun {
     }
 }
 
+impl Pun {
+    /// Pascal's `SizeOf(Pun)`: its bytes in Turbo Pascal's layout.
+    pub const SERIALIZED_SIZE: usize = 4;
+}
+
 /// The main program: the `begin ... end.` block of `VariantNested`.
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
@@ -140,7 +157,7 @@ fn pascal_main() {
     s.filled = 1;
     s.color = 4;
     s.pattern = 2;
-    pwriteln!(12, " ", s.width * s.color + s.pattern);
+    pwriteln!(Shape::SERIALIZED_SIZE, " ", s.width * s.color + s.pattern);
     f.assign("variant_nested.dat");
     f.rewrite();
     f.write(&s);
@@ -156,7 +173,7 @@ fn pascal_main() {
     f.close();
     f.erase();
     p.set_l(448515293);
-    pwriteln!(4, " ", p.lo(), " ", p.hi(), " ", i16::from(p.b3()), " ", i16::from(p.b4()));
+    pwriteln!(Pun::SERIALIZED_SIZE, " ", p.lo(), " ", p.hi(), " ", i16::from(p.b3()), " ", i16::from(p.b4()));
     p.set_b4(0);
     pwriteln!(p.l(), " ", p.pair().a, " ", p.pair().b);
     p.pair_mut().b = 1;
