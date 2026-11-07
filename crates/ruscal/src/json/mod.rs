@@ -5,7 +5,7 @@
 //! layout; nothing in it says what the records look like. So the Pascal
 //! source that declares the record type comes too, and sema's view of that
 //! type (the same one codegen uses for a translated program's files, see
-//! `tp_size`) says where each field's bytes are. See docs/data_files.md.
+//! `serialized_size`) says where each field's bytes are. See docs/data_files.md.
 
 mod decode;
 mod encode;
@@ -13,7 +13,7 @@ mod encode;
 use std::path::Path;
 
 use crate::driver::{self, Options};
-use crate::sema::types::tp_size;
+use crate::sema::types::serialized_size;
 use crate::sema::{Analysis, SymKind, Type};
 
 /// The records of the file `data` as JSON (an array, pretty-printed), read
@@ -23,7 +23,7 @@ pub fn to_json(source: &Path, data: &Path, type_name: Option<&str>, options: &Op
     let analysis = driver::analyze_file(source, options)?;
     let bytes = std::fs::read(data).map_err(|e| format!("cannot read {}: {e}", data.display()))?;
     let ty = record_type(&analysis, source, type_name, Some(bytes.len()))?;
-    let size = tp_size(&ty).filter(|&size| size > 0).ok_or_else(|| format!("{ty} can't be in a typed file"))?;
+    let size = serialized_size(&ty).filter(|&size| size > 0).ok_or_else(|| format!("{ty} can't be in a typed file"))?;
     let size = size as usize;
     if bytes.len() % size != 0 {
         return Err(format!(
@@ -103,7 +103,7 @@ fn record_type(
         let fits: Vec<&Type> = candidates
             .iter()
             .copied()
-            .filter(|ty| tp_size(ty).is_some_and(|size| size > 0 && len % size as usize == 0))
+            .filter(|ty| serialized_size(ty).is_some_and(|size| size > 0 && len % size as usize == 0))
             .collect();
         if fits.len() == 1 {
             candidates = fits;

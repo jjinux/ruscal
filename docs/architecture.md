@@ -437,7 +437,7 @@ part decides the representation:
   variant's fields are ordinary struct fields, so `f.kind = Shape::Rect;
   f.w = 3;` reads as plain Rust. `RecordType::variant` keeps the shape (the
   tag's index, each variant's labels and its range of `fields`), from which
-  `tp_size` is TP's (fixed fields plus the largest variant, unpadded) and
+  `serialized_size` is TP's (fixed fields plus the largest variant, unpadded) and
   `file_record!` gets a `case kind: 4 { Shape::Circle => [r], ... }` clause:
   a file holds the variant the tag selects, padded with zeros to the area
   the variants share, and reading fills that variant only. What differs
@@ -651,7 +651,7 @@ phantom element type. TP kept a set in only the bytes from its lowest
 value's to its highest's (`Max div 8 - Min div 8 + 1`: `set of 0..7` is 1
 byte, `set of 'a'..'z'` 4, bytes 12 to 15 of the whole bitmap), so a set
 of a subrange keeps its bounds in its type (`Type::Set`'s second field),
-`tp_size` uses TP's formula, and a file or byte view stores those bytes
+`serialized_size` uses TP's formula, and a file or byte view stores those bytes
 (`Hint { size, first }`, `set 4 from 12` in `file_record!`). `+`, `*` and `-` are
 `|`, `&` and `-` (`BitOr`/`BitAnd`/`Sub`); `=`/`<>` compare the bits;
 `<=`/`>=` are `is_subset`/`is_superset`; `Include`/`Exclude` are methods.
@@ -855,7 +855,7 @@ methods are supported too (below).
   type with a constructor, destructor or virtual method gets one, right
   after its own fields, unless an ancestor already has one; descendants'
   fields come after it. Sema marks that type (`ObjectType::adds_vmt`);
-  `tp_size` counts the 2 bytes, and `file_record!(T { x, y; vmt })` reads
+  `serialized_size` counts the 2 bytes, and `file_record!(T { x, y; vmt })` reads
   past them and writes zeros.
 - Objects declared as variables and never "created" (`var Board: BoardType;
   Board.Create;`) are `let mut board = BoardType::default();` followed by
@@ -1422,7 +1422,7 @@ sema's types, rather than generate a Rust program around the runtime's
 end only (`driver::analyze_file`; a unit is checked as a program that uses
 it, as for `--lib`), then walks the type over each record's bytes
 (`json/decode.rs`). Sizes and offsets come from the same functions
-codegen's `file_record!` is built from (`tp_size`, `set_bytes`,
+codegen's `file_record!` is built from (`serialized_size`, `set_bytes`,
 `VariantPart::offset_of`), so it reads exactly what a translated program
 writes. Real48 and CP437 come from the runtime, which the `cli` feature
 depends on (a build script's `default-features = false` doesn't), so the

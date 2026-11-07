@@ -21,7 +21,7 @@ use std::rc::Rc;
 use crate::ast::*;
 use crate::diag::{SourceMap, Span};
 use crate::sema::goto::GotoBlock;
-use crate::sema::types::{ObjectType, RecordType, VariantPart, tp_size};
+use crate::sema::types::{ObjectType, RecordType, VariantPart, serialized_size};
 use crate::sema::{Access, Analysis, Builtin, CaptureMode, IntKind, MAIN, ProcId, SymId, SymKind, Type, VarRole};
 
 /// What [`generate`] writes Rust for: the program and its units, with what
@@ -1017,7 +1017,7 @@ impl<'a> Codegen<'a> {
             let (name, ty) = (&field.rust_name, field.ty.rust());
             // The last byte is `size - 1` after the first: a LongInt at 0
             // is bytes 0 to 3.
-            let last = offset + tp_size(&field.ty).unwrap_or(1) - 1;
+            let last = offset + serialized_size(&field.ty).unwrap_or(1) - 1;
             if last == offset {
                 self.line(format!("    // `{}` is byte {offset}", field.name));
             } else {

@@ -4,7 +4,7 @@ use ruscal_runtime::cp437;
 use ruscal_runtime::io::real48;
 use serde_json::{Map, Number, Value};
 
-use crate::sema::types::{Field, ObjectType, RealKind, RecordType, VariantPart, set_bytes, tp_size};
+use crate::sema::types::{Field, ObjectType, RealKind, RecordType, VariantPart, serialized_size, set_bytes};
 use crate::sema::{Analysis, IntKind, Type};
 
 /// The value of type `ty` in `bytes` (exactly its size). `path` says where
@@ -60,7 +60,7 @@ pub fn value(analysis: &Analysis, ty: &Type, bytes: &[u8], path: &str) -> Result
 
 /// A value's size in bytes, in TP's layout.
 fn size_of(ty: &Type) -> Result<usize, String> {
-    tp_size(ty).map(|size| size as usize).ok_or_else(|| format!("{ty} can't be in a typed file"))
+    serialized_size(ty).map(|size| size as usize).ok_or_else(|| format!("{ty} can't be in a typed file"))
 }
 
 /// A little-endian integer of type `kind`.
@@ -192,7 +192,7 @@ fn ordinal(ty: &Type, bytes: &[u8]) -> i64 {
 
 /// An object's fields: its parent's first, then its own, as TP lays it out.
 /// TP's hidden VMT field, if this type adds it, comes after them, so there's
-/// nothing more to read: `tp_size` counts its 2 bytes.
+/// nothing more to read: `serialized_size` counts its 2 bytes.
 fn object(
     analysis: &Analysis,
     object: &ObjectType,

@@ -1186,7 +1186,7 @@ impl<'a> Codegen<'a> {
             ExprKind::Index(base, indexes)
                 if let Some(bytes) = self.view_cast_guard(base)
                     && let Type::Array(a) = self.a.type_of(base.id).clone()
-                    && super::super::sema::types::tp_size(&a.elem) == Some(1)
+                    && super::super::sema::types::serialized_size(&a.elem) == Some(1)
                     && indexes.len() == 1 =>
             {
                 let index = self.expr(&indexes[0]).0;
@@ -1245,7 +1245,7 @@ impl<'a> Codegen<'a> {
         };
         let byte_element = matches!(&inner.kind, ExprKind::Index(_, indexes) if indexes.len() == 1)
             && std::ptr::eq(inner, e)
-            && matches!(self.a.type_of(cast.id), Type::Array(a) if super::super::sema::types::tp_size(&a.elem) == Some(1));
+            && matches!(self.a.type_of(cast.id), Type::Array(a) if super::super::sema::types::serialized_size(&a.elem) == Some(1));
         if byte_element || self.hoisted.contains_key(&cast.id) {
             return;
         }
@@ -1351,7 +1351,7 @@ impl<'a> Codegen<'a> {
     /// element is `(i - lo) * size` in, a string's `s[i]` is `i` in (after
     /// the length byte), a record field after the fields before it.
     fn view_offset<'e>(&mut self, e: &'e Expr) -> (&'e Expr, Option<String>) {
-        use super::super::sema::types::tp_size;
+        use super::super::sema::types::serialized_size;
         let mut parts: Vec<String> = Vec::new();
         let mut constant: i64 = 0;
         let mut node = e;
@@ -1362,7 +1362,7 @@ impl<'a> Codegen<'a> {
                     let mut ty = self.a.type_of(base.id).clone();
                     for index in indexes {
                         let (lo, size, next) = match &ty {
-                            Type::Array(a) => (a.lo, tp_size(&a.elem).unwrap_or(1), a.elem.clone()),
+                            Type::Array(a) => (a.lo, serialized_size(&a.elem).unwrap_or(1), a.elem.clone()),
                             _ => (0, 1, Type::Char),
                         };
                         let literal = match &index.kind {

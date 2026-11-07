@@ -309,7 +309,7 @@ impl VariantPart {
     pub fn area(&self, fields: &[Field]) -> Option<i64> {
         let mut largest = 0;
         for variant in &self.variants {
-            let own = fields[variant.fields.clone()].iter().map(|f| tp_size(&f.ty)).sum::<Option<i64>>()?;
+            let own = fields[variant.fields.clone()].iter().map(|f| serialized_size(&f.ty)).sum::<Option<i64>>()?;
             let nested = match &variant.nested {
                 Some(part) => part.tag_size(fields)? + part.area(fields)?,
                 None => 0,
@@ -320,7 +320,7 @@ impl VariantPart {
     }
 
     fn tag_size(&self, fields: &[Field]) -> Option<i64> {
-        self.tag.map_or(Some(0), |tag| tp_size(&fields[tag].ty))
+        self.tag.map_or(Some(0), |tag| serialized_size(&fields[tag].ty))
     }
 
     /// Where field `index` starts, counting from the start of the bytes
@@ -331,7 +331,8 @@ impl VariantPart {
                 return Some(variant.offsets[index - variant.fields.start]);
             }
             if let Some(part) = &variant.nested {
-                let start = fields[variant.fields.clone()].iter().map(|f| tp_size(&f.ty).unwrap_or(0)).sum::<i64>();
+                let start =
+                    fields[variant.fields.clone()].iter().map(|f| serialized_size(&f.ty).unwrap_or(0)).sum::<i64>();
                 if part.tag == Some(index) {
                     return Some(start);
                 }
@@ -458,9 +459,11 @@ impl ObjectType {
     /// as TP laid it out: the parent's part (with its VMT field, if any)
     /// comes first, then this type's own fields, then its VMT field.
     pub fn field_offset(&self, name: &str) -> i64 {
-        let inherited = self.parent.as_ref().map_or(0, |p| tp_size(&Type::Object(p.clone())).unwrap_or(0));
+        let inherited = self.parent.as_ref().map_or(0, |p| serialized_size(&Type::Object(p.clone())).unwrap_or(0));
         match self.fields.iter().position(|f| f.name.eq_ignore_ascii_case(name)) {
-            Some(index) => inherited + self.fields[..index].iter().map(|f| tp_size(&f.ty).unwrap_or(0)).sum::<i64>(),
+            Some(index) => {
+                inherited + self.fields[..index].iter().map(|f| serialized_size(&f.ty).unwrap_or(0)).sum::<i64>()
+            }
             None => self.parent.as_ref().map_or(0, |p| p.field_offset(name)),
         }
     }
@@ -486,7 +489,7 @@ impl RecordType {
     /// after the fields before it, but a variant's fields all start where
     /// the variants do, after the fixed fields.
     pub fn field_offset(&self, name: &str) -> i64 {
-        let size = |fields: &[Field]| fields.iter().map(|f| tp_size(&f.ty).unwrap_or(0)).sum::<i64>();
+        let size = |fields: &[Field]| fields.iter().map(|f| serialized_size(&f.ty).unwrap_or(0)).sum::<i64>();
         let Some(index) = self.fields.iter().position(|f| f.name.eq_ignore_ascii_case(name)) else { return 0 };
         match self.variant.as_ref().and_then(|part| part.offset_of(&self.fields, index)) {
             Some(offset) => size(self.fixed_fields()) + offset,
@@ -745,8 +748,10 @@ impl fmt::Display for Type {
 
 /// The size in bytes Turbo Pascal gives a type, for `SizeOf`: `Integer` is
 /// 2, `Real` 6, `string[n]` n+1, a record the sum of its fields (TP doesn't
-/// pad). `None` for a type without a fixed size.
-pub fn tp_size(ty: &Type) -> Option<i64> {
+/// pad). It's also what a typed file stores, so it's called the serialized
+/// size: the Rust value's size in memory is different. `None` for a type
+/// without a fixed size.
+pub fn serialized_size(ty: &Type) -> Option<i64> {
     Some(match ty {
         Type::Int(IntKind::ShortInt | IntKind::Byte) | Type::Char | Type::Bool => 1,
         Type::Int(IntKind::Integer | IntKind::Word) => 2,
@@ -762,12 +767,14 @@ pub fn tp_size(ty: &Type) -> Option<i64> {
             }
         }
         Type::Str { cap } => i64::from(*cap) + 1,
-        Type::Array(a) => a.count() * tp_size(&a.elem)?,
-        Type::Record(r) => r.fixed_fields().iter().map(|f| tp_size(&f.ty)).sum::<Option<i64>>()? + r.variant_area()?,
+        Type::Array(a) => a.count() * serialized_size(&a.elem)?,
+        Type::Record(r) => {
+            r.fixed_fields().iter().map(|f| serialized_size(&f.ty)).sum::<Option<i64>>()? + r.variant_area()?
+        }
         Type::Object(o) => {
-            let own = o.fields.iter().map(|f| tp_size(&f.ty)).sum::<Option<i64>>()?;
+            let own = o.fields.iter().map(|f| serialized_size(&f.ty)).sum::<Option<i64>>()?;
             let vmt = if o.adds_vmt { 2 } else { 0 };
-            own + vmt + o.parent.as_ref().map_or(Some(0), |p| tp_size(&Type::Object(p.clone())))?
+            own + vmt + o.parent.as_ref().map_or(Some(0), |p| serialized_size(&Type::Object(p.clone())))?
         }
         // A procedural value was a 4-byte far address in TP.
         Type::Pointer(_) | Type::AnyPointer | Type::PChar | Type::Proc(_) => 4,

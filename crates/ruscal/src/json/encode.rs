@@ -6,7 +6,7 @@ use ruscal_runtime::cp437;
 use ruscal_runtime::io::real48;
 use serde_json::{Map, Value};
 
-use crate::sema::types::{Field, ObjectType, RealKind, RecordType, VariantPart, set_bytes, tp_size};
+use crate::sema::types::{Field, ObjectType, RealKind, RecordType, VariantPart, serialized_size, set_bytes};
 use crate::sema::{Analysis, IntKind, Type};
 
 /// Where a value goes: its bytes, which of them mean something, and which
@@ -74,7 +74,7 @@ impl Buffer {
 }
 
 fn size_of(ty: &Type) -> Result<usize, String> {
-    tp_size(ty).map(|size| size as usize).ok_or_else(|| format!("{ty} can't be in a typed file"))
+    serialized_size(ty).map(|size| size as usize).ok_or_else(|| format!("{ty} can't be in a typed file"))
 }
 
 fn value(analysis: &Analysis, ty: &Type, json: &Value, out: &mut Out, path: &str) -> Result<(), String> {

@@ -1302,7 +1302,7 @@ impl Checker {
             let mut at = 0;
             for field in &resolved[start..end] {
                 offsets.push(at);
-                at += super::types::tp_size(&field.ty).unwrap_or(0);
+                at += super::types::serialized_size(&field.ty).unwrap_or(0);
             }
             // A variant part at the end of this variant, after its fields.
             let nested = arm.variant.as_ref().and_then(|part| self.variant_part(part, resolved)).map(Box::new);
@@ -1313,7 +1313,7 @@ impl Checker {
         // every field can be bytes. (A pointer can't: it has no bytes here.)
         let first = variants.first().map_or(resolved.len(), |v| v.fields.start);
         let byte_able = |ty: &Type| {
-            super::types::tp_size(ty).is_some()
+            super::types::serialized_size(ty).is_some()
                 && !matches!(ty, Type::Pointer(_) | Type::AnyPointer | Type::PChar | Type::Text | Type::File(_))
                 && !ty.contains_set()
         };
@@ -2164,7 +2164,8 @@ impl Checker {
         {
             return;
         }
-        let whole = super::types::tp_size(&ty).is_some_and(|size| self.eval_const(count) == Some(ConstVal::Int(size)));
+        let whole =
+            super::types::serialized_size(&ty).is_some_and(|size| self.eval_const(count) == Some(ConstVal::Int(size)));
         let ok = whole
             && match b {
                 Builtin::Move => source_ty == ty,
@@ -2187,7 +2188,7 @@ impl Checker {
                     sizes.push((&args[0], &source_ty));
                 }
                 for (arg, arg_ty) in sizes {
-                    if let Some(size) = super::types::tp_size(arg_ty)
+                    if let Some(size) = super::types::serialized_size(arg_ty)
                         && matches!(arg.kind, ExprKind::Name(_))
                         && count > size
                     {
@@ -2281,7 +2282,7 @@ impl Checker {
         // An integer answer is typed like an integer literal, so it fits
         // whatever it's compared with or assigned to.
         if b == Builtin::SizeOf {
-            let size = super::types::tp_size(&ty)?;
+            let size = super::types::serialized_size(&ty)?;
             return Some((ConstVal::Int(size), Type::IntLit(size)));
         }
         let (lo, hi, ty) = match &ty {
@@ -2890,7 +2891,7 @@ impl Checker {
     /// `TRec(Data)`: an untyped parameter seen as a `TRec`. The type needs a
     /// byte layout, a size as TP gave it.
     fn view_cast(&mut self, e: &Expr, target: &Type) -> Type {
-        if super::types::tp_size(target).is_none() {
+        if super::types::serialized_size(target).is_none() {
             self.error(e.span, format!("an untyped parameter can't be seen as a {target}"));
             return Type::Error;
         }
@@ -2919,7 +2920,7 @@ impl Checker {
         if ty == Type::Untyped || ty == Type::Error {
             return;
         }
-        if super::types::tp_size(&ty).is_none() || matches!(ty, Type::Text | Type::File(_)) {
+        if super::types::serialized_size(&ty).is_none() || matches!(ty, Type::Text | Type::File(_)) {
             self.error(arg.span, format!("a {ty} can't be passed as untyped bytes"));
             return;
         }

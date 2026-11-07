@@ -824,7 +824,7 @@ impl Codegen<'_> {
             // (Only an array of byte-sized elements, as sema allows; an
             // element of an array of strings is a string, below.)
             if let Type::Array(a) = &base_ty
-                && crate::sema::types::tp_size(&a.elem) == Some(1)
+                && crate::sema::types::serialized_size(&a.elem) == Some(1)
             {
                 let place = self.place_receiver(base);
                 let (start, count) = (self.expr(&indexes[0]).0, self.expr(count).0);
