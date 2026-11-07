@@ -182,7 +182,7 @@ impl<'a> Bytes<'a> {
     /// variable read as zeros, where TP read whatever came next in memory.
     pub fn read<T: FileRecord>(&self) -> T {
         let mut bytes = self.bytes.clone();
-        bytes.resize(bytes.len().max(T::record_size()), 0);
+        bytes.resize(bytes.len().max(T::serialized_size()), 0);
         T::decode(&mut &bytes[..])
     }
 

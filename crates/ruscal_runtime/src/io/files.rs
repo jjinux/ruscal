@@ -375,8 +375,10 @@ pub trait FileRecord: Default {
         Self::decode(input)
     }
 
-    /// The size of one record, found by encoding the default value.
-    fn record_size() -> usize {
+    /// The bytes one record takes in a file, in Turbo Pascal's layout (what
+    /// TP's `SizeOf` says), found by encoding the default value. Not the
+    /// Rust value's size in memory, `std::mem::size_of::<Self>()`.
+    fn serialized_size() -> usize {
         let mut bytes = Vec::new();
         Self::default().encode(&mut bytes);
         bytes.len()
@@ -899,8 +901,9 @@ impl<T: FileRecord> PFile<T> {
         PFile { hint: Hint::new(size, first), ..PFile::default() }
     }
 
-    /// The bytes one record takes.
-    fn record_size(&self) -> usize {
+    /// The bytes one record takes in the file, in Turbo Pascal's layout (see
+    /// [`FileRecord::serialized_size`]; the hint matters for a `string[n]`).
+    fn serialized_size(&self) -> usize {
         let mut bytes = Vec::new();
         T::default().encode_sized(self.hint, &mut bytes);
         bytes.len()
@@ -909,13 +912,13 @@ impl<T: FileRecord> PFile<T> {
     /// Pascal `FileSize(f)`: the number of records.
     pub fn file_size(&self) -> i32 {
         let bytes = self.file_ref().metadata().map_or(0, |m| m.len());
-        (bytes / self.record_size() as u64) as i32
+        (bytes / self.serialized_size() as u64) as i32
     }
 
     /// Pascal `FilePos(f)`: the number of the next record (0-based).
     pub fn file_pos(&self) -> i32 {
         let pos = self.file_ref().stream_position().unwrap_or(0);
-        (pos / self.record_size() as u64) as i32
+        (pos / self.serialized_size() as u64) as i32
     }
 
     /// Pascal `Seek(f, n)`: move to record `n` (0-based).
@@ -924,7 +927,7 @@ impl<T: FileRecord> PFile<T> {
         if n < 0 || n > self.file_size() {
             crate::rte(100, format!("Disk read error: seek to record {n}"));
         }
-        let offset = n as u64 * self.record_size() as u64;
+        let offset = n as u64 * self.serialized_size() as u64;
         if self.file().seek(SeekFrom::Start(offset)).is_err() {
             crate::rte(100, "Disk read error");
         }
@@ -943,7 +946,7 @@ impl<T: FileRecord> PFile<T> {
 
     /// Pascal `Read(f, x)`: read the next record.
     pub fn read(&mut self, target: &mut T) {
-        let mut bytes = vec![0; self.record_size()];
+        let mut bytes = vec![0; self.serialized_size()];
         if self.file().read_exact(&mut bytes).is_err() {
             crate::rte(100, "Disk read error: read past the end of the file");
         }
@@ -1234,7 +1237,7 @@ mod layout_tests {
         // `mark.dat` was written by the real program, under TP: a
         // `string[30]` (31 bytes), a `LongInt` (4) and a `Real` (6).
         let bytes = include_bytes!("../../../../examples/database/mark.dat");
-        assert_eq!(People::record_size(), 41);
+        assert_eq!(People::serialized_size(), 41);
         let person = People::decode(&mut &bytes[..]);
         assert_eq!(person.name.to_string(), "Shannon Behrens");
         assert_eq!((person.id, person.index), (1, 2930802.0));
