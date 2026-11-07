@@ -125,6 +125,23 @@ pub const VGA_MED: u8 = 1;
 pub const VGA_HI: u8 = 2;
 pub const GR_OK: u8 = 0;
 pub const GR_ERROR: i8 = -11;
+// The EGA colours `SetPalette` takes (EGA colour numbers 0..63).
+pub const EGA_BLACK: u8 = 0;
+pub const EGA_BLUE: u8 = 1;
+pub const EGA_GREEN: u8 = 2;
+pub const EGA_CYAN: u8 = 3;
+pub const EGA_RED: u8 = 4;
+pub const EGA_MAGENTA: u8 = 5;
+pub const EGA_BROWN: u8 = 20;
+pub const EGA_LIGHT_GRAY: u8 = 7;
+pub const EGA_DARK_GRAY: u8 = 56;
+pub const EGA_LIGHT_BLUE: u8 = 57;
+pub const EGA_LIGHT_GREEN: u8 = 58;
+pub const EGA_LIGHT_CYAN: u8 = 59;
+pub const EGA_LIGHT_RED: u8 = 60;
+pub const EGA_LIGHT_MAGENTA: u8 = 61;
+pub const EGA_YELLOW: u8 = 62;
+pub const EGA_WHITE: u8 = 63;
 // Line styles and widths.
 pub const SOLID_LN: u8 = 0;
 pub const DOTTED_LN: u8 = 1;
@@ -354,12 +371,15 @@ pub fn get_color() -> u16 {
 }
 
 /// `SetBkColor(Color)`: colour 0 is the background, so this changes what
-/// colour 0 looks like, everywhere on the screen at once.
+/// colour 0 looks like, everywhere on the screen at once. As in Turbo
+/// Pascal 7 (tried in DOSBox), colour 0 becomes a copy of colour `c` as
+/// the palette has it now (after a `SetPalette(1, ...)`, `SetBkColor(1)`
+/// shows that colour), and `SetBkColor(0)` brings back black.
 pub fn set_bk_color(c: impl Into<i32>) {
     let c = color(c);
     with(|s| {
         s.bk_color = c;
-        s.palette[0] = screen::DEFAULT_PALETTE[usize::from(c)];
+        s.palette[0] = if c == 0 { screen::DEFAULT_PALETTE[0] } else { s.palette[usize::from(c)] };
     });
 }
 

@@ -38,14 +38,14 @@ Free Pascal (`fpc -Mtp`) gives most expected outputs, but it works in 32 or
 have Turbo Pascal 7 (in DOSBox, say), these settle what it can't. Tell
 Claude what TP does, and it makes Ruscal match.
 
-- [ ] `w + 1` with `w: Word = 65535`: 0 (Ruscal) or 65536?
+- [x] `w + 1` with `w: Word = 65535`: 0 (Ruscal) or 65536? TP 7 (DOSBox, 2026-11-07): 0, also `L := w + 1`; but `L := w + i` (`i` an Integer) is 65536. Ruscal does the same.
 - [x] With `{$Q+}`, is `Inc(b)` at 255 for a Byte (or `w + 1` at 65535 for a Word) error 215, as Ruscal says, or 0? TP 7 (in DOSBox, 2026-11-07): `Inc` and `Dec` are never checked, for any type (`Inc(i)` at 32767 is -32768, `Inc(b)` at 255 is 0); `w := w + 1` at 65535 and `i := i + 1` at 32767 are error 215; `b := b + 1` at 255 is 0 (worked out in Integer); `Succ`, `Pred`, `Abs`, `Sqr`, negation and LongInt `*` are checked. Ruscal checked `Inc`/`Dec`; fixed.
-- [ ] `s := s + Bump` where the function `Bump` changes `s`: which runs first?
-- [ ] `type Small = 0..10; const X = Small(300);`: an error, or 44 (Ruscal)?
-- [ ] Graph: does `SetBkColor` use the current `SetPalette` entry? Do XOR-mode rectangles lose their corners?
-- [ ] `SizeOf` of a subrange of an enum of more than 256 values (`V10..V20`): Ruscal says 2 (the host enum's), FPC -Mtp says 1 (the bounds fit a byte). What TP 7 does is unknown; it matters for such a field in a typed file.
-- [ ] `const W = Word(-1)`, then `i := W` (an Integer) is a compile error, "the constant 65535 is out of range for Integer" (also `i := K - W`). Free Pascal accepts it (-1). What did TP 7 do?
-- [ ] An object with a constructor but no virtual methods: does TP 7 give it the 2-byte VMT field (`SizeOf` 6, not 4, for X, Y: Integer and `constructor Init`)? Ruscal does, as Free Pascal does and the TP 7 Language Guide says as far as Claude remembers it (it couldn't read the Guide to check).
+- [x] `s := s + Bump` where the function `Bump` changes `s`: which runs first? TP 7: `s` is read first (`'ab'` gives `'abX'`; `Bump + s` gives `'Xabc'`). Ruscal does the same.
+- [x] `type Small = 0..10; const X = Small(300);`: an error, or 44 (Ruscal)? TP 7: 44, as Ruscal.
+- [x] Graph: does `SetBkColor` use the current `SetPalette` entry? Do XOR-mode rectangles lose their corners? TP 7: yes, a copy of the entry as it is at the call (a later `SetPalette` doesn't change it), and `SetBkColor(0)` brings back black; Ruscal used the default palette's entry: fixed (and `EGALightRed` & co. were missing: added). XOR rectangles lose their corners, in TP and Ruscal alike.
+- [ ] `SizeOf` of a subrange of an enum of more than 256 values (`V10..V20`): TP 7 (DOSBox, 2026-11-07) says 1, as Free Pascal does (the bounds fit a byte), and a record of one such field is 1 byte too; Ruscal says 2 (the host enum's). To fix: an enum subrange needs its own size in `serialized_size`, and `file_record!` a per-field hint (as `string 10` is), so a typed file stores 1 byte.
+- [x] `const W = Word(-1)`, then `i := W` (an Integer) is a compile error, "the constant 65535 is out of range for Integer" (also `i := K - W`). Free Pascal accepts it (-1). What did TP 7 do? A compile error too ("Error 76: Constant out of range"), as Ruscal.
+- [x] An object with a constructor but no virtual methods: does TP 7 give it the 2-byte VMT field? TP 7: yes, `SizeOf` 6 (and 6 with only a destructor), as Ruscal.
 
 ## Original TODOs
 

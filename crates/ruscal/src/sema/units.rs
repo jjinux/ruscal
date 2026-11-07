@@ -591,6 +591,23 @@ pub static GRAPH_CONSTS: &[UnitConst] = &[
     ("notput", "NOT_PUT", 4),
     ("maxcolors", "MAX_COLORS", 15),
     ("usercharsize", "USER_CHAR_SIZE", 0),
+    // The EGA colours `SetPalette` takes (`EGALightRed` is 60).
+    ("egablack", "EGA_BLACK", 0),
+    ("egablue", "EGA_BLUE", 1),
+    ("egagreen", "EGA_GREEN", 2),
+    ("egacyan", "EGA_CYAN", 3),
+    ("egared", "EGA_RED", 4),
+    ("egamagenta", "EGA_MAGENTA", 5),
+    ("egabrown", "EGA_BROWN", 20),
+    ("egalightgray", "EGA_LIGHT_GRAY", 7),
+    ("egadarkgray", "EGA_DARK_GRAY", 56),
+    ("egalightblue", "EGA_LIGHT_BLUE", 57),
+    ("egalightgreen", "EGA_LIGHT_GREEN", 58),
+    ("egalightcyan", "EGA_LIGHT_CYAN", 59),
+    ("egalightred", "EGA_LIGHT_RED", 60),
+    ("egalightmagenta", "EGA_LIGHT_MAGENTA", 61),
+    ("egayellow", "EGA_YELLOW", 62),
+    ("egawhite", "EGA_WHITE", 63),
 ];
 
 /// The `Strings` unit (TP 7): C-style strings through `PChar`. The

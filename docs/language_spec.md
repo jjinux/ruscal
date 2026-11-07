@@ -452,6 +452,8 @@ Graph unit (BGI, as used in the examples)
 - `InitGraph`/`Detect`/`CloseGraph`/`GraphResult`/`GraphErrorMsg`/
   `SetGraphMode`/`RestoreCrtMode`, `GetMaxX`/`GetMaxY`/`GetMaxColor`
 - `SetColor`/`GetColor`/`SetBkColor`/`GetBkColor`, the 16 colour constants
+  (`SetBkColor(c)` makes colour 0 a copy of colour `c` as the palette
+  has it then, and `SetBkColor(0)` brings back black, as TP 7 does)
 - `PutPixel`/`GetPixel`, `Line`/`LineTo`/`LineRel`/`MoveTo`/`MoveRel`/
   `GetX`/`GetY`, `Rectangle`, `Bar`, `Bar3D`, `Circle`, `Arc`, `Ellipse`,
   `PieSlice`, `Sector`, `FillEllipse`, `FloodFill`, `GetArcCoords`
@@ -473,7 +475,8 @@ Graph unit (BGI, as used in the examples)
   `TextWidth`/`TextHeight`
 - `SetViewPort`/`ClearViewPort`/`ClearDevice`/`GetViewSettings`
   (`ViewPortType`), `GetAspectRatio`
-- `SetPalette`, `GetPalette`/`GetDefaultPalette`/`SetAllPalette`
+- `SetPalette` (and the 16 EGA colour constants it takes, `EGABlack` ..
+  `EGAWhite`), `GetPalette`/`GetDefaultPalette`/`SetAllPalette`
   (`PaletteType`; -1 leaves a colour), `GetPaletteSize`, `SetRGBPalette`
   (the VGA's 64 colour registers the EGA palette points into),
   `GraphDefaults`, `SetAspectRatio` (remembered; pixels stay square),
