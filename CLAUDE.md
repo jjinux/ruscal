@@ -48,6 +48,7 @@ cargo run -p ruscal -- emit file.pas       # print generated Rust
 cargo run -p ruscal -- run file.pas        # transpile, build and run (project goes in out/)
 cargo run -p ruscal -- fmt $(find examples -name '*.pas' -not -path '*/ruscal/*')   # the user's examples, together (checked by fmt_tests)
 cargo run -p ruscal -- fmt tests/run/foo.pas  # format each new test program on its own (checked by fmt_tests)
+cargo run -p ruscal -- fmt --crlf c/RUSCAL/FOO.PAS  # a Turbo Pascal 7 check program, keeping DOS line endings
 tests/gen_expected.sh tests/run/foo.pas      # expected output from Free Pascal (fpc -Mtp)
 cargo fmt --all && cargo clippy --workspace --all-targets -- -D warnings
 ```

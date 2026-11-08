@@ -59,7 +59,7 @@ cargo run -p ruscal -- build examples/magic_square.pas -o /tmp/magic
 
 Old sources with DOS (`\r\n`) line endings are fine everywhere: the
 transpiler, `Readln` on standard input and text files, and `fmt` (which
-writes UNIX line endings).
+writes UNIX line endings, or DOS ones with `--crlf`).
 
 Or install the tools once with `cargo install --path crates/ruscal`, which
 puts `ruscal` and `tpc` (below) on your `PATH`, and use
@@ -124,7 +124,8 @@ nested routines and `begin ... end` one level in from its heading),
 normalizes spacing (`x := y`, `a, b`, `name: string`), lowercases keywords,
 and spells each identifier the way it's spelled most often. Line breaks,
 strings and comments stay as they are, columns you lined up by hand stay
-lined up, and DOS line endings become UNIX ones.
+lined up, and DOS line endings become UNIX ones (unless you give `--crlf`,
+for files going back to DOS).
 
 ```sh
 # Format files in place, printing the ones that changed. Give a program and
@@ -134,6 +135,9 @@ cargo run -p ruscal -- fmt examples/database/*.pas
 # Only check: list the files that would change, and fail if there are any
 # (handy in CI; this repository's tests check examples/ this way).
 cargo run -p ruscal -- fmt --check examples/*.pas examples/*/*.pas
+
+# Keep DOS line endings, for files that Turbo Pascal in DOS will read.
+cargo run -p ruscal -- fmt --crlf c/RUSCAL/WORDADD.PAS
 ```
 
 ## Data files as JSON: `ruscal to-json` and `from-json`

@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use ruscal::fmt::format_files;
+use ruscal::fmt::{dos_line_endings, format_files};
 use ruscal::lexer::tokenize;
 use ruscal::token::TokenKind;
 
@@ -107,5 +107,25 @@ fn test_programs_are_formatted() {
         let source = std::fs::read(&file).unwrap();
         let formatted = format_files(&[&source]).unwrap();
         assert!(formatted[0] == source, "{} is not formatted; run `ruscal fmt` on it", file.display());
+    }
+}
+
+/// The programs that check what Turbo Pascal 7 did (`c/RUSCAL`) are
+/// formatted one by one and keep DOS line endings, for DOSBox:
+/// `ruscal fmt --crlf c/RUSCAL/X.PAS` changes nothing.
+#[test]
+fn tp_check_programs_are_formatted_for_dos() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../c/RUSCAL");
+    let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|e| e == "PAS"))
+        .collect();
+    files.sort();
+    assert!(!files.is_empty());
+    for file in files {
+        let source = std::fs::read(&file).unwrap();
+        let formatted = dos_line_endings(&format_files(&[&source]).unwrap()[0]);
+        assert!(formatted == source, "{} is not formatted; run `ruscal fmt --crlf` on it", file.display());
     }
 }

@@ -38,6 +38,10 @@ enum Cmd {
         /// if there are any.
         #[arg(long)]
         check: bool,
+        /// Write DOS line endings (`\r\n`) instead of UNIX ones, for files
+        /// that go back to DOS.
+        #[arg(long)]
+        crlf: bool,
     },
     /// Transpile, build and run.
     Run {
@@ -104,7 +108,7 @@ fn run(command: Cmd) -> Result<ExitCode, String> {
             let dir = if lib { library(&file, out)? } else { project(&file, out)? };
             cargo(&dir, &["build", "--quiet"], &[])
         }
-        Cmd::Fmt { files, check } => fmt(&files, check),
+        Cmd::Fmt { files, check, crlf } => fmt(&files, check, crlf),
         Cmd::Run { file, out, args } => {
             let dir = project(&file, out)?;
             cargo(&dir, &["run", "--quiet", "--"], &args)
@@ -127,7 +131,7 @@ fn run(command: Cmd) -> Result<ExitCode, String> {
     }
 }
 
-fn fmt(files: &[PathBuf], check: bool) -> Result<ExitCode, String> {
+fn fmt(files: &[PathBuf], check: bool, crlf: bool) -> Result<ExitCode, String> {
     let sources = files
         .iter()
         .map(|f| std::fs::read(f).map_err(|e| format!("cannot read {}: {e}", f.display())))
@@ -136,7 +140,10 @@ fn fmt(files: &[PathBuf], check: bool) -> Result<ExitCode, String> {
     let formatted = ruscal::fmt::format_files(&borrowed)
         .map_err(|(i, d)| d.render(&files[i].display().to_string(), &sources[i]))?;
     let mut changed = false;
-    for ((file, old), new) in files.iter().zip(&sources).zip(formatted) {
+    for ((file, old), mut new) in files.iter().zip(&sources).zip(formatted) {
+        if crlf {
+            new = ruscal::fmt::dos_line_endings(&new);
+        }
         if *old != new {
             changed = true;
             println!("{}", file.display());

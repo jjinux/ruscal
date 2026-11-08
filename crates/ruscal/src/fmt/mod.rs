@@ -35,6 +35,8 @@
 //!   Pascal is case-insensitive, so this can't change a program either.
 //!
 //! The output has UNIX line endings; DOS (`\r\n`) input is fine.
+//! [`dos_line_endings`] turns them back into DOS ones (`ruscal fmt --crlf`),
+//! for files that go back to DOS.
 //!
 //! The work happens in three passes: [`lines`] splits the source into lines
 //! of items (code tokens, spaces, comments), [`structure`] finds the
@@ -152,6 +154,19 @@ pub fn format_files(sources: &[&[u8]]) -> Result<Vec<Vec<u8>>, (usize, Diagnosti
 /// end-of-file marker.
 fn is_code(token: &Token) -> bool {
     !matches!(token.kind, TokenKind::Directive(_) | TokenKind::Eof)
+}
+
+/// Formatted source with DOS line endings: each `\n` becomes `\r\n`, for a
+/// file that Turbo Pascal in DOS (or DOSBox) will read.
+pub fn dos_line_endings(formatted: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(formatted.len() + formatted.len() / 16);
+    for &b in formatted {
+        if b == b'\n' {
+            out.push(b'\r');
+        }
+        out.push(b);
+    }
+    out
 }
 
 /// DOS `\r\n` (and old Mac `\r`) line endings become `\n`.

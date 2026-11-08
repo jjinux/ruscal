@@ -258,9 +258,16 @@ fn numeric_labels() {
 }
 
 #[test]
-fn dos_line_endings() {
+fn reads_dos_line_endings() {
     let unix = "program P;\nbegin\n   writeln('hi');\nend.\n";
     assert_eq!(fmt(&unix.replace('\n', "\r\n")), unix);
+}
+
+#[test]
+fn back_to_dos_line_endings() {
+    let unix = "program P;\nbegin\n   writeln('hi');\nend.\n";
+    let dos = unix.replace('\n', "\r\n");
+    assert_eq!(dos_line_endings(fmt(&dos).as_bytes()), dos.as_bytes());
 }
 
 #[test]

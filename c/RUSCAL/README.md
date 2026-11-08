@@ -18,9 +18,9 @@ output, `NAME.OUT` the program's, and `DONE.TXT` appears at the end.
 DOS wants 8.3 names and CRLF line endings, and nothing may wait for a
 key. A new program needs its two lines in `RUNALL.BAT`.
 
-Format a program with `ruscal fmt`, then put back the CRLF line endings
-it turns into UNIX ones:
+Format each program on its own, keeping its DOS line endings
+(`crates/ruscal/tests/fmt_tests.rs` checks this):
 
 ```sh
-ruscal fmt c/RUSCAL/NAME.PAS && perl -pi -e 's/\r?\n/\r\n/' c/RUSCAL/NAME.PAS
+ruscal fmt --crlf c/RUSCAL/NAME.PAS
 ```
