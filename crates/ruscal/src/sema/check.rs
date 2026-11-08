@@ -1048,7 +1048,7 @@ impl Checker {
                 let rust_name = self.type_name(name.unwrap_or("Enum"));
                 let variants = names.iter().map(|n| names::camel_case(&n.name)).collect();
                 let pascal_names = names.iter().map(|n| n.name.clone()).collect();
-                let ty = Type::Enum(Rc::new(EnumType { rust_name, variants, pascal_names }));
+                let ty = Type::Enum(Rc::new(EnumType { rust_name, variants, pascal_names, in_one_byte: false }));
                 // Each enum value is a constant in the enclosing scope, valued
                 // by its position: `Red` is 0, `Green` 1, ...
                 let Type::Enum(e) = &ty else { unreachable!() };
@@ -1378,6 +1378,11 @@ impl Checker {
                 let kinds = [IntKind::ShortInt, IntKind::Byte, IntKind::Integer, IntKind::Word, IntKind::LongInt];
                 let kind = kinds.into_iter().find(|k| k.contains(l) && k.contains(h)).unwrap_or(IntKind::LongInt);
                 Type::Int(kind)
+            }
+            // Likewise an enum's: `V10..V20` of a 300-value enum is a byte,
+            // though the enum is a Word.
+            Type::Enum(e) if e.variants.len() > 256 && h <= 255 => {
+                Type::Enum(Rc::new(EnumType { in_one_byte: true, ..(*e).clone() }))
             }
             other => other,
         };

@@ -48,7 +48,7 @@ type:
 | `Char` | 1 byte, code page 437 | a one-character string (`"é"` for #130) |
 | `string[n]` | a length byte, then `n` bytes | the string; the bytes after its length are leftovers TP never cleared, and are dropped |
 | `Real` | 6 bytes | a number, written as the shortest decimal that gives the same 6 bytes (`0.1`, not `0.10000000000002274`) |
-| an enumerated type | 1 byte (2 for more than 256 values) | the value's name as the source spells it (`"Blue"`) |
+| an enumerated type | 1 byte (2 for more than 256 values, but 1 for a subrange of such a type whose upper bound fits a byte) | the value's name as the source spells it (`"Blue"`) |
 | `set of T` | a bit per possible element | an array of the elements (`["Red", "Blue"]`, `["a", "z"]`) |
 | `array[lo..hi] of T` | the elements | an array, in index order (an array of arrays for `[1..2, 1..3]`) |
 | a record | its fields, in order | an object, its keys spelled as in the source |

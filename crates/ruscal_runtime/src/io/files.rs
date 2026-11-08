@@ -637,10 +637,12 @@ impl<T> FileRecord for crate::ptr::Ptr<T> {
 
 /// Implement [`FileRecord`] for a record (struct) by encoding its fields in
 /// order, or for an enum by its ordinal. A `string[n]` field (or an array
-/// of them) says its capacity:
+/// of them) says its capacity, and so on for the other sizes a Rust type
+/// doesn't say (see the `@encode` rules at the end):
 ///
 /// ```ignore
 /// file_record!(Person { name: string 30, age });
+/// file_record!(Reading { kind: enum 1 }); // a big enum's subrange in a byte
 /// file_record!(enum Color);
 /// file_record!(newtype State);
 /// ```
@@ -679,6 +681,24 @@ macro_rules! file_record {
                     usize::from(<u8 as $crate::io::FileRecord>::decode(input))
                 };
                 values[ord.min(values.len() - 1)]
+            }
+            // A subrange of a big enum that fits a byte (`V10..V20` of 300
+            // values) takes one byte in TP: the hint's size 1 says so.
+            fn encode_sized(&self, hint: $crate::io::Hint, out: &mut ::std::vec::Vec<u8>) {
+                if hint.size == 1 {
+                    out.push($crate::ordinal::Ordinal::ord(*self) as u8);
+                } else {
+                    $crate::io::FileRecord::encode(self, out);
+                }
+            }
+            fn decode_sized(hint: $crate::io::Hint, input: &mut &[u8]) -> Self {
+                if hint.size == 1 {
+                    let values = <$ty as $crate::ordinal::Enumerated>::VALUES;
+                    let ord = usize::from(<u8 as $crate::io::FileRecord>::decode(input));
+                    values[ord.min(values.len() - 1)]
+                } else {
+                    $crate::io::FileRecord::decode(input)
+                }
             }
         }
     };
@@ -767,8 +787,14 @@ macro_rules! file_record {
     (@encode $value:expr, $out:ident, set $bytes:literal from $first:literal) => {
         $crate::io::FileRecord::encode_sized(&$value, $crate::io::Hint::new($bytes, $first), $out)
     };
+    (@encode $value:expr, $out:ident, enum $bytes:literal) => {
+        $crate::io::FileRecord::encode_sized(&$value, $crate::io::Hint::new($bytes, 0), $out)
+    };
     (@decode $input:ident) => {
         $crate::io::FileRecord::decode($input)
+    };
+    (@decode $input:ident, enum $bytes:literal) => {
+        $crate::io::FileRecord::decode_sized($crate::io::Hint::new($bytes, 0), $input)
     };
     (@decode $input:ident, string $cap:literal) => {
         $crate::io::FileString::decode_string($cap, $input)

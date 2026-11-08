@@ -14,7 +14,8 @@ DOSBox's C: drive is the repo's `c/`; TP itself goes in `c/TP` (see
 ```
 
 `RUNALL.BAT` compiles and runs each `NAME.PAS`: `NAME.CMP` is TPC's
-output, `NAME.OUT` the program's, and `DONE.TXT` appears at the end.
+output (which can say how long it took, so it may change between runs),
+`NAME.OUT` the program's, and `DONE.TXT` appears at the end.
 DOS wants 8.3 names and CRLF line endings, and nothing may wait for a
 key. A new program needs its two lines in `RUNALL.BAT`.
 

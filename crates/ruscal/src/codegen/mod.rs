@@ -3077,11 +3077,15 @@ impl Covered {
 }
 
 /// A field in `file_record!`: a `string[n]` (or an array of them) says its
-/// capacity, so it takes n+1 bytes in the file, and a set smaller than 32
-/// bytes says its size, as in TP (and as `SizeOf` says).
+/// capacity, so it takes n+1 bytes in the file, a set smaller than 32
+/// bytes says its size, and a big enum's subrange that fits a byte says
+/// so (`enum 1`), as in TP (and as `SizeOf` says).
 fn file_record_field(field: &crate::sema::types::Field) -> String {
     if let Some(cap) = string_capacity(&field.ty) {
         return format!("{}: string {cap}", field.rust_name);
+    }
+    if enum_in_one_byte(&field.ty) {
+        return format!("{}: enum 1", field.rust_name);
     }
     match size_hint(&field.ty) {
         Some((bytes, 0)) => format!("{}: set {bytes}", field.rust_name),
@@ -3093,7 +3097,8 @@ fn file_record_field(field: &crate::sema::types::Field) -> String {
 /// The size a type gives the strings or small sets in it that their Rust
 /// types don't say (`FileRecord::encode_sized`): a `string[n]`'s n, or a
 /// set's bytes when it keeps fewer than 32, and the first of them in the
-/// bitmap (0 for a string); also for an array of them. `None` when the
+/// bitmap (0 for a string), or 1 for a big enum's subrange kept in a byte;
+/// also for an array of them. `None` when the
 /// default encoding is right.
 pub(super) fn size_hint(ty: &Type) -> Option<(usize, usize)> {
     match ty {
@@ -3102,8 +3107,19 @@ pub(super) fn size_hint(ty: &Type) -> Option<(usize, usize)> {
             let (first, bytes) = crate::sema::types::set_bytes(ty);
             (bytes < 32).then_some((bytes, first))
         }
+        Type::Enum(e) if e.in_one_byte => Some((1, 0)),
         Type::Array(a) => size_hint(&a.elem),
         _ => None,
+    }
+}
+
+/// Is this a subrange of a big enum kept in one byte (`V10..V20`; see
+/// `EnumType::in_one_byte`), or an array of them?
+fn enum_in_one_byte(ty: &Type) -> bool {
+    match ty {
+        Type::Enum(e) => e.in_one_byte,
+        Type::Array(a) => enum_in_one_byte(&a.elem),
+        _ => false,
     }
 }
 

@@ -640,7 +640,14 @@ that's TP's: the smallest of `ShortInt`, `Byte`, `Integer`, `Word` and
 `LongInt` that holds both bounds (`1..12` is a `u8`, `-5..5` an `i8`,
 `0..65535` a `u16`), so `SizeOf` and a record in a file match TP's (from
 the Fable review of f310f56; it used to be `Integer` for anything that
-fit). Arithmetic still follows TP's rules for the host types. A `--range-checks`
+fit). Arithmetic still follows TP's rules for the host types. An enum
+subrange is the enum itself, except for size: TP kept `V10..V20` of a
+300-value enum in a byte (checked in TP 7), though the enum takes a Word.
+So its `EnumType` is a copy marked `in_one_byte`, which sema compares
+equal to the enum's (as it does `RealKind`s); `serialized_size` counts 1,
+and the size travels with the type into records, arrays and files, where
+`file_record!` gets a hint (`part: enum 1`, `PFile::sized(1)`) as a
+`string[n]` does. A `--range-checks`
 flag makes codegen wrap assignments into subrange variables with
 `check_range(v, lo, hi)`. Off by default because TP's default is `{$R-}`.
 

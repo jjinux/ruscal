@@ -65,6 +65,8 @@ Types
 - Enumerated types `(Red, Green, Blue)`; subranges `1..10`, `'A'..'Z'`,
   `Red..Blue`, an integer subrange stored in the smallest type that holds
   its bounds, as in TP (`1..12` is a byte, in `SizeOf` and in files).
+  Likewise a subrange of an enum of more than 256 values whose upper
+  bound fits a byte (`V10..V20`) takes 1 byte, where the enum takes 2.
   `Succ`, `Pred`, `Inc` and `Dec` past the ends of an enum (or of
   `Boolean`) are runtime error 201, as if `{$R+}` were on: TP with `{$R-}`
   stored the ordinal anyway, but a Rust enum can't hold a value outside it

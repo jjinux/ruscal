@@ -200,7 +200,7 @@ pub enum Type {
 // The structured types live behind `Rc` (a reference-counted pointer), so
 // cloning a `Type` is cheap even for a big record: it just bumps a count.
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct EnumType {
     /// The Rust name of the generated `enum`.
     pub rust_name: String,
@@ -208,6 +208,17 @@ pub struct EnumType {
     pub variants: Vec<String>,
     /// The values' names as the Pascal spells them (`to-json` writes those).
     pub pascal_names: Vec<String>,
+    /// A subrange of an enum of more than 256 values whose upper bound fits
+    /// a byte (`V10..V20`): TP kept it, and a file stores it, in one byte,
+    /// where the whole enum takes two. Only the size changes; it's the same
+    /// Rust enum, and the same type to sema (the `PartialEq` below).
+    pub in_one_byte: bool,
+}
+
+impl PartialEq for EnumType {
+    fn eq(&self, other: &Self) -> bool {
+        self.rust_name == other.rust_name && self.variants == other.variants && self.pascal_names == other.pascal_names
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -760,7 +771,7 @@ pub fn serialized_size(ty: &Type) -> Option<i64> {
         // so they get its 6 bytes too (see `RealKind`).
         Type::Real(_) => 6,
         Type::Enum(e) => {
-            if e.variants.len() <= 256 {
+            if e.variants.len() <= 256 || e.in_one_byte {
                 1
             } else {
                 2

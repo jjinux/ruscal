@@ -9,3 +9,4 @@ out/
 !/c/RUSCAL/
 /c/RUSCAL/*.EXE
 /c/RUSCAL/DONE.TXT
+/c/RUSCAL/*.DAT
