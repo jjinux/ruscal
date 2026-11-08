@@ -69,6 +69,17 @@ For two fields of one record, pass the record (and say which fields in
 another parameter if needed), or copy one field into a local variable,
 pass the local, and copy it back after the call.
 
+The same goes for a `const` parameter that Turbo Pascal passes by
+reference (a string, or a record, array or object that isn't exactly 1,
+2 or 4 bytes): it's a reference in Rust too, a shared one, which Rust
+won't have alongside a mutable one. So `Both(Name, Name)` with
+`procedure Both(const S: string; var T: string)` is refused, and so is
+`Thing.CopyFrom(Thing)` when `CopyFrom` takes a `const` object (the
+method's `&mut self` is the other reference). Copy the argument into a
+local variable first and pass the local: in TP that's what the `const`
+parameter would have seen anyway, unless the routine changes the `var`
+one before reading it.
+
 <a id="var-and-global"></a>
 
 ## A `var` argument that the routine also uses as a global
@@ -118,6 +129,14 @@ AddToCount(5);
 
 If the routine must also work on other variables, copy the global into a
 local variable, pass the local, and copy it back after the call.
+
+A `const` parameter that Turbo Pascal passes by reference (a string, or a
+record, array or object that isn't exactly 1, 2 or 4 bytes) gets the same
+treatment when the routine changes the global (or calls a method on the
+parameter and uses the global). If every call passes the global itself,
+Ruscal reads the global through the parameter, so the routine sees its
+own change, as in TP; it's refused only when calls pass different
+variables. Copy the argument into a local variable first, as above.
 
 <a id="with-selector"></a>
 

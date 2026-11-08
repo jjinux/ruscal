@@ -122,7 +122,12 @@ Statements
 - Value, `var` and `const` parameters (TP 7); passing arrays, records and strings both ways.
   A `const` parameter can't be changed (assigned, passed by `var`, read
   into, changed through `with`), as in TP; a method may be called on one,
-  and `p^ := x` writes through one.
+  and `p^ := x` writes through one. As in TP 7, a `const` string, or a
+  record, array or object that isn't exactly 1, 2 or 4 bytes, is passed
+  by reference (`&PString` in Rust): a method called on one changes the
+  caller's object, and a routine that changes the global it was given
+  sees the change through the parameter. A scalar, a set and a small
+  record are copied.
 - Open array parameters (TP 7): `a: array of T`, `var` or `const` too. The
   argument is an array of `T` of any size and bounds, one `T`, another
   open array, or (`array of Char`) a string constant. Inside, `a[0]` to

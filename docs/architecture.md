@@ -730,6 +730,39 @@ Pascal copies value parameters; the callee may mutate its copy. Codegen passes
 by value (`grid: GridT`) and inserts `.clone()` at the call site for non-Copy
 types. The parameter is declared `mut` only if the body assigns to it.
 
+### `const` parameters: by value or `&T`, as TP passed them
+
+TP 7 passes a `const` parameter by reference unless it's a scalar, a set,
+or a record, array or object of exactly 1, 2 or 4 bytes; a string always
+(checked in TP 7: `c/RUSCAL/CPASS.PAS`, `types::const_by_reference`). It
+shows when the routine changes, through a global, the variable it was
+given, or calls a method on the parameter (which changes the caller's
+object). Ruscal passes it the same way (the user's choice, 2026-11-07,
+on a branch with Fable reviewing the plan, `notes/const_ref.md`): `s:
+&PString`, `r: &TBig`, and the argument `&name`, `&pstr("lit")`,
+`&(s + "!")`, or the reference held already. Sema works out each
+parameter's `Passing` (`Value`, `Ref`, `RefMut`) once, and codegen's
+signatures and call arguments ask it rather than test for `var`:
+
+- A method called on the parameter makes it `&mut` (`RefMut`), and a
+  fixed point (`lift::const_ref_mut`) carries that to a `const` parameter
+  passed on to such a one and across routines that share a signature (a
+  procedural type's, a virtual method's overrides). Such an argument is
+  a write of its variable (so it's `mut`), a mutable borrow in the alias
+  check, and a temporary if it's a value (a function's result); a
+  virtual object's is `&mut dyn TShapeMethods`.
+- A shared argument joins the alias check: with another shared one or a
+  global the routine only reads, nothing to do; with a `var` argument
+  (or the object a method is called on) in one variable, an error
+  (`docs/rust_limits.md`, two-var-arguments). If the routine changes a
+  global that every call passes as the argument (or calls a method on
+  the parameter and uses the global), `find_param_aliases` unifies the
+  two, as for a `var` parameter, and the parameter becomes `&mut`: the
+  routine sees its own change, as in TP. Otherwise the var-and-global
+  error. Not for a virtual method or an external routine.
+- External Rust routines take `&PString` too (`tests/run/rust_externals.rs`):
+  there are no users to stay compatible with (the user).
+
 ### `var` parameters: `&mut T`
 
 Decision: a `var` parameter is a `&mut T` parameter, and a `var` argument is

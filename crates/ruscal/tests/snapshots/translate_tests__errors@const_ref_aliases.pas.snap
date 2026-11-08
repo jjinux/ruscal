@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/const_ref_aliases.pas
+---
+const_ref_aliases.pas:36:15: error: `Name` is passed by `var` and as a `const` parameter (which Turbo Pascal passes by reference) in this call to `Both`; Rust doesn't allow a mutable reference to a variable alongside another reference to it; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+   Both(Name, Name);
+              ^^^^
+
+const_ref_aliases.pas:37:10: error: `Big` is passed as a `const` parameter (which Turbo Pascal passes by reference) to `Reset`, which also uses `Big` directly; Rust doesn't allow two references to the same variable when one of them is mutable; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#var-and-global
+   Reset(Big);
+         ^^^
+
+const_ref_aliases.pas:39:19: error: `Thing` is passed as a `const` parameter (which Turbo Pascal passes by reference) of `TThing.CopyFrom`, which is called on it; Rust doesn't allow the method's `&mut self` alongside another reference to the object; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+   Thing.CopyFrom(Thing);
+                  ^^^^^

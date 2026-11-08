@@ -201,7 +201,39 @@ fn is_ancestor(a: &Analysis, ancestor: ProcId, p: ProcId) -> bool {
 /// receives the global `FileSystem` as a parameter and passes its parameter
 /// on to a nested procedure, so every parameter in that chain is the global.
 /// The chains are followed to a fixed point.
-pub(super) fn find_param_aliases(a: &mut Analysis, sites: &[CallSite]) {
+///
+/// A `const` parameter TP passes by reference (`Passing::Ref`) is unified
+/// the same way, but only where it has to be: when the routine, or one it
+/// calls, changes the variable every call passes. Then the routine sees its
+/// own change through the parameter, as in TP, and the parameter becomes
+/// `&mut` (its callers pass `&mut g`). Not for a virtual method or an
+/// external routine, whose signature can't follow one program's calls.
+pub(super) fn find_param_aliases(a: &mut Analysis, sites: &mut [CallSite]) {
+    // What each routine changes, and uses, itself or through the routines
+    // it calls.
+    let through_calls = |a: &Analysis, mut sets: Vec<BTreeSet<SymId>>| {
+        let mut grew = true;
+        while grew {
+            grew = false;
+            for p in 0..a.procs.len() {
+                for &q in &a.procs[p].calls {
+                    let theirs = sets[q].clone();
+                    let before = sets[p].len();
+                    sets[p].extend(theirs);
+                    grew |= sets[p].len() > before;
+                }
+            }
+        }
+        sets
+    };
+    let changes = through_calls(a, a.procs.iter().map(|p| p.writes.clone()).collect());
+    let uses = through_calls(a, a.procs.iter().map(|p| p.uses.clone()).collect());
+    let unifiable_const = |a: &Analysis, p: ProcId, param: SymId| {
+        a.passing(param) != super::Passing::Value
+            && a.var(param).role == VarRole::Param(crate::ast::ParamMode::Const)
+            && a.procs[p].has_body
+            && !a.dispatched.contains(&p)
+    };
     // `canon[param]` = the variable that parameter always stands for.
     let mut canon: HashMap<SymId, SymId> = HashMap::new();
     let resolve = |canon: &HashMap<SymId, SymId>, mut sym: SymId| {
@@ -217,6 +249,7 @@ pub(super) fn find_param_aliases(a: &mut Analysis, sites: &[CallSite]) {
         .iter()
         .flat_map(|&class| std::iter::once(class).chain(a.procs[class].calls.iter().copied()))
         .collect();
+    let mut unified_consts: Vec<SymId> = Vec::new();
     let mut changed = true;
     while changed {
         changed = false;
@@ -225,8 +258,9 @@ pub(super) fn find_param_aliases(a: &mut Analysis, sites: &[CallSite]) {
             if calls.is_empty() || in_class.contains(&p) {
                 continue;
             }
-            for &param in &a.procs[p].params {
-                if canon.contains_key(&param) || a.var(param).role != VarRole::Param(crate::ast::ParamMode::Var) {
+            for &param in &a.procs[p].params.clone() {
+                let is_var = a.var(param).role == VarRole::Param(crate::ast::ParamMode::Var);
+                if canon.contains_key(&param) || !(is_var || unifiable_const(a, p, param)) {
                     continue;
                 }
                 // The variable each call passes for this parameter. A
@@ -245,9 +279,32 @@ pub(super) fn find_param_aliases(a: &mut Analysis, sites: &[CallSite]) {
                     }
                 }
                 if every_call_binds_whole_variable && bound_to.len() == 1 {
-                    canon.insert(param, *bound_to.iter().next().unwrap());
+                    let target = *bound_to.iter().next().unwrap();
+                    // A `const` one only where Rust would see a conflict: the
+                    // routine changes that variable, or uses it while it
+                    // changes the parameter (a method called on it).
+                    let conflict =
+                        changes[p].contains(&target) || (a.const_ref_mut.contains(&param) && uses[p].contains(&target));
+                    if !is_var && !conflict {
+                        continue;
+                    }
+                    canon.insert(param, target);
+                    if !is_var {
+                        unified_consts.push(param);
+                    }
                     changed = true;
                 }
+            }
+        }
+    }
+    // A unified `const` parameter is `&mut`, and each call's argument a
+    // write of its variable.
+    for param in unified_consts {
+        a.const_ref_mut.insert(param);
+        for site in sites.iter_mut() {
+            for arg in site.var_args.iter_mut().filter(|arg| arg.param == param) {
+                arg.shared = false;
+                a.procs[site.caller].writes.insert(arg.root);
             }
         }
     }
@@ -350,7 +407,10 @@ pub(super) fn check_aliasing(a: &Analysis, sites: &[CallSite]) -> Vec<Diagnostic
                 } else {
                     ""
                 };
-                let what = if earlier.shared || arg.shared {
+                let is_receiver = |v: &VarArg| callee.self_param.as_ref().is_some_and(|(_, s)| *s == v.param);
+                let what = if (earlier.shared || arg.shared) && (is_receiver(earlier) || is_receiver(arg)) {
+                    "as a `const` parameter (which Turbo Pascal passes by reference) of `{}`, which is called on it; Rust doesn't allow the method's `&mut self` alongside another reference to the object"
+                } else if earlier.shared || arg.shared {
                     "by `var` and as a `const` parameter (which Turbo Pascal passes by reference) in this call to `{}`; Rust doesn't allow a mutable reference to a variable alongside another reference to it"
                 } else {
                     "by `var` more than once in this call to `{}`; Rust doesn't allow two mutable references to the same variable"

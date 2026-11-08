@@ -1655,6 +1655,7 @@ impl<'a> Codegen<'a> {
         aliases.sort();
         for ((_, outer), param) in aliases {
             self.line("///");
+            let is_const = self.a.var(*param).role == VarRole::Param(ParamMode::Const);
             let (outer, param) = (&self.a.sym(*outer).name, &self.a.sym(*param).name);
             if outer.eq_ignore_ascii_case(param) {
                 // The parameter hides the outer variable in the Pascal, so
@@ -1667,6 +1668,10 @@ impl<'a> Codegen<'a> {
                 self.line(format!("/// Every call passes `{outer}` itself as `{param}`, so where the Pascal code"));
                 self.line(format!("/// uses `{outer}` directly, this function uses `{param}`: they are the same"));
                 self.line("/// variable, and Rust doesn't allow two references to one variable.");
+            }
+            if is_const {
+                self.line(format!("/// (Turbo Pascal passes the `const` `{param}` by reference, so a change to"));
+                self.line(format!("/// `{outer}` here shows through it, which is why it's `&mut`.)"));
             }
         }
 
