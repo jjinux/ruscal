@@ -10,14 +10,14 @@ var
    Before0, Before1, After0, After1, Bk: Word;
 
 function PaletteReg(N: Byte): Byte;
-var
-   R: Registers;
-begin
-   R.AX := $1007;
-   R.BL := N;
-   Intr($10, R);
-   PaletteReg := R.BH
-end;
+   var
+      R: Registers;
+   begin
+      R.AX := $1007;
+      R.BL := N;
+      Intr($10, R);
+      PaletteReg := R.BH
+   end;
 
 begin
    Driver := VGA;

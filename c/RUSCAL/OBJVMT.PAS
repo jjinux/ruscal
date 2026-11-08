@@ -20,20 +20,20 @@ type
    end;
 
 constructor TCtor.Init;
-begin
-end;
+   begin
+   end;
 
 constructor TVirt.Init;
-begin
-end;
+   begin
+   end;
 
 procedure TVirt.P;
-begin
-end;
+   begin
+   end;
 
 destructor TDtor.Done;
-begin
-end;
+   begin
+   end;
 
 begin
    WriteLn('plain ', SizeOf(TPlain), ' ctor ', SizeOf(TCtor));

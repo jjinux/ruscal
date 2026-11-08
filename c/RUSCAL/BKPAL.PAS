@@ -9,14 +9,14 @@ var
    PalA, PalB: ShortInt;
 
 function PaletteReg(N: Byte): Byte;
-var
-   R: Registers;
-begin
-   R.AX := $1007;
-   R.BL := N;
-   Intr($10, R);
-   PaletteReg := R.BH
-end;
+   var
+      R: Registers;
+   begin
+      R.AX := $1007;
+      R.BL := N;
+      Intr($10, R);
+      PaletteReg := R.BH
+   end;
 
 begin
    Driver := VGA;

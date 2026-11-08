@@ -5,10 +5,10 @@ var
    S: string;
 
 function Bump: string;
-begin
-   S := S + 'c';
-   Bump := 'X'
-end;
+   begin
+      S := S + 'c';
+      Bump := 'X'
+   end;
 
 begin
    S := 'ab';

@@ -17,3 +17,10 @@ DOSBox's C: drive is the repo's `c/`; TP itself goes in `c/TP` (see
 output, `NAME.OUT` the program's, and `DONE.TXT` appears at the end.
 DOS wants 8.3 names and CRLF line endings, and nothing may wait for a
 key. A new program needs its two lines in `RUNALL.BAT`.
+
+Format a program with `ruscal fmt`, then put back the CRLF line endings
+it turns into UNIX ones:
+
+```sh
+ruscal fmt c/RUSCAL/NAME.PAS && perl -pi -e 's/\r?\n/\r\n/' c/RUSCAL/NAME.PAS
+```
