@@ -259,6 +259,73 @@ pub(super) fn find_param_aliases(a: &mut Analysis, sites: &[CallSite]) {
     }
 }
 
+/// Which `const` parameters passed by reference must be `&mut` (see
+/// `Passing`): one a method is called on (sema found those), one passed on
+/// to such a parameter (`procedure A(const X: TBig); begin B(X) end`), and
+/// one in the same place as such a parameter in a routine that shares its
+/// signature: a procedural type's routines, or a virtual method's
+/// overrides. A fixed point. Then each such argument counts as a write of
+/// its variable, and as a mutable borrow in the alias check.
+pub(super) fn const_ref_mut(a: &mut Analysis, sites: &mut [CallSite]) {
+    let by_reference_const = |a: &Analysis, sym: SymId| match &a.sym(sym).kind {
+        super::SymKind::Var(v) => {
+            v.role == VarRole::Param(crate::ast::ParamMode::Const) && super::types::const_by_reference(&v.ty)
+        }
+        _ => false,
+    };
+    // Routines that must agree, parameter by parameter.
+    let mut families: Vec<Vec<ProcId>> = a
+        .proc_classes
+        .iter()
+        .map(|&class| std::iter::once(class).chain(a.procs[class].calls.iter().copied()).collect())
+        .collect();
+    let mut by_name: HashMap<(String, String), Vec<ProcId>> = HashMap::new();
+    for &p in &a.dispatched {
+        if let Some((object, _)) = &a.procs[p].self_param {
+            let root = object.lineage().last().unwrap().0.rust_name.clone();
+            let name = a.procs[p].name.rsplit('.').next().unwrap_or_default().to_ascii_lowercase();
+            by_name.entry((root, name)).or_default().push(p);
+        }
+    }
+    families.extend(by_name.into_values());
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for site in sites.iter() {
+            for arg in &site.var_args {
+                if arg.shared
+                    && a.const_ref_mut.contains(&arg.param)
+                    && by_reference_const(a, arg.root)
+                    && a.const_ref_mut.insert(arg.root)
+                {
+                    changed = true;
+                }
+            }
+        }
+        for family in &families {
+            let positions = family.iter().map(|&p| a.procs[p].params.len()).max().unwrap_or(0);
+            for i in 0..positions {
+                let params: Vec<SymId> = family.iter().filter_map(|&p| a.procs[p].params.get(i).copied()).collect();
+                if params.iter().any(|q| a.const_ref_mut.contains(q)) {
+                    for q in params {
+                        if by_reference_const(a, q) && a.const_ref_mut.insert(q) {
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for site in sites.iter_mut() {
+        for arg in &mut site.var_args {
+            if arg.shared && a.const_ref_mut.contains(&arg.param) {
+                arg.shared = false;
+                a.procs[site.caller].writes.insert(arg.root);
+            }
+        }
+    }
+}
+
 /// Reject calls where Rust would see two mutable references to the same
 /// variable. Pascal allows this "aliasing" (and its behaviour is subtle even
 /// there); Rust's borrow checker forbids it outright.

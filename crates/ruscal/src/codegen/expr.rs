@@ -1777,6 +1777,24 @@ impl<'a> Codegen<'a> {
     }
 
     /// Is `e` a `var` parameter that takes any object of a hierarchy with
+    /// Is `e` a variable or part of one (`Make` alone may be a function
+    /// call, `p^` through a pointer counts)?
+    fn is_variable(&self, e: &Expr) -> bool {
+        is_place(e)
+            && match &e.kind {
+                // Only a routine's name isn't one (`Output` is; a field of
+                // `Self` or of a `with` record has no symbol, and is one).
+                ExprKind::Name(_) => match self.a.refs.get(&e.id) {
+                    Some(&sym) => !matches!(
+                        self.a.sym(sym).kind,
+                        SymKind::Proc(_) | SymKind::UnitRoutine(_) | SymKind::Builtin(_)
+                    ),
+                    None => true,
+                },
+                _ => true,
+            }
+    }
+
     /// virtual methods (`shape: &mut dyn TShapeMethods`)?
     pub(super) fn is_dyn_param(&self, e: &Expr) -> bool {
         let ExprKind::Name(_) = &e.kind else { return false };
@@ -1786,7 +1804,7 @@ impl<'a> Codegen<'a> {
         }
         match &self.a.sym(sym).kind {
             SymKind::Var(v) => {
-                v.role == crate::sema::VarRole::Param(ParamMode::Var)
+                self.a.passing(sym) == crate::sema::Passing::RefMut
                     && matches!(&v.ty, Type::Object(o) if self.in_dispatch(o))
             }
             _ => false,
@@ -1845,7 +1863,7 @@ impl<'a> Codegen<'a> {
         let borrowed: Vec<String> = params
             .iter()
             .zip(args)
-            .filter(|(p, _)| self.a.var(**p).role == crate::sema::VarRole::Param(ParamMode::Var))
+            .filter(|(p, _)| self.a.passing(**p) == crate::sema::Passing::RefMut)
             .map(|(_, arg)| root_key(arg))
             .chain(
                 info.captures
@@ -1855,7 +1873,7 @@ impl<'a> Codegen<'a> {
             )
             .collect();
         // Heap records shared by more than one `var` argument (`q^.x, q^.y`).
-        let is_var = |p: &usize| self.a.var(*p).role == crate::sema::VarRole::Param(ParamMode::Var);
+        let is_var = |p: &usize| self.a.passing(*p) == crate::sema::Passing::RefMut;
         let heap: Vec<Option<String>> = params
             .iter()
             .zip(args)
@@ -1877,7 +1895,8 @@ impl<'a> Codegen<'a> {
         for ((param, arg), key) in params.iter().zip(args).zip(&heap) {
             let var = self.a.var(*param);
             let ty = var.ty.clone();
-            let is_var_arg = var.role == crate::sema::VarRole::Param(ParamMode::Var);
+            // (`var`, or a `const` one a method is called on: see `Passing`.)
+            let is_var_arg = self.a.passing(*param) == crate::sema::Passing::RefMut;
             // An object passed where an ancestor is expected: its ancestor
             // part, `&mut circle.base`. (With virtual methods, the parameter
             // takes the whole object, `&mut dyn TShapeMethods`.)
@@ -1915,14 +1934,14 @@ impl<'a> Codegen<'a> {
                 } else {
                     parts.push(self.open_array_arg(arg, elem, is_var_arg));
                 }
-            } else if var.role == crate::sema::VarRole::Param(ParamMode::Var)
+            } else if is_var_arg
                 && dyn_param
                 && let ExprKind::Deref(pointer) = &arg.kind
             {
                 parts.push(format!("&mut *{}.get_mut()", self.selector_base(pointer)));
-            } else if var.role == crate::sema::VarRole::Param(ParamMode::Var) && depth > 0 {
+            } else if is_var_arg && depth > 0 {
                 parts.push(format!("&mut {}{}", self.selector_base(arg), ".base".repeat(depth)));
-            } else if var.role == crate::sema::VarRole::Param(ParamMode::Var) && shared(key) {
+            } else if is_var_arg && shared(key) {
                 // `&mut q.get_mut().x` becomes `&mut point.x`, where `point`
                 // is the record borrowed once by `with_mut`.
                 let place = self.place(arg);
@@ -1941,7 +1960,14 @@ impl<'a> Codegen<'a> {
                     }
                 };
                 parts.push(format!("&mut {name}{fields}"));
-            } else if var.role == crate::sema::VarRole::Param(ParamMode::Var) {
+            } else if is_var_arg && !self.is_variable(arg) {
+                // A `const` one a method is called on, given a value
+                // (`Show(MakeShape)`): the method changes a copy.
+                let code = self.coerce(arg, &ty).0;
+                let temp = self.temp_name(&self.a.sym(*param).rust_name.clone());
+                self.pending.push(format!("let mut {temp} = {code};"));
+                parts.push(format!("&mut {temp}"));
+            } else if is_var_arg {
                 parts.push(self.place_mut(arg));
             } else {
                 // A `const` parameter TP passes by reference: a reference to

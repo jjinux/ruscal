@@ -1840,7 +1840,7 @@ impl<'a> Codegen<'a> {
             params.push(match (&var.role, &var.ty) {
                 // A `var` parameter of an object type with virtual methods
                 // takes any object descended from it.
-                (VarRole::Param(ParamMode::Var), Type::Object(o)) if self.in_dispatch(o) => {
+                (_, Type::Object(o)) if self.a.passing(param) == Passing::RefMut && self.in_dispatch(o) => {
                     (name, format!("&mut dyn {}", trait_name(o)))
                 }
                 // An untyped `var Data`: any variable, as its bytes.

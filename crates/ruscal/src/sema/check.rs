@@ -3562,6 +3562,16 @@ impl Checker {
         let outer = std::mem::replace(&mut self.in_receiver, true);
         let receiver_ty = self.place(receiver, true);
         self.in_receiver = outer;
+        // A method called on a `const` parameter TP passes by reference
+        // changes the caller's object: the parameter is `&mut` (`Passing`).
+        if !Self::through_pointer(receiver)
+            && let Some(root) = self.place_root(receiver)
+            && let SymKind::Var(v) = &self.a.symbols[root].kind
+            && v.role == VarRole::Param(ParamMode::Const)
+            && super::types::const_by_reference(&v.ty)
+        {
+            self.a.const_ref_mut.insert(root);
+        }
         let Type::Object(object) = &receiver_ty else {
             if receiver_ty != Type::Error {
                 self.error(method.span, format!("a {receiver_ty} value has no methods"));
@@ -3736,6 +3746,7 @@ impl Checker {
                 if role == VarRole::Param(ParamMode::Const)
                     && super::types::const_by_reference(&ty)
                     && let Some(root) = self.place_root(arg)
+                    && matches!(self.a.symbols[root].kind, SymKind::Var(_))
                 {
                     var_args.push(VarArg {
                         param,

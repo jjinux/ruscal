@@ -435,6 +435,8 @@ pub fn analyze(program: &Program, units: &[Unit]) -> Result<Analysis, Vec<Diagno
     checker.program(program, units);
     let (mut analysis, mut errors, call_sites) = checker.finish();
     errors.extend(dispatch(&mut analysis));
+    let mut call_sites = call_sites;
+    lift::const_ref_mut(&mut analysis, &mut call_sites);
     lift::find_param_aliases(&mut analysis, &call_sites);
     lift::lift(&mut analysis);
     errors.extend(lift::check_aliasing(&analysis, &call_sites));
