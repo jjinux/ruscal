@@ -15,6 +15,14 @@ impl Parser {
         match self.peek().clone() {
             TokenKind::Keyword(Keyword::Array) => {
                 self.bump();
+                // `array of T` without bounds is an open array, which TP 7
+                // allows only as a parameter's type.
+                if self.at_keyword(Keyword::Of) {
+                    return Err(Diagnostic::new(
+                        start.to(self.span()),
+                        "an array without bounds (`array of T`) can only be a parameter's type; give it bounds, `array[1..10] of T`",
+                    ));
+                }
                 self.expect(&TokenKind::LBracket)?;
                 let mut indexes = vec![self.type_expr()?];
                 while self.eat(&TokenKind::Comma) {

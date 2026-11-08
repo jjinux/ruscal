@@ -17,6 +17,8 @@ use std::ops::{Deref, Index, IndexMut};
 
 use ref_cast::RefCast;
 
+use crate::bytes::ByteView;
+use crate::io::{FileRecord, Hint};
 use crate::ordinal::Ordinal;
 
 /// The elements of an open array parameter, indexed from 0.
@@ -83,6 +85,45 @@ impl<T, I: Ordinal> IndexMut<I> for OpenArray<T> {
     fn index_mut(&mut self, index: I) -> &mut T {
         let at = crate::array::offset(index.ord(), 0, self.0.len());
         &mut self.0[at]
+    }
+}
+
+/// An open array as bytes, for an untyped parameter (`FillChar(A,
+/// SizeOf(A), 0)`): its elements in TP's layout, one after another. A
+/// `&mut dyn ByteView` can only point to a sized type, so this small struct
+/// holds the reference; `hint` is the elements' size where their Rust type
+/// doesn't say it (`array of string[20]`).
+pub struct OpenBytes<'a, T> {
+    elements: &'a mut OpenArray<T>,
+    hint: Hint,
+}
+
+/// `FillChar(A, SizeOf(A), 0)` with `var A: array of Integer`:
+/// `fill_char(&mut open_bytes(a), ...)`.
+pub fn open_bytes<T: FileRecord>(elements: &mut OpenArray<T>) -> OpenBytes<'_, T> {
+    OpenBytes { elements, hint: Hint::default() }
+}
+
+/// The same for elements that say their size: `array of string[20]` (20),
+/// a small set (`size` bytes from byte `first` of its bitmap).
+pub fn open_sized_bytes<T: FileRecord>(elements: &mut OpenArray<T>, size: usize, first: usize) -> OpenBytes<'_, T> {
+    OpenBytes { elements, hint: Hint::new(size, first) }
+}
+
+impl<T: FileRecord> ByteView for OpenBytes<'_, T> {
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+        for element in self.elements.0.iter() {
+            element.encode_sized(self.hint, &mut out);
+        }
+        out
+    }
+
+    fn set_bytes(&mut self, bytes: &[u8]) {
+        let mut input = bytes;
+        for element in self.elements.0.iter_mut() {
+            *element = T::decode_sized(self.hint, &mut input);
+        }
     }
 }
 

@@ -1,0 +1,24 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/open_array_errors.pas
+---
+open_array_errors.pas:18:12: error: an open array can't be assigned as a whole; assign its elements one by one
+      A := B;
+           ^
+
+open_array_errors.pas:19:13: error: expected an array[1..3] of Integer argument, found array of Integer
+      Fixed(A);
+            ^
+
+open_array_errors.pas:31:10: error: this can't be assigned to or passed by `var`
+   Twice(5);
+         ^
+
+open_array_errors.pas:32:10: error: a `var` array of Integer parameter needs an array of Integer or an Integer variable, found array[1..3] of Word
+   Twice(W);
+         ^
+
+open_array_errors.pas:33:10: error: an array of Char parameter needs an array of Char, a Char or a string constant, found String
+   Chars(S);
+         ^

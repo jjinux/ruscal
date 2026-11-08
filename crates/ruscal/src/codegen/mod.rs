@@ -3321,6 +3321,15 @@ fn goto_label(name: &str) -> String {
     }
 }
 
+/// Does `value` read the open array at the root of `target`?
+pub(super) fn reads_open_array(value: &Expr, target: &Expr, a: &crate::sema::Analysis) -> bool {
+    let mut root = target;
+    while let ExprKind::Field(base, _) | ExprKind::Index(base, _) = &root.kind {
+        root = base;
+    }
+    matches!(a.types.get(&root.id), Some(Type::OpenArray(_))) && mentions(value, &root_name(target))
+}
+
 fn root_name(e: &Expr) -> String {
     match &e.kind {
         ExprKind::Name(id) => id.key(),
@@ -3334,6 +3343,9 @@ fn root_name(e: &Expr) -> String {
 pub(super) fn value_temp_base(e: &Expr) -> String {
     match &e.kind {
         ExprKind::Field(_, field) => crate::sema::names::snake_case(&field.name),
+        ExprKind::Call { callee, .. } if matches!(&callee.kind, ExprKind::Name(id) if id.key() == "sizeof") => {
+            "size".to_string()
+        }
         _ => "value".to_string(),
     }
 }

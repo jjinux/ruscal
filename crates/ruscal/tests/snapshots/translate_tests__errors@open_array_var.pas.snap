@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/open_array_var.pas
+---
+open_array_var.pas:5:7: error: an array without bounds (`array of T`) can only be a parameter's type; give it bounds, `array[1..10] of T`
+   X: array of Integer;
+      ^^^^^^^^

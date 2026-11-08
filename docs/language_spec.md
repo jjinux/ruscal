@@ -123,6 +123,13 @@ Statements
   A `const` parameter can't be changed (assigned, passed by `var`, read
   into, changed through `with`), as in TP; a method may be called on one,
   and `p^ := x` writes through one.
+- Open array parameters (TP 7): `a: array of T`, `var` or `const` too. The
+  argument is an array of `T` of any size and bounds, one `T`, another
+  open array, or (`array of Char`) a string constant. Inside, `a[0]` to
+  `a[High(a)]`; `Low(a)` is 0 and `SizeOf(a)` the elements' bytes. A value
+  one is a copy, as in TP. Not allowed, as in TP: assigning one as a
+  whole, passing one where a fixed-size array is wanted, a `string`
+  variable for `array of Char`, `array of T` anywhere but a parameter.
   A parameter's or result's type is a type's name, as in TP: `p: ^Node`
   is an error that says to declare `PNode = ^Node` and use that.
   Different fields of one record may be passed as two `var` arguments
@@ -549,9 +556,9 @@ Later (real TP features, not in the examples, worth doing in order)
    the place-descriptor representation from `architecture.md` §15)
 7. (Untyped files are done, in tier 2.) `TextRec`/`FileRec`
 8. (Done, now in tier 2: TP-exact binary layout for `file of Rec`.)
-9. Open array parameters (a TP 7 addition). (`const` parameters,
-   `Include`/`Exclude`, `PChar`, `Assigned` and `WinDos` are done.) A
-   `PChar` kept into a `Char` array (`P := A`)
+9. (Open array parameters, `const` parameters, `Include`/`Exclude`,
+   `PChar`, `Assigned` and `WinDos` are done.) A `PChar` kept into a
+   `Char` array (`P := A`)
 10. Vector (stroked) BGI fonts, `RegisterBGIfont`, custom drivers
 11. `Overlay` unit: parse and ignore
 12. `absolute` variables when both are scalars of the same size

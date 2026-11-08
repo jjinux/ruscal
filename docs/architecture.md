@@ -421,6 +421,42 @@ Big arrays live wherever the Pascal variable lived; globals are locals of
 stack. `run()` executes the program on a thread with a large stack (see
 §17). Graphics programs do too; the main thread runs their window (§19).
 
+### Open array parameters: `&OpenArray<T>`
+
+TP 7's `procedure Sum(const A: array of Integer)` takes an array of any
+size and bounds (or one Integer), indexed from 0 inside. The runtime's
+`OpenArray<T>` is a slice `[T]` under another name (`#[repr(transparent)]`),
+*unsized* like `str` and `Path`, so a parameter is a reference to one: `a:
+&OpenArray<i16>` for a value or `const` parameter, `a: &mut
+OpenArray<i16>` for a `var` one. Why not a plain `&[i16]`: Pascal indexes
+with an `Integer`, and Rust won't let us implement `Index<i16>` for a slice
+(the orphan rule); `OpenArray` has the same `Index<I: Ordinal>` and range
+check (runtime error 201) as `PArray`. And why one unsized type rather
+than two sized wrappers (shared and mutable): codegen already writes a
+`var` parameter as `&mut {ty}` and a capture as `&{ty}`/`&mut {ty}`, and
+passes a reference it holds on by name, so all of that works unchanged,
+with Rust's implicit reborrows, and signatures carry no lifetime (from
+Fable's review of the plan, `notes/open_arrays.md`). Turning a `&[T]` into
+a `&OpenArray<T>` is a pointer cast, which needs `unsafe`; the `ref-cast`
+crate's derive does it, so the runtime has no `unsafe` of its own (the
+user's choice, 2026-11-07).
+
+Arguments: `scores.as_open()` / `scores.as_open_mut()` for a `PArray`,
+`OpenArray::single(&x)` for one variable, `OpenArray::new(b"xy")` (or a
+named constant's `.as_bytes()`) for `array of Char`, an open array
+parameter passed on by name. A value parameter the routine changes is its
+own copy in TP: the function starts `let mut a_copy = a.to_vec(); let a =
+OpenArray::new_mut(&mut a_copy);`, keeping the binding a reference. One
+given a variable a `var` argument of the same call also borrows (`Outer(A,
+A)`) is copied into a `let` first. `High(a)` is `a.high() as i16`,
+`Low(a)` `0`, `SizeOf(a)` `a.len() * <element size>`; they aren't
+constants, as they are for a fixed array. An untyped parameter sees one
+through `open_bytes(a)` (a `&mut dyn ByteView` needs a sized type), and a
+size that reads the array (`FillChar(A, SizeOf(A), 0)`) is worked out
+first. A `var` open array parameter isn't merged with a global that every
+call passes (`find_param_aliases`): the global is indexed from its own
+low bound, the parameter from 0.
+
 ## 11. Records and variant records
 
 Records are structs: `#[derive(Clone, Default, Debug)]`, plus `Copy` when

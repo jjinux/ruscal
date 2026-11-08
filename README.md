@@ -241,7 +241,8 @@ to 7.0 as students used it. It runs every program in `examples/`. The
   `Boolean` and the rest), strings, arrays, records (variant records too),
   enums, subranges, sets, typed constants, `with`, `case`, `Break` and
   `Continue`, nested and recursive procedures, `var` and `const`
-  parameters, and procedural types.
+  parameters, open array parameters (`a: array of Integer`), and
+  procedural types.
 - **Units:** a program pulls in its units' source files, which are
   translated with it.
 - **Objects:** inheritance, virtual methods, constructors and destructors,
@@ -282,7 +283,6 @@ Not supported yet:
 
 - A `goto` into a statement it isn't in, or two jumps whose blocks would
   cross.
-- Open array parameters (`a: array of Integer`).
 - Pointer arithmetic other than on `PChar`, `@` on a variable, and
   `absolute` variables.
 - Keeping a `PChar` into a `Char` array (`P := A`). A `PChar` from

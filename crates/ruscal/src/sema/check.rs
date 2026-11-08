@@ -2516,6 +2516,10 @@ impl Checker {
     fn check_assignable(&mut self, target: &Type, value: &Type, span: Span) {
         if *value == Type::Untyped {
             self.error(span, UNTYPED_USE);
+        } else if matches!(target, Type::OpenArray(_)) {
+            // As in TP: its size is the caller's, so only its elements can
+            // be assigned.
+            self.error(span, "an open array can't be assigned as a whole; assign its elements one by one");
         } else if let (Type::Array(a), Type::StrLit(n)) = (target, value)
             && target.is_packed_string()
             && !target.accepts(value)
@@ -3019,6 +3023,14 @@ impl Checker {
     fn view_arg(&mut self, arg: &Expr, ty: &Type) {
         let ty = ty.clone();
         if ty == Type::Untyped || ty == Type::Error {
+            return;
+        }
+        // An open array's size is its caller's: its elements one after
+        // another (`OpenBytes`).
+        if let Type::OpenArray(elem) = &ty {
+            if super::types::serialized_size(elem).is_none() {
+                self.error(arg.span, format!("a {ty} can't be passed as untyped bytes"));
+            }
             return;
         }
         if super::types::serialized_size(&ty).is_none() || matches!(ty, Type::Text | Type::File(_)) {
@@ -3668,7 +3680,18 @@ impl Checker {
                     (arg, Type::OpenArray(elem)) => arg == &**elem,
                     _ => false,
                 };
-                if arg_ty != ty && !descendant && arg_ty != Type::Error && ty != Type::Error {
+                if let Type::OpenArray(elem) = &ty
+                    && !descendant
+                    && arg_ty != Type::Error
+                {
+                    self.error(
+                        arg.span,
+                        format!(
+                            "a `var` {ty} parameter needs an array of {elem} or {} variable, found {arg_ty}",
+                            a(elem)
+                        ),
+                    );
+                } else if arg_ty != ty && !descendant && arg_ty != Type::Error && ty != Type::Error {
                     self.error(
                         arg.span,
                         format!("a `var` parameter of type {ty} needs a variable of exactly that type, found {arg_ty}"),
@@ -3698,8 +3721,16 @@ impl Checker {
                     Some(arg_ty) => arg_ty,
                     None => self.expr(arg),
                 };
-                if !ty.accepts(&arg_ty) {
-                    self.error(arg.span, format!("expected a {ty} argument, found {arg_ty}"));
+                if let Type::OpenArray(elem) = &ty
+                    && !ty.accepts(&arg_ty)
+                {
+                    let constant = if **elem == Type::Char { " or a string constant" } else { "" };
+                    self.error(
+                        arg.span,
+                        format!("an {ty} parameter needs an array of {elem}, {}{constant}, found {arg_ty}", a(elem)),
+                    );
+                } else if !ty.accepts(&arg_ty) {
+                    self.error(arg.span, format!("expected {} argument, found {arg_ty}", a(&ty)));
                 }
                 // The routine may write through a `PChar`, or keep it.
                 if matches!(ty, Type::PChar | Type::AnyPointer) {
@@ -4156,8 +4187,14 @@ impl Checker {
                 // Except for an open array, whose size each call decides:
                 // `High(a)` is `a.high()`, `SizeOf(a)` its length times its
                 // element's size.
-                if let Some((Type::OpenArray(_), _)) = self.query_arg(&args[0]) {
+                if let Some((Type::OpenArray(elem), _)) = self.query_arg(&args[0]) {
                     self.expr(&args[0]);
+                    // The element's `SERIALIZED_SIZE`, if it's a record:
+                    // noted under the argument's id, not the call's, which
+                    // would make the call the element's `SizeOf`.
+                    if b == SizeOf {
+                        self.a.sizeof_types.insert(args[0].id, (*elem).clone());
+                    }
                     return Type::Int(IntKind::Integer);
                 }
                 match self.type_query(b, &args[0]) {
@@ -4492,6 +4529,7 @@ impl Checker {
                 for _ in indexes {
                     ty = match ty {
                         Type::Array(a) => a.elem.clone(),
+                        Type::OpenArray(elem) => (*elem).clone(),
                         _ => return None,
                     };
                 }
@@ -4747,3 +4785,10 @@ const AS_OPERAND: u8 = 5; // the left side of `as`
 const CAST: u8 = 5; // `x as i16`
 const UNARY: u8 = 6; // `-x`
 const ATOM: u8 = 7; // names and literals
+
+/// `ty` with "a" or "an" before it, for messages: "an Integer", "a Word".
+fn a(ty: &Type) -> String {
+    let text = ty.to_string();
+    let article = if text.starts_with(['A', 'E', 'I', 'O', 'U', 'a', 'e', 'i', 'o', 'u']) { "an" } else { "a" };
+    format!("{article} {text}")
+}

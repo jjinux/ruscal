@@ -1231,6 +1231,7 @@ impl<'a> Codegen<'a> {
                     code.push_str(&format!("[{index_code}]"));
                     ty = match &ty {
                         Type::Array(a) => a.elem.clone(),
+                        Type::OpenArray(elem) => (**elem).clone(),
                         _ => Type::Char,
                     };
                 }
@@ -1322,6 +1323,10 @@ impl<'a> Codegen<'a> {
         }
         let root_view = match self.a.type_of(root.id).clone() {
             Type::Str { cap } => format!("&mut string_bytes({}, {cap})", self.place_mut(root)),
+            Type::OpenArray(elem) => match super::size_hint(&elem) {
+                Some((size, first)) => format!("&mut open_sized_bytes({}, {size}, {first})", self.place_mut(root)),
+                None => format!("&mut open_bytes({})", self.place_mut(root)),
+            },
             // An array of `string[n]`s or of small sets: their real sizes.
             ty => match super::size_hint(&ty) {
                 Some((size, 0)) => format!("&mut sized_bytes({}, {size})", self.place_mut(root)),
@@ -1385,6 +1390,7 @@ impl<'a> Codegen<'a> {
                     for index in indexes {
                         let (lo, size, next) = match &ty {
                             Type::Array(a) => (a.lo, serialized_size(&a.elem).unwrap_or(1), a.elem.clone()),
+                            Type::OpenArray(elem) => (0, serialized_size(elem).unwrap_or(1), (**elem).clone()),
                             _ => (0, 1, Type::Char),
                         };
                         let literal = match &index.kind {
@@ -1876,7 +1882,26 @@ impl<'a> Codegen<'a> {
             if ty == Type::Untyped {
                 parts.push(self.view_arg(arg));
             } else if let Type::OpenArray(elem) = &ty {
-                parts.push(self.open_array_arg(arg, elem, is_var_arg));
+                // A value open array given a variable that a `var` argument
+                // of this call also borrows (`Outer(A, A)`): it's a copy in
+                // TP anyway, so copy it first.
+                if !is_var_arg && borrowed.iter().any(|root| !root.is_empty() && mentions(arg, root)) {
+                    let temp = self.temp_name(&self.a.sym(*param).rust_name.clone());
+                    let (copy, view) = match self.a.type_of(arg.id).clone() {
+                        Type::OpenArray(_) => {
+                            (format!("{}.to_vec()", self.selector_base(arg)), format!("OpenArray::new(&{temp})"))
+                        }
+                        Type::Array(a) if !a.elem.is_copy() => {
+                            (format!("{}.clone()", self.selector_base(arg)), format!("{temp}.as_open()"))
+                        }
+                        Type::Array(_) => (self.selector_base(arg), format!("{temp}.as_open()")),
+                        _ => (self.coerce(arg, elem).0, format!("OpenArray::single(&{temp})")),
+                    };
+                    self.pending.push(format!("let {temp} = {copy};"));
+                    parts.push(view);
+                } else {
+                    parts.push(self.open_array_arg(arg, elem, is_var_arg));
+                }
             } else if var.role == crate::sema::VarRole::Param(ParamMode::Var)
                 && dyn_param
                 && let ExprKind::Deref(pointer) = &arg.kind

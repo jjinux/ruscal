@@ -54,8 +54,14 @@ impl<'a> Codegen<'a> {
             _ => (0, &[]),
         };
         for &i in values {
+            // (`FillChar(A, SizeOf(A), 0)` with an open array `A` reads `A`
+            // while its bytes are borrowed: the size goes first too. For
+            // any other array, `SizeOf` is a constant.)
             if let Some(arg) = args.get(i)
-                && super::borrows_while_writing(arg, &args[target])
+                && (super::borrows_while_writing(arg, &args[target])
+                    || matches!(b, FillChar | Move)
+                        && !self.a.folded.contains_key(&arg.id)
+                        && super::reads_open_array(arg, &args[target], self.a))
                 && !self.hoisted.contains_key(&arg.id)
             {
                 let code = self.expr(arg).0;
