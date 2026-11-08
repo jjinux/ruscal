@@ -64,11 +64,10 @@ with a new `shared: true`:
 - Nested routines capture it by reference as they do a `var` one.
 
 **External Rust routines** (`{$L sound.rs}`, `procedure Greet(const
-Name: string); external;`): the user's Rust function today takes
-`name: PString`. Option A: keep externals by value (no change for
-existing Rust code; TP's reference semantics can't matter across that
-boundary). Option B: `&PString` for them too (consistent, but breaks
-existing external Rust). Plan: A, unless the reviewer sees a reason.
+Name: string); external;`): the same rule, `name: &PString`, so a Rust
+function a Pascal program calls takes what any other routine would (the
+user, 2026-11-07: there are no users yet, so nothing to keep compatible
+with). `tests/run/rust_externals.rs` changes to match.
 
 **JSON, typed files, Graph/Crt runtime calls:** unaffected (runtime
 routines take their own parameter types; the codegen passes `*x` or `x`
