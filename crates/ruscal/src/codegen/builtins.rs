@@ -75,12 +75,13 @@ impl<'a> Codegen<'a> {
                 }
                 Some(Type::Text) => {
                     let mut parts = vec![self.place_receiver(&args[0])];
-                    parts.extend(args[1..].iter().map(|a| self.write_arg(a)));
+                    parts.extend(args[1..].iter().filter(|a| !is_empty_line(b, a)).map(|a| self.write_arg(a)));
                     let mac = if b == Write { "fwrite!" } else { "fwriteln!" };
                     format!("{mac}({})", parts.join(", "))
                 }
                 _ => {
-                    let parts: Vec<String> = args.iter().map(|a| self.write_arg(a)).collect();
+                    let parts: Vec<String> =
+                        args.iter().filter(|a| !is_empty_line(b, a)).map(|a| self.write_arg(a)).collect();
                     let mac = if b == Write { "pwrite!" } else { "pwriteln!" };
                     format!("{mac}({})", parts.join(", "))
                 }
@@ -837,4 +838,10 @@ impl Codegen<'_> {
     fn pascal_arg(&self, e: &Expr) -> String {
         String::from_utf8_lossy(self.map.slice(e.span)).into_owned()
     }
+}
+
+/// `WriteLn('')`'s empty string, which writes nothing: `pwriteln!()`, not
+/// `pwriteln!("")`.
+fn is_empty_line(b: Builtin, arg: &Expr) -> bool {
+    b == Builtin::Writeln && matches!(&arg.kind, ExprKind::Str(s) if s.is_empty())
 }
