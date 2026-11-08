@@ -19,6 +19,7 @@ pub mod dos;
 #[cfg(feature = "graph")]
 pub mod graph;
 pub mod io;
+pub mod open_array;
 pub mod ordinal;
 pub mod overlay;
 pub mod pchar;

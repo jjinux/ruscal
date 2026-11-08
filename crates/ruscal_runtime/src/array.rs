@@ -45,11 +45,7 @@ impl<T, const LO: i64, const N: usize> PArray<T, LO, N> {
     /// Turn a Pascal index into a Rust index, or raise runtime error 201,
     /// Turbo Pascal's "Range check error".
     fn offset(index: i64) -> usize {
-        let hi = LO + N as i64 - 1;
-        if index < LO || index > hi {
-            crate::rte(201, format!("Range check error: index {index} is not in {LO}..{hi}"));
-        }
-        (index - LO) as usize
+        offset(index, LO, N)
     }
 
     /// Iterate over the elements in index order.
@@ -87,6 +83,30 @@ impl<T: Copy, const LO: i64, const N: usize> PArray<T, LO, N> {
         let first = Self::offset(start.ord());
         Self::offset(start.ord() + count as i64 - 1);
         self.0[first..first + count].fill(value);
+    }
+}
+
+/// Turn a Pascal index into a Rust one for an array of `len` elements
+/// starting at `lo`, or raise runtime error 201, Turbo Pascal's "Range
+/// check error". (`PArray` and `OpenArray` share it.)
+pub(crate) fn offset(index: i64, lo: i64, len: usize) -> usize {
+    let hi = lo + len as i64 - 1;
+    if index < lo || index > hi {
+        crate::rte(201, format!("Range check error: index {index} is not in {lo}..{hi}"));
+    }
+    (index - lo) as usize
+}
+
+impl<T, const LO: i64, const N: usize> PArray<T, LO, N> {
+    /// The array as an open array parameter's argument (`Sum(Scores)`):
+    /// its elements, indexed from 0.
+    pub fn as_open(&self) -> &crate::open_array::OpenArray<T> {
+        crate::open_array::OpenArray::new(&self.0)
+    }
+
+    /// The array as a `var` open array parameter's argument.
+    pub fn as_open_mut(&mut self) -> &mut crate::open_array::OpenArray<T> {
+        crate::open_array::OpenArray::new_mut(&mut self.0)
     }
 }
 

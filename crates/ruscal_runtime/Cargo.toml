@@ -20,3 +20,4 @@ crossterm = { version = "0.28", optional = true }
 chrono = { version = "0.4", optional = true, default-features = false, features = ["clock"] }
 # A window with a pixel buffer, for the `Graph` unit.
 minifb = { version = "0.29", optional = true }
+ref-cast = "1.0.27"
