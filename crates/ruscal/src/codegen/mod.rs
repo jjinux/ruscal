@@ -1653,9 +1653,18 @@ impl<'a> Codegen<'a> {
         for ((_, outer), param) in aliases {
             self.line("///");
             let (outer, param) = (&self.a.sym(*outer).name, &self.a.sym(*param).name);
-            self.line(format!("/// Every call passes `{outer}` itself as `{param}`, so where the Pascal code"));
-            self.line(format!("/// uses `{outer}` directly, this function uses `{param}`: they are the same"));
-            self.line("/// variable, and Rust doesn't allow two references to one variable.");
+            if outer.eq_ignore_ascii_case(param) {
+                // The parameter hides the outer variable in the Pascal, so
+                // only a routine called from here uses that one.
+                self.line(format!("/// Every call passes the outer `{outer}` as this `{param}` parameter, so where"));
+                self.line("/// a routine called from here needs the outer one, this function passes the");
+                self.line("/// parameter: they are the same variable, and Rust doesn't allow two");
+                self.line("/// references to one variable.");
+            } else {
+                self.line(format!("/// Every call passes `{outer}` itself as `{param}`, so where the Pascal code"));
+                self.line(format!("/// uses `{outer}` directly, this function uses `{param}`: they are the same"));
+                self.line("/// variable, and Rust doesn't allow two references to one variable.");
+            }
         }
 
         let mut params = self.signature_params(pid);
