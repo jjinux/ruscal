@@ -30,6 +30,10 @@ struct TRec {
     b: u8,
 }
 
+// `file of` needs to turn records into bytes and back. This runtime macro
+// implements that (the `FileRecord` trait) field by field.
+file_record!(TRec { a, b });
+
 impl TRec {
     /// Pascal's `SizeOf(TRec)`: its bytes in Turbo Pascal's layout.
     /// That's also what a typed file stores, so it's called the serialized

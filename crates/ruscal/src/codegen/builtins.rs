@@ -50,7 +50,7 @@ impl<'a> Codegen<'a> {
             Insert => (1, &[0, 2]),
             Delete | FillChar => (0, &[1, 2]),
             Inc | Dec => (0, &[1]),
-            Move => (1, &[2]),
+            Move | BlockRead => (1, &[2]),
             _ => (0, &[]),
         };
         for &i in values {
@@ -59,7 +59,7 @@ impl<'a> Codegen<'a> {
             // any other array, `SizeOf` is a constant.)
             if let Some(arg) = args.get(i)
                 && (super::borrows_while_writing(arg, &args[target])
-                    || matches!(b, FillChar | Move)
+                    || matches!(b, FillChar | Move | BlockRead)
                         && !self.a.folded.contains_key(&arg.id)
                         && super::reads_open_array(arg, &args[target], self.a))
                 && !self.hoisted.contains_key(&arg.id)
@@ -376,7 +376,11 @@ impl<'a> Codegen<'a> {
                             Some((code, _)) => code,
                             None => crate::sema::types::serialized_size(&elem).unwrap_or(0).to_string(),
                         };
-                        format!("({array}.len() * {size}) as i16")
+                        if size == "1" {
+                            format!("{array}.len() as i16")
+                        } else {
+                            format!("({array}.len() * {size}) as i16")
+                        }
                     }
                 }
             }

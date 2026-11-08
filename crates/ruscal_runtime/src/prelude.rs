@@ -11,7 +11,7 @@ pub use crate::bytes::{
     sized_view_bytes_from, string_bytes, string_view_bytes,
 };
 pub use crate::io::{FileRecord, Hint, PBlockFile, PFile, PText, PasWrite, eof, eoln, seek_eof, seek_eoln, w, wd};
-pub use crate::open_array::{OpenArray, open_bytes, open_sized_bytes};
+pub use crate::open_array::{OpenArray, open_bytes, open_sized_bytes, open_sized_view_bytes, open_view_bytes};
 pub use crate::ordinal::{Enumerated, Ordinal, enum_range};
 pub use crate::overlay::*;
 pub use crate::pchar::*;

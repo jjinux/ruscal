@@ -1359,6 +1359,10 @@ impl<'a> Codegen<'a> {
         }
         let all = match self.a.type_of(root.id).clone() {
             Type::Str { cap } => format!("string_view_bytes(&{}, {cap})", paren(self.expr(root), prec::UNARY)),
+            Type::OpenArray(elem) => match super::size_hint(&elem) {
+                Some((size, first)) => format!("open_sized_view_bytes({}, {size}, {first})", self.selector_base(root)),
+                None => format!("open_view_bytes({})", self.selector_base(root)),
+            },
             ty => match super::size_hint(&ty) {
                 Some((size, 0)) => format!("sized_view_bytes(&{}, {size})", paren(self.expr(root), prec::UNARY)),
                 Some((size, first)) => {
@@ -1894,7 +1898,8 @@ impl<'a> Codegen<'a> {
                         Type::Array(a) if !a.elem.is_copy() => {
                             (format!("{}.clone()", self.selector_base(arg)), format!("{temp}.as_open()"))
                         }
-                        Type::Array(_) => (self.selector_base(arg), format!("{temp}.as_open()")),
+                        // (Read as a value: `*g` where we hold `g` by reference.)
+                        Type::Array(_) => (self.expr(arg).0, format!("{temp}.as_open()")),
                         _ => (self.coerce(arg, elem).0, format!("OpenArray::single(&{temp})")),
                     };
                     self.pending.push(format!("let {temp} = {copy};"));

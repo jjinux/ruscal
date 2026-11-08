@@ -112,11 +112,7 @@ pub fn open_sized_bytes<T: FileRecord>(elements: &mut OpenArray<T>, size: usize,
 
 impl<T: FileRecord> ByteView for OpenBytes<'_, T> {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut out = Vec::new();
-        for element in self.elements.0.iter() {
-            element.encode_sized(self.hint, &mut out);
-        }
-        out
+        open_sized_view_bytes(self.elements, self.hint.size, self.hint.first)
     }
 
     fn set_bytes(&mut self, bytes: &[u8]) {
@@ -125,6 +121,22 @@ impl<T: FileRecord> ByteView for OpenBytes<'_, T> {
             *element = T::decode_sized(self.hint, &mut input);
         }
     }
+}
+
+/// An open array's bytes, to read from (`Move`'s source, `BlockWrite`):
+/// its elements in TP's layout. It takes a shared reference, so a `const`
+/// open array works too.
+pub fn open_view_bytes<T: FileRecord>(elements: &OpenArray<T>) -> Vec<u8> {
+    open_sized_view_bytes(elements, 0, 0)
+}
+
+/// The same for elements that say their size (see [`open_sized_bytes`]).
+pub fn open_sized_view_bytes<T: FileRecord>(elements: &OpenArray<T>, size: usize, first: usize) -> Vec<u8> {
+    let mut out = Vec::new();
+    for element in elements.0.iter() {
+        element.encode_sized(Hint::new(size, first), &mut out);
+    }
+    out
 }
 
 impl<T: std::fmt::Debug> std::fmt::Debug for OpenArray<T> {

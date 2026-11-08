@@ -2527,7 +2527,7 @@ impl Checker {
             let fits = if a.lo == 0 { format!("at most {}", a.count()) } else { format!("exactly {}", a.count()) };
             self.error(span, format!("a string constant for {target} needs {fits} characters, not {n}"));
         } else if !target.accepts(value) {
-            self.error(span, format!("cannot assign a {value} value to a {target} variable"));
+            self.error(span, format!("cannot assign {} value to {} variable", a(value), a(target)));
         }
     }
 
@@ -3030,6 +3030,10 @@ impl Checker {
         if let Type::OpenArray(elem) = &ty {
             if super::types::serialized_size(elem).is_none() {
                 self.error(arg.span, format!("a {ty} can't be passed as untyped bytes"));
+            } else if let Some(r) = elem.unstorable_record() {
+                self.error(arg.span, unstorable_message(r));
+            } else {
+                self.add_view_type(&ty);
             }
             return;
         }
@@ -3677,6 +3681,8 @@ impl Checker {
                     // A `var` open array: an array of its element type, of
                     // any size, or one variable of that type.
                     (Type::Array(a), Type::OpenArray(elem)) => a.elem == **elem,
+                    // Another open array parameter, passed on.
+                    (Type::OpenArray(other), Type::OpenArray(elem)) => other == elem,
                     (arg, Type::OpenArray(elem)) => arg == &**elem,
                     _ => false,
                 };
@@ -3724,11 +3730,12 @@ impl Checker {
                 if let Type::OpenArray(elem) = &ty
                     && !ty.accepts(&arg_ty)
                 {
-                    let constant = if **elem == Type::Char { " or a string constant" } else { "" };
-                    self.error(
-                        arg.span,
-                        format!("an {ty} parameter needs an array of {elem}, {}{constant}, found {arg_ty}", a(elem)),
-                    );
+                    let one = if **elem == Type::Char {
+                        format!(", {} or a string constant", a(elem))
+                    } else {
+                        format!(" or {}", a(elem))
+                    };
+                    self.error(arg.span, format!("an {ty} parameter needs an array of {elem}{one}, found {arg_ty}"));
                 } else if !ty.accepts(&arg_ty) {
                     self.error(arg.span, format!("expected {} argument, found {arg_ty}", a(&ty)));
                 }

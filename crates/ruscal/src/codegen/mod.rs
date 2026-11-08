@@ -992,6 +992,7 @@ impl<'a> Codegen<'a> {
                     found.insert(e.rust_name.clone());
                 }
                 Type::Array(a) => visit(&a.elem, found),
+                Type::OpenArray(elem) => visit(elem, found),
                 Type::Proc(p) => {
                     found.insert(p.alias.clone());
                 }
@@ -2808,8 +2809,11 @@ impl<'a> Codegen<'a> {
                 self.line("// a fresh loop variable.");
             }
             let label = self.loops.last().cloned().flatten().and_then(|l| l.loop_label).map(|l| format!("{l}: "));
-            self.line(format!("{}for {name}_value in {range} {{", label.unwrap_or_default()));
-            self.line(format!("    {place} = {name}_value;"));
+            // (`w_value`, not `w__value`, for a variable renamed `w_`: Rust
+            // warns about a double underscore.)
+            let value = format!("{}_value", name.trim_end_matches('_'));
+            self.line(format!("{}for {value} in {range} {{", label.unwrap_or_default()));
+            self.line(format!("    {place} = {value};"));
             self.block_body(body);
             self.line("}");
         }
