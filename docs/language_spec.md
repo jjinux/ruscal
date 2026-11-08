@@ -127,7 +127,9 @@ Statements
   by reference (`&PString` in Rust): a method called on one changes the
   caller's object, and a routine that changes the global it was given
   sees the change through the parameter. A scalar, a set and a small
-  record are copied.
+  record are copied. (One exception: an argument through a pointer,
+  `Show(P^)`, that the routine writes through is copied, so the change
+  doesn't show; see `docs/architecture.md` §15.)
 - Open array parameters (TP 7): `a: array of T`, `var` or `const` too. The
   argument is an array of `T` of any size and bounds, one `T`, another
   open array, or (`array of Char`) a string constant. Inside, `a[0]` to

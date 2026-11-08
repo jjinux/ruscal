@@ -759,7 +759,14 @@ signatures and call arguments ask it rather than test for `var`:
   the parameter and uses the global), `find_param_aliases` unifies the
   two, as for a `var` parameter, and the parameter becomes `&mut`: the
   routine sees its own change, as in TP. Otherwise the var-and-global
-  error. Not for a virtual method or an external routine.
+  error. Not for a virtual method, an external routine, or a routine
+  assigned to a procedural variable (its signature is the procedural
+  type's, which can't follow one program's calls): there, too, the
+  var-and-global error.
+- One way a by-reference `const` parameter is still a copy: an argument
+  reached through a pointer (`Show(P^)`) that the routine writes through
+  (`P^.A := 9`). The pointer's record can't be borrowed for the call while
+  the routine changes it, so it's copied first; TP would show the change.
 - External Rust routines take `&PString` too (`tests/run/rust_externals.rs`):
   there are no users to stay compatible with (the user).
 

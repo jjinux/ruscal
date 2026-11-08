@@ -3597,6 +3597,7 @@ impl Checker {
             variant_bytes: false,
             untyped: false,
             shared: false,
+            is_const: false,
             span: receiver.span,
         });
         self.user_call_with(e, pid, args, receiver_arg)
@@ -3680,6 +3681,7 @@ impl Checker {
                         variant_bytes: false,
                         untyped: true,
                         shared: false,
+                        is_const: false,
                         span: arg.span,
                     });
                 }
@@ -3732,6 +3734,7 @@ impl Checker {
                         variant_bytes: bytes,
                         untyped: false,
                         shared: false,
+                        is_const: false,
                         span: arg.span,
                     });
                 }
@@ -3758,6 +3761,7 @@ impl Checker {
                         variant_bytes: self.through_variant_bytes(arg),
                         untyped: false,
                         shared: true,
+                        is_const: true,
                         span: arg.span,
                     });
                 }
@@ -3819,7 +3823,14 @@ impl Checker {
             }
         }
         let var_roots: Vec<SymId> = var_args.iter().filter(|arg| !arg.shared).map(|arg| arg.root).collect();
-        if !var_args.is_empty() {
+        // (Also every call to a routine with a `const` parameter passed by
+        // reference, even with no variable for it: `Show('lit')` means
+        // not every call passes the same global, see `find_param_aliases`.)
+        let const_ref = params.iter().any(|&q| {
+            let v = self.a.var(q);
+            v.role == VarRole::Param(ParamMode::Const) && super::types::const_by_reference(&v.ty)
+        });
+        if !var_args.is_empty() || const_ref {
             self.call_sites.push(CallSite { caller: cur, callee: p, var_args });
         }
         // In order with the statement's lends of `Char` arrays (see

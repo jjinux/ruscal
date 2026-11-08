@@ -569,6 +569,9 @@ pub struct VarArg {
     /// True for a `const` parameter passed by reference (`Passing::Ref`):
     /// a shared borrow, which may overlap another shared one.
     pub shared: bool,
+    /// True for any `const` parameter's argument, shared or not (for the
+    /// messages).
+    pub is_const: bool,
     pub span: Span,
 }
 

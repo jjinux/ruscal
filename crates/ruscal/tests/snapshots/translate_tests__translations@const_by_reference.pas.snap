@@ -47,7 +47,7 @@ struct TCounter {
 
 /// Pascal: `procedure Greet(const S: string);`
 fn greet(s: &PString) {
-    pwriteln!("hello, ", *s);
+    pwriteln!("hello, ", s);
 }
 
 /// Pascal: `function Total(const X: TBig; const Y: TSmall): Integer;`

@@ -76,6 +76,7 @@ examples/ruscal/calls_rust.pas`.
 | `array[1..10] of T` | `PArray<T, 1, 10>` |
 | `^T` | `Ptr<T>` |
 | a `var` parameter | `&mut T` |
+| a `const` string, or a `const` record, array or object that isn't exactly 1, 2 or 4 bytes | `&T` (`name: &PString`), as Turbo Pascal passed it by reference; a smaller one, or a scalar, by value |
 | a function's result | the return type |
 
 `PString` has `as_bytes()` and `to_string()` to read it, and

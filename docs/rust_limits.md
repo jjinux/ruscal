@@ -136,7 +136,10 @@ treatment when the routine changes the global (or calls a method on the
 parameter and uses the global). If every call passes the global itself,
 Ruscal reads the global through the parameter, so the routine sees its
 own change, as in TP; it's refused only when calls pass different
-variables. Copy the argument into a local variable first, as above.
+variables (or passes a value, `Show('lit')`, as well as the global), or
+when the routine is assigned to a procedural variable (its signature is
+the procedural type's). Copy the argument into a local variable first, as
+above.
 
 <a id="with-selector"></a>
 

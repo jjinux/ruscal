@@ -1225,7 +1225,7 @@ pub fn put(to_string: bool, output2: &mut PString, f: &mut PText, s: &PString) {
             *output2 = (*output2 + *s).copy(1, 255);
         }
     } else {
-        fwrite!(f, *s);
+        fwrite!(f, s);
     }
 }
 

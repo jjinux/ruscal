@@ -408,10 +408,12 @@ pub(super) fn check_aliasing(a: &Analysis, sites: &[CallSite]) -> Vec<Diagnostic
                     ""
                 };
                 let is_receiver = |v: &VarArg| callee.self_param.as_ref().is_some_and(|(_, s)| *s == v.param);
-                let what = if (earlier.shared || arg.shared) && (is_receiver(earlier) || is_receiver(arg)) {
+                let what = if (earlier.is_const || arg.is_const) && (is_receiver(earlier) || is_receiver(arg)) {
                     "as a `const` parameter (which Turbo Pascal passes by reference) of `{}`, which is called on it; Rust doesn't allow the method's `&mut self` alongside another reference to the object"
-                } else if earlier.shared || arg.shared {
+                } else if earlier.is_const != arg.is_const {
                     "by `var` and as a `const` parameter (which Turbo Pascal passes by reference) in this call to `{}`; Rust doesn't allow a mutable reference to a variable alongside another reference to it"
+                } else if earlier.is_const {
+                    "as a `const` parameter more than once in this call to `{}` (Turbo Pascal passes one by reference, and here a method is called on it); Rust doesn't allow a mutable reference to a variable alongside another reference to it"
                 } else {
                     "by `var` more than once in this call to `{}`; Rust doesn't allow two mutable references to the same variable"
                 };
@@ -428,7 +430,7 @@ pub(super) fn check_aliasing(a: &Analysis, sites: &[CallSite]) -> Vec<Diagnostic
                 // And a shared one only minds a callee that changes it.
                 .any(|c| c.sym == root && !((arg.through_pointer || arg.shared) && c.mode != CaptureMode::RefMut))
             {
-                let how = if arg.shared {
+                let how = if arg.is_const {
                     "as a `const` parameter (which Turbo Pascal passes by reference)"
                 } else {
                     "by `var`"

@@ -1795,6 +1795,18 @@ impl<'a> Codegen<'a> {
             }
     }
 
+    /// The Rust for an object we hold as `&mut dyn TShapeMethods`: a `var`
+    /// parameter of a type with virtual methods (`shape`), or `Self` in a
+    /// virtual method's default body (`self`).
+    fn dyn_object(&self, e: &Expr) -> Option<String> {
+        if self.is_dyn_param(e) {
+            return Some(self.a.var_name(self.proc, self.a.refs[&e.id]).to_string());
+        }
+        let ExprKind::Name(_) = &e.kind else { return None };
+        let sym = *self.a.refs.get(&e.id)?;
+        (self.a.sym(sym).rust_name == "self" && self.self_expr.is_some()).then(|| "self".to_string())
+    }
+
     /// virtual methods (`shape: &mut dyn TShapeMethods`)?
     pub(super) fn is_dyn_param(&self, e: &Expr) -> bool {
         let ExprKind::Name(_) = &e.kind else { return false };
@@ -1969,6 +1981,18 @@ impl<'a> Codegen<'a> {
                 parts.push(format!("&mut {temp}"));
             } else if is_var_arg {
                 parts.push(self.place_mut(arg));
+            } else if let Type::Object(wanted) = &ty
+                && let Some(base) = self.dyn_object(arg)
+            {
+                // An object we hold as `&mut dyn TShapeMethods` (a `var`
+                // parameter, or `Self` in a virtual method), given to a
+                // `const` or value parameter: its `TShape` part.
+                let part = format!("{base}.{}()", super::accessor(wanted));
+                parts.push(match self.a.passing(*param) {
+                    crate::sema::Passing::Value if wanted.is_copy() => format!("*{part}"),
+                    crate::sema::Passing::Value => format!("{part}.clone()"),
+                    _ => part,
+                });
             } else {
                 // A `const` parameter TP passes by reference: a reference to
                 // the argument (`&s`, `&pstr("abc")`), or the reference we

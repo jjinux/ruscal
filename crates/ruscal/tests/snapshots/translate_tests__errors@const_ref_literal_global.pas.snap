@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/const_ref_literal_global.pas
+---
+const_ref_literal_global.pas:21:9: error: `Name` is passed as a `const` parameter (which Turbo Pascal passes by reference) to `Show`, which also uses `Name` directly; Rust doesn't allow two references to the same variable when one of them is mutable; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#var-and-global
+   Show(Name);
+        ^^^^

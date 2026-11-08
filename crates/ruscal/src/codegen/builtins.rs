@@ -638,6 +638,22 @@ impl<'a> Codegen<'a> {
             {
                 self.coerce(value, &ty.concrete()).0
             }
+            // A `const` string parameter, held as `&PString`, prints as it
+            // is: `pwriteln!(s)`, not `pwriteln!(*s)`.
+            Type::Str { .. }
+                if width.is_none()
+                    && matches!(value.kind, ExprKind::Name(_))
+                    && self.a.refs.get(&value.id).is_some_and(|&sym| {
+                        matches!(self.a.sym(sym).kind, SymKind::Var(_))
+                            && self.a.passing(sym) == crate::sema::Passing::Ref
+                    }) =>
+            {
+                let code = self.expr(value).0;
+                match code.strip_prefix('*') {
+                    Some(name) if name.chars().all(|c| c.is_alphanumeric() || c == '_') => name.to_string(),
+                    _ => code,
+                }
+            }
             _ => self.expr(value).0,
         };
         match (width, decimals) {
