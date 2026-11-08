@@ -1048,6 +1048,22 @@ impl<'a> Codegen<'a> {
                         "    {vis}fn {name}_mut(&mut self) -> StringField<'_, {ty}> {{ self.variants.string_field({offset}, {cap}) }}"
                     ));
                 }
+                // A big enum's subrange that TP kept in one byte says so, as
+                // in a file (`file_record!`'s `enum 1`).
+                None if enum_in_one_byte(&field.ty) => {
+                    self.line(format!(
+                        "    // (a subrange of `{ty}`, which TP keeps in one byte, though `{ty}` takes two)"
+                    ));
+                    self.line(format!(
+                        "    {vis}fn {name}(&self) -> {ty} {{ self.variants.get_sized({offset}, Hint::new(1, 0)) }}"
+                    ));
+                    self.line(format!(
+                        "    {vis}fn set_{name}(&mut self, {name}: {ty}) {{ self.variants.set_sized({offset}, Hint::new(1, 0), {name}) }}"
+                    ));
+                    self.line(format!(
+                        "    {vis}fn {name}_mut(&mut self) -> VariantField<'_, {ty}> {{ self.variants.field_sized({offset}, Hint::new(1, 0)) }}"
+                    ));
+                }
                 None => {
                     self.line(format!("    {vis}fn {name}(&self) -> {ty} {{ self.variants.get({offset}) }}"));
                     self.line(format!(
@@ -1122,6 +1138,15 @@ impl<'a> Codegen<'a> {
         if self.first_time("file_record") {
             self.line("// `file of` needs to turn records into bytes and back. This runtime macro");
             self.line("// implements that (the `FileRecord` trait) field by field.");
+        }
+        let fields = match ty {
+            Type::Record(r) => r.fields.as_slice(),
+            Type::Object(o) => o.fields.as_slice(),
+            _ => &[],
+        };
+        if fields.iter().any(|f| enum_in_one_byte(&f.ty)) && self.first_time("enum_in_one_byte") {
+            self.line("// `enum 1`: a subrange of an enum of more than 256 values whose values");
+            self.line("// fit a byte, which TP keeps in one byte, though the enum takes two.");
         }
         match ty {
             Type::Enum(e) => self.line(format!("file_record!(enum {});", e.rust_name)),

@@ -647,7 +647,8 @@ So its `EnumType` is a copy marked `in_one_byte`, which sema compares
 equal to the enum's (as it does `RealKind`s); `serialized_size` counts 1,
 and the size travels with the type into records, arrays and files, where
 `file_record!` gets a hint (`part: enum 1`, `PFile::sized(1)`) as a
-`string[n]` does. A `--range-checks`
+`string[n]` does; a variant part without a tag reads and writes it with
+one too (`variants.get_sized(0, Hint::new(1, 0))`). A `--range-checks`
 flag makes codegen wrap assignments into subrange variables with
 `check_range(v, lo, hi)`. Off by default because TP's default is `{$R-}`.
 

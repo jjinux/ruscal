@@ -1,7 +1,9 @@
 program EnumSubrangeBytes;
 { A subrange of an enum of more than 256 values whose upper bound fits a
   byte takes 1 byte, as in Turbo Pascal: the record's file_record! says
-  `enum 1` for it, a file of it is PFile::sized(1), and SizeOf counts 1. }
+  `enum 1` for it (in a variant too), a file of it (or of an array of it)
+  is PFile::sized(1), SizeOf counts 1, and a variant part without a tag
+  reads and writes it with a one-byte hint. }
 type
    TBig = (
       V0, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14,
@@ -29,14 +31,30 @@ type
       Part: TPart;
       Whole: TBig;
    end;
+   TTagged = record
+      case Kind: Byte of
+         0: (P: TPart);
+         1: (W: Word);
+   end;
+   TOverlay = record
+      case Integer of
+         0: (P, Q: TPart);
+         1: (W: Word);
+   end;
+   TTriple = array[1..3] of TPart;
 
 var
    F: file of TPart;
    G: file of TRec;
+   H: file of TTagged;
+   A: file of TTriple;
+   O: TOverlay;
    R: TRec;
    N: Integer;
 begin
    N := SizeOf(TRec);
    R.Part := V15;
-   WriteLn(N, ' ', Ord(R.Part));
+   O.Q := V12;
+   Inc(O.P);
+   WriteLn(N, ' ', Ord(R.Part), ' ', O.W);
 end.

@@ -33,6 +33,12 @@ type
       Cross: TCross;
       Parts: array[1..2] of TPart;
    end;
+   { A variant part without a tag field overlays its variants' bytes. }
+   TOverlay = packed record
+      case Integer of
+         0: (P, Q: TPart);
+         1: (W: Word);
+   end;
 
 var
    F: file of TRec;
@@ -40,6 +46,7 @@ var
    B: file of Byte;
    R: TRec;
    P: TPart;
+   O: TOverlay;
    Value: Byte;
 
 procedure Dump(Name: string);
@@ -86,4 +93,12 @@ begin
    WriteLn(Ord(P));
    Close(FP);
    Erase(FP);
+   WriteLn(SizeOf(TOverlay));
+   O.P := V11;
+   O.Q := V12;
+   WriteLn(O.W);
+   O.W := 3343;
+   WriteLn(Ord(O.P), ' ', Ord(O.Q));
+   Inc(O.Q);
+   WriteLn(O.W);
 end.

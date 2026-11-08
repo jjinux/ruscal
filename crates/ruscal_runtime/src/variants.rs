@@ -9,7 +9,7 @@
 
 use std::ops::{Deref, DerefMut};
 
-use crate::io::{FileRecord, FileString};
+use crate::io::{FileRecord, FileString, Hint};
 
 /// The `N` bytes a tagless variant part takes in TP (its largest variant).
 #[derive(Clone, Copy, Debug)]
@@ -26,22 +26,36 @@ impl<const N: usize> Default for VariantPart<N> {
 impl<const N: usize> VariantPart<N> {
     /// The field at `offset`, read from the bytes.
     pub fn get<T: FileRecord>(&self, offset: usize) -> T {
-        T::decode(&mut &self.0[offset..])
+        self.get_sized(offset, Hint::default())
     }
 
     /// Set the field at `offset`: its bytes change, and so does every field
     /// of another variant that overlaps them.
     pub fn set<T: FileRecord>(&mut self, offset: usize, value: T) {
-        let mut bytes = Vec::new();
-        value.encode(&mut bytes);
-        put(&mut self.0[offset..], &bytes);
+        self.set_sized(offset, Hint::default(), value);
     }
 
     /// The field at `offset`, to change in place (`Inc(p.Hi)`, `p.B[4] :=
     /// 0`): see [`VariantField`].
     pub fn field<T: FileRecord>(&mut self, offset: usize) -> VariantField<'_, T> {
-        let value = self.get(offset);
-        VariantField { bytes: &mut self.0[offset..], value, encode: |value, out| value.encode(out) }
+        self.field_sized(offset, Hint::default())
+    }
+
+    /// [`Self::get`] for a field whose size its Rust type doesn't say (see
+    /// [`Hint`]): a subrange of a big enum that TP kept in one byte.
+    pub fn get_sized<T: FileRecord>(&self, offset: usize, hint: Hint) -> T {
+        T::decode_sized(hint, &mut &self.0[offset..])
+    }
+
+    pub fn set_sized<T: FileRecord>(&mut self, offset: usize, hint: Hint, value: T) {
+        let mut bytes = Vec::new();
+        value.encode_sized(hint, &mut bytes);
+        put(&mut self.0[offset..], &bytes);
+    }
+
+    pub fn field_sized<T: FileRecord>(&mut self, offset: usize, hint: Hint) -> VariantField<'_, T> {
+        let value = self.get_sized(offset, hint);
+        VariantField { bytes: &mut self.0[offset..], value, hint }
     }
 
     /// A `string[cap]` field (or an array of them): its type says how many
@@ -76,29 +90,29 @@ fn put(slot: &mut [u8], bytes: &[u8]) {
 /// which it derefs to, and written back when the guard is dropped at the
 /// end of the statement (`Drop` runs then), as the `Bytes` of an untyped
 /// parameter is.
-pub struct VariantField<'a, T> {
+pub struct VariantField<'a, T: FileRecord> {
     bytes: &'a mut [u8],
     value: T,
-    encode: fn(&T, &mut Vec<u8>),
+    hint: Hint,
 }
 
-impl<T> Deref for VariantField<'_, T> {
+impl<T: FileRecord> Deref for VariantField<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         &self.value
     }
 }
 
-impl<T> DerefMut for VariantField<'_, T> {
+impl<T: FileRecord> DerefMut for VariantField<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         &mut self.value
     }
 }
 
-impl<T> Drop for VariantField<'_, T> {
+impl<T: FileRecord> Drop for VariantField<'_, T> {
     fn drop(&mut self) {
         let mut bytes = Vec::new();
-        (self.encode)(&self.value, &mut bytes);
+        self.value.encode_sized(self.hint, &mut bytes);
         put(self.bytes, &bytes);
     }
 }
