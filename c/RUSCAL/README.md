@@ -10,8 +10,11 @@ DOSBox's C: drive is the repo's `c/`; TP itself goes in `c/TP` (see
 
 ```sh
 /Applications/dosbox.app/Contents/MacOS/DOSBox \
-  -c "mount c $PWD/c" -c "c:" -c "cd \ruscal" -c "runall" -c "exit"
+  -c "mount c $PWD/c" -c "c:" -c "cd \ruscal" -c "call runall" -c "exit"
 ```
+
+(`call` matters: a batch file run without it never returns, so the `exit`
+after it never runs and the window stays open.)
 
 `RUNALL.BAT` compiles and runs each `NAME.PAS`: `NAME.CMP` is TPC's
 output (which can say how long it took, so it may change between runs),
