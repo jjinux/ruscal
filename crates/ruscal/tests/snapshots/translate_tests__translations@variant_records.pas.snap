@@ -104,12 +104,8 @@ fn grow(n: &mut i16) {
 fn area(fig: Fig) -> i16 {
     let mut result: i16 = 0;
     match fig.kind {
-        Shape::Circle => {
-            result = 3 * fig.r * fig.r;
-        }
-        Shape::Rect => {
-            result = fig.w * fig.h;
-        }
+        Shape::Circle => result = 3 * fig.r * fig.r,
+        Shape::Rect => result = fig.w * fig.h,
         _ => {
             result = 0;
         }

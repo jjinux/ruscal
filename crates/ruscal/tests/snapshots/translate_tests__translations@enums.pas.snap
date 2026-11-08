@@ -79,15 +79,9 @@ fn play(mine: Choice, theirs: Choice) -> Outcome {
 /// Pascal: `procedure Show(c: Choice);`
 fn show(c: Choice) {
     match c {
-        Choice::Paper => {
-            pwrite!("paper");
-        }
-        Choice::Scissors => {
-            pwrite!("scissors");
-        }
-        Choice::Rock => {
-            pwrite!("rock");
-        }
+        Choice::Paper => pwrite!("paper"),
+        Choice::Scissors => pwrite!("scissors"),
+        Choice::Rock => pwrite!("rock"),
     }
 }
 

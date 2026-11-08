@@ -2006,6 +2006,25 @@ impl<'a> Codegen<'a> {
 
     /// A statement as the body of `if`/`while`/...: always a `{ }` block in
     /// Rust, and a Pascal `begin ... end` doesn't need a second pair.
+    /// A `match` arm written from `start` as `pattern => {`, one statement
+    /// and `}` becomes `pattern => statement,`, as a person would write it
+    /// (`0 => pwrite!(")"),`). Not with a comment, or for a `let` (which
+    /// isn't an expression).
+    fn compact_arm(&mut self, start: usize) {
+        let arm = &self.out[start..];
+        let lines: Vec<&str> = arm.lines().collect();
+        let [head, body, close] = lines[..] else { return };
+        let (Some(pattern), Some(stmt)) = (head.strip_suffix(" => {"), body.trim_start().strip_suffix(';')) else {
+            return;
+        };
+        if close.trim() != "}" || stmt.contains("//") || stmt.starts_with("let ") || stmt.contains(';') {
+            return;
+        }
+        let compact = format!("{pattern} => {stmt},\n");
+        self.out.truncate(start);
+        self.out.push_str(&compact);
+    }
+
     fn block_body(&mut self, s: &Stmt) {
         self.indent += 1;
         match &s.kind {
@@ -2382,6 +2401,7 @@ impl<'a> Codegen<'a> {
             for note in label_notes(&mut all_dropped, &mut all_trimmed) {
                 self.line(note);
             }
+            let arm_start = self.out.len();
             if guards.is_empty() {
                 self.line(format!("{} => {{", labels.join(" | ")));
             } else {
@@ -2403,6 +2423,17 @@ impl<'a> Codegen<'a> {
             }
             self.block_body(&arm.body);
             self.line("}");
+            // Only an assignment or a procedure call: a function called for
+            // its side effect would make the arm a value, which the other
+            // arms aren't.
+            let no_value = match &arm.body.kind {
+                StmtKind::Assign { .. } => true,
+                StmtKind::Call(e) => *self.a.type_of(e.id) == Type::Void,
+                _ => false,
+            };
+            if no_value {
+                self.compact_arm(arm_start);
+            }
         }
         // Rust knows when a `match` covers every value of the type, and then
         // warns about a `_` arm.

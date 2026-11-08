@@ -64,9 +64,7 @@ fn pascal_main() {
     pwriteln!(a[2_u8]);
     b = 44;
     match b {
-        44 => {
-            pwriteln!("forty-four");
-        }
+        44 => pwriteln!("forty-four"),
         _ => {
             pwriteln!("other");
         }

@@ -837,12 +837,8 @@ pub fn hex_digits(
     for i in 1_i16..=4 {
         next_char(from_file, source, source_pos, input2, ch, at_end, where_);
         match ch.to_ascii_uppercase() {
-            b'0'..=b'9' => {
-                d = i16::from(*ch) - i16::from(b'0');
-            }
-            b'A'..=b'F' => {
-                d = i16::from(ch.to_ascii_uppercase()) - i16::from(b'A') + 10;
-            }
+            b'0'..=b'9' => d = i16::from(*ch) - i16::from(b'0'),
+            b'A'..=b'F' => d = i16::from(ch.to_ascii_uppercase()) - i16::from(b'A') + 10,
             _ => {
                 fail(json_error, *at_end, *where_, failed, pstr("expected a hex digit"));
                 d = 0;
@@ -883,24 +879,12 @@ pub fn parse_string(
             if c == b'\\' {
                 next_char(from_file, source, source_pos, input2, ch, at_end, where_);
                 match *ch {
-                    b'"' | b'\\' | b'/' => {
-                        c = *ch;
-                    }
-                    b'b' => {
-                        c = b'\x08';
-                    }
-                    b'f' => {
-                        c = b'\x0c';
-                    }
-                    b'n' => {
-                        c = b'\n';
-                    }
-                    b'r' => {
-                        c = b'\r';
-                    }
-                    b't' => {
-                        c = b'\t';
-                    }
+                    b'"' | b'\\' | b'/' => c = *ch,
+                    b'b' => c = b'\x08',
+                    b'f' => c = b'\x0c',
+                    b'n' => c = b'\n',
+                    b'r' => c = b'\r',
+                    b't' => c = b'\t',
                     b'u' => {
                         code =
                             hex_digits(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed);
@@ -1085,7 +1069,7 @@ pub fn parse_value(
                 where_,
                 failed,
                 TJsonKind::JkObject,
-            );
+            )
         }
         b'[' => {
             result = parse_list(
@@ -1099,19 +1083,18 @@ pub fn parse_value(
                 where_,
                 failed,
                 TJsonKind::JkArray,
-            );
+            )
         }
         b'"' => {
             result = json_new_string(parse_string(
                 json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed,
-            ));
+            ))
         }
         b'-' | b'0'..=b'9' => {
-            result =
-                parse_number(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed).clone();
+            result = parse_number(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed).clone()
         }
         b'a'..=b'z' => {
-            result = parse_word(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed).clone();
+            result = parse_word(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed).clone()
         }
         _ => {
             fail(json_error, *at_end, *where_, failed, pstr("expected a value"));
@@ -1256,35 +1239,19 @@ pub fn put_quoted(to_string: bool, output2: &mut PString, hex: PString, f: &mut 
     put(to_string, output2, f, pstr("\""));
     for i in 1..=s.length() {
         match s[i] {
-            b'"' => {
-                put(to_string, output2, f, pstr("\\\""));
-            }
-            b'\\' => {
-                put(to_string, output2, f, pstr("\\\\"));
-            }
-            b'\x08' => {
-                put(to_string, output2, f, pstr("\\b"));
-            }
-            b'\t' => {
-                put(to_string, output2, f, pstr("\\t"));
-            }
-            b'\n' => {
-                put(to_string, output2, f, pstr("\\n"));
-            }
-            b'\x0c' => {
-                put(to_string, output2, f, pstr("\\f"));
-            }
-            b'\r' => {
-                put(to_string, output2, f, pstr("\\r"));
-            }
-            b'\x00'..=b'\x07' | b'\x0b' | b'\x0e'..=b'\x1f' => {
-                put(
-                    to_string,
-                    output2,
-                    f,
-                    pstr("\\u00") + hex[i16::from(s[i]) / 16 + 1] + hex[i16::from(s[i]) % 16 + 1],
-                );
-            }
+            b'"' => put(to_string, output2, f, pstr("\\\"")),
+            b'\\' => put(to_string, output2, f, pstr("\\\\")),
+            b'\x08' => put(to_string, output2, f, pstr("\\b")),
+            b'\t' => put(to_string, output2, f, pstr("\\t")),
+            b'\n' => put(to_string, output2, f, pstr("\\n")),
+            b'\x0c' => put(to_string, output2, f, pstr("\\f")),
+            b'\r' => put(to_string, output2, f, pstr("\\r")),
+            b'\x00'..=b'\x07' | b'\x0b' | b'\x0e'..=b'\x1f' => put(
+                to_string,
+                output2,
+                f,
+                pstr("\\u00") + hex[i16::from(s[i]) / 16 + 1] + hex[i16::from(s[i]) % 16 + 1],
+            ),
             _ => {
                 put(to_string, output2, f, pstr(s[i]));
             }
@@ -1323,9 +1290,7 @@ pub fn write_value(
 ) {
     let mut member: PJsonValue = Ptr::nil();
     match json_kind(v.clone()) {
-        TJsonKind::JkNull => {
-            put(to_string, output2, f, pstr("null"));
-        }
+        TJsonKind::JkNull => put(to_string, output2, f, pstr("null")),
         TJsonKind::JkBoolean => {
             if v.get().bool {
                 put(to_string, output2, f, pstr("true"));

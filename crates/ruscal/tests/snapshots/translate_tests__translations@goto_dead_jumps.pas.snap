@@ -63,9 +63,7 @@ fn pascal_main() {
         // Never runs, in the Pascal either:
         // pwriteln!("never 2");
         // match i {
-        //     1 => {
-        //         x = 1;
-        //     }
+        //     1 => x = 1,
         //     2 => {
         //         x = 2;
         //         pwriteln!("two");

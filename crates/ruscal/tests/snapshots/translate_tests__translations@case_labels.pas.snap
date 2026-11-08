@@ -82,34 +82,24 @@ fn pascal_main() {
     failures = 0;
     l = 5;
     match l {
-        1..=1000000000 => {
-            what = pstr("big");
-        }
+        1..=1000000000 => what = pstr("big"),
         _ => {}
     }
     check(&mut checks, &mut failures, what == "big", pstr("a range of a billion values"));
     i = -7;
     match i {
-        -32768..=-1 => {
-            what = pstr("negative");
-        }
-        0..=32767 => {
-            what = pstr("not negative");
-        }
+        -32768..=-1 => what = pstr("negative"),
+        0..=32767 => what = pstr("not negative"),
     }
     check(&mut checks, &mut failures, what == "negative", pstr("two ranges cover every Integer"));
     w_ = 65535;
     match w_ {
-        0..=65535 => {
-            what = pstr("word");
-        }
+        0..=65535 => what = pstr("word"),
     }
     check(&mut checks, &mut failures, what == "word", pstr("one range covers every Word"));
     sh = -128;
     match sh {
-        -128..=127 => {
-            what = pstr("shortint");
-        }
+        -128..=127 => what = pstr("shortint"),
         #[allow(unreachable_patterns)]
         _ => {
             // The arms above cover every value, so Pascal's `else` never runs.
@@ -119,19 +109,13 @@ fn pascal_main() {
     check(&mut checks, &mut failures, what == "shortint", pstr("a ShortInt case with an else that can't run"));
     d = Day::Wed;
     match d {
-        Day::Mon | Day::Tue | Day::Wed | Day::Thu | Day::Fri => {
-            what = pstr("weekday");
-        }
-        Day::Sat | Day::Sun => {
-            what = pstr("weekend");
-        }
+        Day::Mon | Day::Tue | Day::Wed | Day::Thu | Day::Fri => what = pstr("weekday"),
+        Day::Sat | Day::Sun => what = pstr("weekend"),
     }
     check(&mut checks, &mut failures, what == "weekday", pstr("an enum range: Mon..Fri"));
     d = Day::Sun;
     match d {
-        Day::Mon | Day::Tue | Day::Wed | Day::Thu | Day::Fri => {
-            what = pstr("weekday");
-        }
+        Day::Mon | Day::Tue | Day::Wed | Day::Thu | Day::Fri => what = pstr("weekday"),
         _ => {
             what = pstr("weekend");
         }
@@ -139,13 +123,9 @@ fn pascal_main() {
     check(&mut checks, &mut failures, what == "weekend", pstr("an enum range with an else"));
     b = 2;
     match b {
-        1 | 2 => {
-            what = pstr("one or two");
-        }
+        1 | 2 => what = pstr("one or two"),
         // 1..=2 appeared before; the first one wins.
-        0 => {
-            what = pstr("zero");
-        }
+        0 => what = pstr("zero"),
         _ => {
             what = pstr("more");
         }
@@ -153,67 +133,45 @@ fn pascal_main() {
     check(&mut checks, &mut failures, what == "one or two", pstr("a range an earlier arm covers: the first arm wins"));
     b = 9;
     match b {
-        3..=7 => {
-            what = pstr("middle");
-        }
+        3..=7 => what = pstr("middle"),
         // 1..=5, 6..=10 overlapped a label before; the first one wins, so only the rest is here.
-        1..=2 | 8..=10 => {
-            what = pstr("low");
-        }
+        1..=2 | 8..=10 => what = pstr("low"),
         _ => {}
     }
     check(&mut checks, &mut failures, what == "low", pstr("ranges that overlap an earlier one"));
     d = Day::Wed;
     match d {
-        Day::Mon | Day::Tue | Day::Wed => {
-            what = pstr("early");
-        }
+        Day::Mon | Day::Tue | Day::Wed => what = pstr("early"),
         // Day::Tue | Day::Wed | Day::Thu | Day::Fri | Day::Sat overlapped a label before; the first one wins, so only the rest is here.
-        Day::Thu | Day::Fri | Day::Sat => {
-            what = pstr("later");
-        }
+        Day::Thu | Day::Fri | Day::Sat => what = pstr("later"),
         _ => {}
     }
     check(&mut checks, &mut failures, what == "early", pstr("enum ranges that overlap: the first wins"));
     d = Day::Thu;
     match d {
-        Day::Mon | Day::Tue | Day::Wed => {
-            what = pstr("early");
-        }
+        Day::Mon | Day::Tue | Day::Wed => what = pstr("early"),
         // Day::Tue | Day::Wed | Day::Thu | Day::Fri | Day::Sat overlapped a label before; the first one wins, so only the rest is here.
-        Day::Thu | Day::Fri | Day::Sat => {
-            what = pstr("later");
-        }
+        Day::Thu | Day::Fri | Day::Sat => what = pstr("later"),
         _ => {}
     }
     check(&mut checks, &mut failures, what == "later", pstr("and the second has the rest"));
     b = 7;
     match b {
-        3..=7 => {
-            what = pstr("first");
-        }
+        3..=7 => what = pstr("first"),
         // 7..=10 overlapped a label before; the first one wins, so only the rest is here.
-        8..=10 => {
-            what = pstr("second");
-        }
+        8..=10 => what = pstr("second"),
         _ => {}
     }
     check(&mut checks, &mut failures, what == "first", pstr("ranges sharing an end: the first wins"));
     flag = true;
     match flag {
-        false | true => {
-            what = pstr("either");
-        }
+        false | true => what = pstr("either"),
     }
     check(&mut checks, &mut failures, what == "either", pstr("a Boolean range"));
     d = LAST;
     match d {
-        Day::Mon => {
-            what = pstr("first");
-        }
-        Day::Sun => {
-            what = pstr("last");
-        }
+        Day::Mon => what = pstr("first"),
+        Day::Sun => what = pstr("last"),
         _ => {
             what = pstr("between");
         }
@@ -221,9 +179,7 @@ fn pascal_main() {
     check(&mut checks, &mut failures, what == "last", pstr("enum constants as labels"));
     d = Day::Wed;
     match d {
-        Day::Tue | Day::Wed | Day::Thu | Day::Fri | Day::Sat => {
-            what = pstr("middle");
-        }
+        Day::Tue | Day::Wed | Day::Thu | Day::Fri | Day::Sat => what = pstr("middle"),
         _ => {
             what = pstr("an end");
         }
@@ -232,35 +188,23 @@ fn pascal_main() {
     c = b'B';
     i = 4;
     match c {
-        b'B' => {
-            what = pstr("B");
-        }
+        b'B' => what = pstr("B"),
         _ => {
             what = pstr("other");
         }
     }
     check(&mut checks, &mut failures, what == "B", pstr("Succ of a char"));
     match i {
-        3 => {
-            what = pstr("three");
-        }
-        4 => {
-            what = pstr("four");
-        }
-        1 => {
-            what = pstr("one");
-        }
-        7 => {
-            what = pstr("seven");
-        }
+        3 => what = pstr("three"),
+        4 => what = pstr("four"),
+        1 => what = pstr("one"),
+        7 => what = pstr("seven"),
         _ => {}
     }
     check(&mut checks, &mut failures, what == "four", pstr("Abs, Length, Hi and Lo in labels"));
     w_ = 9;
     match w_ {
-        0..=65535 => {
-            what = pstr("all");
-        }
+        0..=65535 => what = pstr("all"),
     } // 9 appeared before; the first one wins.
     check(&mut checks, &mut failures, what == "all", pstr("a last arm that can't be reached"));
     pwriteln!(checks - failures, " of ", checks, " checks passed");

@@ -145,9 +145,7 @@ fn pascal_main() {
     }
     // an empty block
     match x {
-        5 => {
-            y = 0;
-        }
+        5 => y = 0,
         // other values
         // need nothing
         _ => {}
@@ -175,20 +173,12 @@ fn pascal_main() {
     t = c.total;
     hue = Color::Green;
     match hue {
-        Color::Red => {
-            y += 0;
-        }
-        Color::Green => {
-            y += 0;
-        }
+        Color::Red => y += 0,
+        Color::Green => y += 0,
     } // every colour covered
     match hue {
-        Color::Red => {
-            y += 0;
-        }
-        Color::Green => {
-            y += 0;
-        }
+        Color::Red => y += 0,
+        Color::Green => y += 0,
         #[allow(unreachable_patterns)]
         _ => {
             // The arms above cover every value, so Pascal's `else` never runs.

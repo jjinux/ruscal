@@ -164,9 +164,7 @@ fn pascal_main() {
         pwriteln!("big");
     }
     match 4 {
-        value if value == Point::SERIALIZED_SIZE as i16 => {
-            pwriteln!("point-sized");
-        }
+        value if value == Point::SERIALIZED_SIZE as i16 => pwriteln!("point-sized"),
         _ => {
             pwriteln!("other");
         }

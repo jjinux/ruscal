@@ -68,60 +68,34 @@ fn pascal_main() {
     d = Day::Sun;
     n = 1000;
     match i {
-        1 => {
-            pwriteln!("one");
-        }
-        K => {
-            pwriteln!("K");
-        }
-        6..=L => {
-            pwriteln!("6..L");
-        }
-        value if value == K + 10 => {
-            pwriteln!("K + 10");
-        }
+        1 => pwriteln!("one"),
+        K => pwriteln!("K"),
+        6..=L => pwriteln!("6..L"),
+        value if value == K + 10 => pwriteln!("K + 10"),
         _ => {}
     }
     match i16::from(b) {
-        K => {
-            pwriteln!("b K");
-        }
-        7..=L => {
-            pwriteln!("b 7..L");
-        }
+        K => pwriteln!("b K"),
+        7..=L => pwriteln!("b 7..L"),
         _ => {}
     }
     match c {
-        ESC => {
-            pwriteln!("Esc");
-        }
-        ENTER | b'a'..=b'z' => {
-            pwriteln!("Enter or letter");
-        }
+        ESC => pwriteln!("Esc"),
+        ENTER | b'a'..=b'z' => pwriteln!("Enter or letter"),
         _ => {}
     }
     match d {
-        Day::Mon | Day::Tue | Day::Wed | Day::Thu | Day::Fri => {
-            pwriteln!("weekday");
-        }
-        Day::Sun => {
-            pwriteln!("last");
-        }
+        Day::Mon | Day::Tue | Day::Wed | Day::Thu | Day::Fri => pwriteln!("weekday"),
+        Day::Sun => pwriteln!("last"),
         _ => {}
     }
     match n {
-        value if value == i32::from(BIG) => {
-            pwriteln!("Big");
-        }
-        value if value == i32::from(K) => {
-            pwriteln!("n K");
-        }
+        value if value == i32::from(BIG) => pwriteln!("Big"),
+        value if value == i32::from(K) => pwriteln!("n K"),
         _ => {}
     }
     match i {
-        1..=L => {
-            pwriteln!("1..L");
-        }
+        1..=L => pwriteln!("1..L"),
         // 5 appeared before; the first one wins.
         _ => {}
     }

@@ -84,12 +84,8 @@ fn pascal_main() {
     }
     pwriteln!();
     match i {
-        i16::MIN => {
-            pwriteln!("low");
-        }
-        i16::MAX => {
-            pwriteln!("high");
-        }
+        i16::MIN => pwriteln!("low"),
+        i16::MAX => pwriteln!("high"),
         _ => {
             pwriteln!("in between");
         }
