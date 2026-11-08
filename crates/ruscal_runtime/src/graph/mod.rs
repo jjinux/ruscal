@@ -361,21 +361,33 @@ pub fn set_user_char_size(
 
 // Colours.
 
+/// `SetColor(Color)`: lines and text are drawn in the colour's low 4 bits,
+/// as in TP 7 (tried in DOSBox), where `SetColor(17)` draws in colour 1;
+/// but `GetColor` gives back the number as it was set (its low byte: 44
+/// after `SetColor(300)`).
 pub fn set_color(c: impl Into<i32>) {
-    let c = color(c);
-    with(|s| s.color = c);
+    let c = c.into();
+    with(|s| {
+        s.color = color(c);
+        s.color_number = c as u8;
+    });
 }
 
 pub fn get_color() -> u16 {
-    with(|s| u16::from(s.color))
+    with(|s| u16::from(s.color_number))
 }
 
 /// `SetBkColor(Color)`: colour 0 is the background, so this changes what
 /// colour 0 looks like, everywhere on the screen at once. As in Turbo
 /// Pascal 7 (tried in DOSBox), colour 0 becomes a copy of colour `c` as
 /// the palette has it now (after a `SetPalette(1, ...)`, `SetBkColor(1)`
-/// shows that colour), and `SetBkColor(0)` brings back black.
+/// shows that colour), and `SetBkColor(0)` brings back black. A colour
+/// past 15 changes nothing (TP 7 too; it isn't taken `mod 16`).
 pub fn set_bk_color(c: impl Into<i32>) {
+    let c = c.into();
+    if !(0..=15).contains(&c) {
+        return;
+    }
     let c = color(c);
     with(|s| {
         s.bk_color = c;

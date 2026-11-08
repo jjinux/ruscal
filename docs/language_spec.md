@@ -455,7 +455,9 @@ Graph unit (BGI, as used in the examples)
   `SetGraphMode`/`RestoreCrtMode`, `GetMaxX`/`GetMaxY`/`GetMaxColor`
 - `SetColor`/`GetColor`/`SetBkColor`/`GetBkColor`, the 16 colour constants
   (`SetBkColor(c)` makes colour 0 a copy of colour `c` as the palette
-  has it then, and `SetBkColor(0)` brings back black, as TP 7 does)
+  has it then, `SetBkColor(0)` brings back black, and a colour past 15
+  changes nothing; `SetColor(17)` draws in colour 1, the low 4 bits, but
+  `GetColor` says 17; all as TP 7 does)
 - `PutPixel`/`GetPixel`, `Line`/`LineTo`/`LineRel`/`MoveTo`/`MoveRel`/
   `GetX`/`GetY`, `Rectangle`, `Bar`, `Bar3D`, `Circle`, `Arc`, `Ellipse`,
   `PieSlice`, `Sector`, `FillEllipse`, `FloodFill`, `GetArcCoords`

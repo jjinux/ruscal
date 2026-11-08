@@ -80,7 +80,12 @@ pub struct Screen {
     pub dac: [u32; 64],
     /// `SetAspectRatio`, for `GetAspectRatio`.
     pub aspect: (u16, u16),
+    /// The drawing colour: the low 4 bits of `SetColor`'s, as TP drew.
     pub color: u8,
+    /// `SetColor`'s colour as given (its low byte), which `GetColor`
+    /// returns: TP 7's `SetColor(17)` draws in colour 1, but `GetColor`
+    /// says 17 (and 44 after `SetColor(300)`).
+    pub color_number: u8,
     pub bk_color: u8,
     /// One bit per pixel along a line; thickness is 1 or 3. And the style
     /// number and pattern as `SetLineStyle` gave them, for `GetLineSettings`.
@@ -131,6 +136,7 @@ impl Screen {
             dac: std::array::from_fn(|i| ega_rgb(i as u8)),
             aspect: (10000, 10000),
             color: 15,
+            color_number: 15,
             bk_color: 0,
             line_pattern: LINE_PATTERNS[0],
             thickness: 1,
