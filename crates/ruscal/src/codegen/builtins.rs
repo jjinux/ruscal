@@ -358,7 +358,22 @@ impl<'a> Codegen<'a> {
                 None => "run_error(0)".to_string(),
                 Some(code) => format!("run_error({})", self.expr(code).0),
             },
-            SizeOf | High | Low => unreachable!("sema folds these into constants"),
+            // Sema folds these into constants, except for an open array.
+            High | Low | SizeOf => {
+                let array = self.selector_base(&args[0]);
+                let Type::OpenArray(elem) = ty(self, &args[0]) else { unreachable!("sema folds these into constants") };
+                match b {
+                    Low => "0".to_string(),
+                    High => format!("{array}.high() as i16"),
+                    _ => {
+                        let size = match self.size_term(&elem) {
+                            Some((code, _)) => code,
+                            None => crate::sema::types::serialized_size(&elem).unwrap_or(0).to_string(),
+                        };
+                        format!("({array}.len() * {size}) as i16")
+                    }
+                }
+            }
             FillChar if self.a.byte_moves.contains(&call_id) => {
                 let dest = self.view_arg(&args[0]);
                 let value = self.coerce(&args[2], &Type::Int(IntKind::Byte)).0;

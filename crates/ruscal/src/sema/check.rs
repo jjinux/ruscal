@@ -1110,6 +1110,9 @@ impl Checker {
             }
             // `file`: untyped, read and written in blocks of bytes.
             TypeExpr::File(None, _) => Type::File(Rc::new(Type::Untyped)),
+            // `array of T`, an open array parameter (the parser allows it
+            // only as a parameter's type).
+            TypeExpr::OpenArray(elem, _) => Type::OpenArray(Rc::new(self.resolve_type(elem))),
             TypeExpr::Pointer(target, _) => {
                 let alias = if self.declaring_type { name.map(|n| self.type_name(n)) } else { None };
                 let ptr = Rc::new(PointerType { target_name: target.name.clone(), target: Default::default(), alias });
@@ -3090,6 +3093,13 @@ impl Checker {
                     }
                     a.elem.clone()
                 }
+                // An open array is indexed from 0 by an integer.
+                Type::OpenArray(elem) => {
+                    if !index_ty.is_integer() && index_ty != Type::Error {
+                        self.error(index.span, format!("an open array's index must be an integer, not {index_ty}"));
+                    }
+                    (**elem).clone()
+                }
                 Type::Str { .. } | Type::PChar => {
                     if !index_ty.is_integer() && index_ty != Type::Error {
                         self.error(index.span, format!("a string index must be an integer, not {index_ty}"));
@@ -3652,6 +3662,10 @@ impl Checker {
                 // An object may be passed where an ancestor is expected.
                 let descendant = match (&arg_ty, &ty) {
                     (Type::Object(arg), Type::Object(param)) => arg.lineage().iter().any(|(o, _)| o == param),
+                    // A `var` open array: an array of its element type, of
+                    // any size, or one variable of that type.
+                    (Type::Array(a), Type::OpenArray(elem)) => a.elem == **elem,
+                    (arg, Type::OpenArray(elem)) => arg == &**elem,
                     _ => false,
                 };
                 if arg_ty != ty && !descendant && arg_ty != Type::Error && ty != Type::Error {
@@ -3667,7 +3681,10 @@ impl Checker {
                     var_args.push(VarArg {
                         param,
                         root,
-                        whole: matches!(arg.kind, ExprKind::Name(_)),
+                        // (Not for an open array: a global it's always given
+                        // can't stand in for it, indexed from 1 where it's
+                        // indexed from 0.)
+                        whole: matches!(arg.kind, ExprKind::Name(_)) && !matches!(ty, Type::OpenArray(_)),
                         fields: if bytes { Vec::new() } else { Self::place_fields(arg).0 },
                         indexed: bytes || !Self::place_fields(arg).1,
                         through_pointer: Self::through_pointer(arg),
@@ -4135,6 +4152,13 @@ impl Checker {
             SizeOf | High | Low => {
                 if !arity(&mut self.errors, span, args.len(), 1..=1, &name) {
                     return Type::Error;
+                }
+                // Except for an open array, whose size each call decides:
+                // `High(a)` is `a.high()`, `SizeOf(a)` its length times its
+                // element's size.
+                if let Some((Type::OpenArray(_), _)) = self.query_arg(&args[0]) {
+                    self.expr(&args[0]);
+                    return Type::Int(IntKind::Integer);
                 }
                 match self.type_query(b, &args[0]) {
                     Some((value, ty)) => {

@@ -160,6 +160,9 @@ pub enum Type {
     Enum(Rc<EnumType>),
     /// `array[lo..hi] of T`. A multi-dimensional array is an array of arrays.
     Array(Rc<ArrayType>),
+    /// `array of T`, an open array parameter (TP 7): an array of `T` of any
+    /// size, indexed from 0. Only a parameter can have this type.
+    OpenArray(Rc<Type>),
     Record(Rc<RecordType>),
     /// A Turbo Pascal 5.5 `object` type.
     Object(Rc<ObjectType>),
@@ -604,6 +607,8 @@ impl Type {
                 Some(alias) => alias.clone(),
                 None => a.rust_unaliased(),
             },
+            // Always behind a reference: `&OpenArray<i16>`, `&mut ...`.
+            Type::OpenArray(elem) => format!("OpenArray<{}>", elem.rust()),
             Type::TypeInfo => "&'static str".to_string(),
             Type::Untyped => "&mut dyn ByteView".to_string(),
             Type::AnyPointer => "AnyPtr".to_string(),
@@ -621,6 +626,7 @@ impl Type {
             Type::Record(r) if r.unstorable_variants() => Some(r),
             Type::Record(r) => r.fields.iter().find_map(|f| f.ty.unstorable_record()),
             Type::Array(a) => a.elem.unstorable_record(),
+            Type::OpenArray(elem) => elem.unstorable_record(),
             _ => None,
         }
     }
@@ -630,6 +636,7 @@ impl Type {
         match self {
             Type::Set(..) => true,
             Type::Array(a) => a.elem.contains_set(),
+            Type::OpenArray(elem) => elem.contains_set(),
             Type::Record(r) => r.fields.iter().any(|f| f.ty.contains_set()),
             _ => false,
         }
@@ -669,6 +676,8 @@ impl Type {
             // Copying a pointer means cloning its `Rc` handle.
             Type::Pointer(_) | Type::AnyPointer | Type::PChar => false,
             Type::Text | Type::File(_) => false,
+            // Only ever a reference to the caller's elements.
+            Type::OpenArray(_) => false,
             _ => true,
         }
     }
@@ -697,6 +706,15 @@ impl Type {
             // a pointer type, so it goes with `Pointer` and `nil`.
             (Type::PChar, Type::Nil | Type::StrLit(_) | Type::AnyPointer) => true,
             (Type::Proc(_), Type::Nil) => true,
+            // An open array parameter takes an array of its element type
+            // of any size, another open array of it, one value of it, or
+            // (`array of Char`) a string constant.
+            (Type::OpenArray(elem), from) => match from {
+                Type::Array(a) => a.elem == **elem,
+                Type::OpenArray(other) => other == elem,
+                Type::StrLit(_) if **elem == Type::Char => true,
+                other => elem.accepts(other),
+            },
             (Type::PChar, t) if t.is_char_array0() => true,
             (Type::AnyPointer, Type::PChar) => true,
             (Type::Set(a, _), Type::Set(b, _)) => **b == Type::Void || same_ordinal_kind(a, b),
@@ -744,6 +762,7 @@ impl fmt::Display for Type {
             Type::File(elem) if **elem == Type::Untyped => write!(f, "file"),
             Type::File(elem) => write!(f, "file of {elem}"),
             Type::Array(a) => write!(f, "array[{}..{}] of {}", a.lo, a.hi, a.elem),
+            Type::OpenArray(elem) => write!(f, "array of {elem}"),
             Type::Nil | Type::TypeInfo => write!(f, "Pointer"),
             Type::Untyped => write!(f, "untyped"),
             Type::AnyPointer => write!(f, "Pointer"),

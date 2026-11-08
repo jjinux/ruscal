@@ -384,8 +384,11 @@ impl Analysis {
         }
         let var = self.var(sym);
         if var.owner == proc {
-            return match var.role {
-                VarRole::Param(ParamMode::Var) => Access::Reference,
+            return match (var.role, &var.ty) {
+                (VarRole::Param(ParamMode::Var), _) => Access::Reference,
+                // An open array parameter is always a reference, to the
+                // caller's elements or (a value one it changes) its copy.
+                (VarRole::Param(_), Type::OpenArray(_)) => Access::Reference,
                 _ => Access::Direct,
             };
         }

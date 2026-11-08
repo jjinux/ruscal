@@ -496,6 +496,19 @@ impl Parser {
         Ok(ty)
     }
 
+    /// A parameter's type: a type's name, or `array of` one, an open array
+    /// (TP 7), which takes an array of any size.
+    fn param_type(&mut self) -> PResult<TypeExpr> {
+        if self.at_keyword(Keyword::Array) && self.peek_at(1) == &TokenKind::Keyword(Keyword::Of) {
+            let start = self.span();
+            self.bump();
+            self.bump();
+            let elem = self.type_name_expr("an open array's element")?;
+            return Ok(TypeExpr::OpenArray(Box::new(elem), start.to(self.prev_span())));
+        }
+        self.type_name_expr("a parameter")
+    }
+
     fn param_list(&mut self) -> PResult<Vec<ParamGroup>> {
         self.expect(&TokenKind::LParen)?;
         let mut groups = Vec::new();
@@ -508,7 +521,7 @@ impl Parser {
                 ParamMode::Value
             };
             let names = self.ident_list()?;
-            let ty = if self.eat(&TokenKind::Colon) { Some(self.type_name_expr("a parameter")?) } else { None };
+            let ty = if self.eat(&TokenKind::Colon) { Some(self.param_type()?) } else { None };
             groups.push(ParamGroup { mode, names, ty });
             if !self.eat(&TokenKind::Semi) {
                 break;

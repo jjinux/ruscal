@@ -1875,6 +1875,8 @@ impl<'a> Codegen<'a> {
             let dyn_param = matches!(&ty, Type::Object(o) if self.in_dispatch(o));
             if ty == Type::Untyped {
                 parts.push(self.view_arg(arg));
+            } else if let Type::OpenArray(elem) = &ty {
+                parts.push(self.open_array_arg(arg, elem, is_var_arg));
             } else if var.role == crate::sema::VarRole::Param(ParamMode::Var)
                 && dyn_param
                 && let ExprKind::Deref(pointer) = &arg.kind
@@ -1952,6 +1954,42 @@ impl<'a> Codegen<'a> {
             }
         }
         (parts.join(", "), records.into_iter().map(|(_, pointer, name)| (pointer, name)).collect())
+    }
+
+    /// An open array parameter's argument: an array of any size
+    /// (`scores.as_open()`), one variable (`OpenArray::single(&x)`), an open
+    /// array parameter passed on (`a`), or, for `array of Char`, a string
+    /// constant (`OpenArray::new(b"xy")`).
+    fn open_array_arg(&mut self, arg: &Expr, elem: &Type, is_var: bool) -> String {
+        let arg_ty = self.a.type_of(arg.id).clone();
+        match (&arg_ty, is_var) {
+            (Type::OpenArray(_), true) => self.place_mut(arg),
+            (Type::OpenArray(_), false) => self.selector_base(arg),
+            (Type::Array(_), true) => {
+                let place = self.place(arg);
+                // (A method call dereferences by itself: `arr.as_open_mut()`
+                // for an array we hold by reference.)
+                format!("{}.as_open_mut()", place.strip_prefix('*').unwrap_or(&place))
+            }
+            (Type::Array(_), false) => format!("{}.as_open()", self.selector_base(arg)),
+            (Type::StrLit(_), _) if *elem == Type::Char => {
+                match (&arg.kind, self.a.consts.get(&arg.id)) {
+                    (ExprKind::Str(bytes), _) => {
+                        format!("OpenArray::new(b{})", str_literal(bytes).trim_start_matches('b'))
+                    }
+                    // A named string constant keeps its name.
+                    (_, Some(crate::sema::ConstVal::Str(bytes))) if bytes.iter().all(u8::is_ascii) => {
+                        format!("OpenArray::new({}.as_bytes())", self.expr(arg).0)
+                    }
+                    (_, Some(crate::sema::ConstVal::Str(bytes))) => {
+                        format!("OpenArray::new(b{})", str_literal(bytes).trim_start_matches('b'))
+                    }
+                    _ => format!("OpenArray::new({}.as_bytes())", self.expr(arg).0),
+                }
+            }
+            (_, true) => format!("OpenArray::single_mut({})", self.place_mut(arg)),
+            (_, false) => format!("OpenArray::single(&{})", self.coerce(arg, elem).0),
+        }
     }
 
     /// A name for the heap record that `arg` (`q^.x`) is a field of, after

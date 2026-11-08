@@ -148,6 +148,9 @@ pub enum TypeExpr {
     /// A Turbo Pascal 5.5 `object`: a record with procedures attached
     /// ("methods"), optionally inheriting from a parent object type.
     Object { parent: Option<Ident>, fields: Vec<FieldDecl>, methods: Vec<ProcDecl>, span: Span },
+    /// `array of T`, an open array parameter (TP 7): only a parameter's
+    /// type.
+    OpenArray(Box<TypeExpr>, Span),
 }
 
 impl TypeExpr {
@@ -163,6 +166,7 @@ impl TypeExpr {
             | TypeExpr::Set(_, span)
             | TypeExpr::File(_, span)
             | TypeExpr::Object { span, .. }
+            | TypeExpr::OpenArray(_, span)
             | TypeExpr::Proc { span, .. } => *span,
         }
     }

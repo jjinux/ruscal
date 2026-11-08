@@ -1679,6 +1679,7 @@ impl<'a> Codegen<'a> {
         let vis = if self.self_expr.is_some() { "" } else { self.vis };
         self.line(format!("{vis}fn {}({params}){ret} {{", self.body_name(pid)));
         self.indent += 1;
+        self.open_array_copies(pid);
         self.untyped_guards(pid);
         self.locals(pid);
         // An `Exit` that ends the routine changes nothing, and Rust would warn
@@ -1842,11 +1843,33 @@ impl<'a> Codegen<'a> {
                 // An untyped `var Data`: any variable, as its bytes.
                 (VarRole::Param(ParamMode::Var), Type::Untyped) => (name, "&mut dyn ByteView".to_string()),
                 (VarRole::Param(ParamMode::Var), _) => (name, format!("&mut {ty}")),
+                // A value or `const` open array: the caller's elements.
+                (_, Type::OpenArray(_)) => (name, format!("&{ty}")),
                 _ if self.a.mutated.contains(&param) => (format!("mut {name}"), ty),
                 _ => (name, ty),
             });
         }
         params
+    }
+
+    /// A value open array parameter that the routine changes is its own
+    /// copy in TP: copy the caller's elements, and go on through a
+    /// reference to the copy, as for any other open array.
+    fn open_array_copies(&mut self, pid: ProcId) {
+        for &param in &self.a.procs[pid].params.clone() {
+            let var = self.a.var(param);
+            if var.role != VarRole::Param(ParamMode::Value)
+                || !matches!(var.ty, Type::OpenArray(_))
+                || !self.a.mutated.contains(&param)
+            {
+                continue;
+            }
+            let name = self.a.sym(param).rust_name.clone();
+            self.line(format!("// `{name}` is a value parameter, which this routine changes: in Pascal"));
+            self.line("// that's its own copy of the caller's array.");
+            self.line(format!("let mut {name}_copy = {name}.to_vec();"));
+            self.line(format!("let {name} = OpenArray::new_mut(&mut {name}_copy);"));
+        }
     }
 
     /// An untyped `var Data` parameter is the variable's bytes from here
@@ -3344,7 +3367,9 @@ fn default_value(ty: &Type) -> String {
         },
         Type::TypeInfo => "\"\"".to_string(),
         Type::Set(..) => "PSet::new()".to_string(),
-        Type::Nil | Type::Untyped | Type::Void | Type::Error => "()".to_string(),
+        // (Only a parameter has this type, and parameters aren't declared
+        // with a starting value.)
+        Type::Nil | Type::Untyped | Type::OpenArray(_) | Type::Void | Type::Error => "()".to_string(),
     }
 }
 
