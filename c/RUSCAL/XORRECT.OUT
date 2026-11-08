@@ -1,0 +1,7 @@
+XOR rectangle: corner (10,10) = 0
+corner (100,60) = 0, edge (50,10) = 15
+(15 means the corner is drawn, 0 that it was XORed away)
+palette regs before: 0 = 0, 1 = 1
+after SetPalette(1, EGALightRed = 60), SetBkColor(1):
+   0 = 60, 1 = 60, GetBkColor = 1
+(reg 0 = 60: uses the palette entry; = 1: the default colour 1)

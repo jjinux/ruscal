@@ -1,0 +1,4 @@
+Turbo Pascal  Version 7.0  Copyright (c) 1983,92 Borland International
+WORDNEG.PAS(1)WORDNEG.PAS(1)WORDNEG.PAS(11): Error 76: Constant out of range.
+   I := W;
+         ^

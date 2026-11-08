@@ -1,0 +1,3 @@
+after SetBkColor(1): reg 0 = 60, GetPalette entry 0 = 60
+after SetBkColor(0): reg 0 = 0, GetPalette entry 0 = 0
+SetBkColor(2) then SetPalette(2, Yellow = 62): reg 0 = 2, GetBkColor = 2

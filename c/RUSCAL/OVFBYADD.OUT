@@ -1,0 +1,2 @@
+before: 255
+after b := b + 1: 0

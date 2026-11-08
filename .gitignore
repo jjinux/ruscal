@@ -3,5 +3,9 @@ out/
 *.swp
 .DS_Store
 *.snap.new
-# DOSBox C: drive (Turbo Pascal 7, to check what TP really did)
-/c/
+# DOSBox C: drive. c/TP is Turbo Pascal 7 itself (Borland's, never committed);
+# c/RUSCAL holds our programs that check what TP really did, and their output.
+/c/*
+!/c/RUSCAL/
+/c/RUSCAL/*.EXE
+/c/RUSCAL/DONE.TXT

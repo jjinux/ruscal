@@ -1,2 +1,7 @@
 tests/run/crlf.* -text
 tests/translate/crlf.pas -text
+# DOS files: keep their CRLF line endings exactly.
+c/RUSCAL/*.PAS -text
+c/RUSCAL/*.BAT -text
+c/RUSCAL/*.CMP -text
+c/RUSCAL/*.OUT -text

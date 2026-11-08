@@ -62,8 +62,10 @@ programs to see how they behave:
 
 - `fpc -Mtp` gives most tests' expected output (`tests/gen_expected.sh`).
 - Turbo Pascal 7 runs in DOSBox (`brew install --cask dosbox`), whose
-  C: drive is `c/` (in `.gitignore`), to settle what TP really did where
-  Free Pascal differs.
+  C: drive is `c/`, to settle what TP really did where Free Pascal
+  differs. TP goes in `c/TP` (git-ignored), unzipped from
+  https://archive.org/download/tp_20240418/TP.zip. Our programs that
+  check it, and their output, are in `c/RUSCAL` (its `README.md`).
 
 ## Who it's for
 

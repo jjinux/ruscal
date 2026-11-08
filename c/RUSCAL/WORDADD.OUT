@@ -1,0 +1,4 @@
+w + 1 = 0
+L := w + 1 gives 0
+L := w + i (i = 1) gives 65536
+w := w + 1 gives 0
