@@ -358,6 +358,12 @@ impl Anchors<'_> {
                 self.block_end(s.span);
             }
             StmtKind::If { then_branch, else_branch, .. } => {
+                // An empty `then` branch before an `else` (`if Done then
+                // {nothing} else ...`) gets an anchor of its own at the
+                // `else`, so a comment there stays in the `then` block.
+                if then_branch.kind == StmtKind::Empty && else_branch.is_some() {
+                    self.anchors.push((then_branch.span.start, then_branch.span.start));
+                }
                 self.stmt(then_branch);
                 if let Some(e) = else_branch {
                     self.stmt(e);

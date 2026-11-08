@@ -2681,6 +2681,14 @@ impl<'a> Codegen<'a> {
             self.leading_comments(s.span.start);
             self.indent -= 1;
         }
+        // `if Done then {nothing to do} else ...`: an empty statement sits
+        // at the `else`, and the comment before it belongs in this block,
+        // not the `else` one.
+        if then_branch.kind == StmtKind::Empty && else_branch.is_some() {
+            self.indent += 1;
+            self.leading_comments(then_branch.span.start);
+            self.indent -= 1;
+        }
         self.block_body(then_branch);
         match else_branch.as_deref() {
             None => self.line("}"),
