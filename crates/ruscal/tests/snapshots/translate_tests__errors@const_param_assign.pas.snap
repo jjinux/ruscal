@@ -1,0 +1,36 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/const_param_assign.pas
+---
+const_param_assign.pas:17:7: error: `N` is a `const` parameter, so it can't be changed
+      N := 2;
+      ^
+
+const_param_assign.pas:18:7: error: `R` is a `const` parameter, so it can't be changed
+      R.X := 1;
+      ^
+
+const_param_assign.pas:19:7: error: `S` is a `const` parameter, so it can't be changed
+      S[1] := 'x';
+      ^
+
+const_param_assign.pas:20:11: error: `N` is a `const` parameter, so it can't be changed
+      Inc(N);
+          ^
+
+const_param_assign.pas:21:14: error: `N` is a `const` parameter, so it can't be changed
+      Change(N);
+             ^
+
+const_param_assign.pas:22:14: error: `R` is a `const` parameter, so it can't be changed
+      Change(R.X);
+             ^
+
+const_param_assign.pas:23:14: error: `N` is a `const` parameter, so it can't be changed
+      ReadLn(N);
+             ^
+
+const_param_assign.pas:24:12: error: `R` is a `const` parameter, so it can't be changed
+      with R do
+           ^

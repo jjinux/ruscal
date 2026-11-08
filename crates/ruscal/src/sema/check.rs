@@ -63,6 +63,9 @@ pub(super) struct Checker {
     /// Inside statements that never run (see `goto::dead`): codegen writes
     /// them as comments, so what they change doesn't count as changed.
     in_dead: bool,
+    /// Checking a method call's receiver: TP lets that be a `const`
+    /// parameter (`o.Show`), though nothing else may change one.
+    in_receiver: bool,
     /// For each method body we're inside: the index of its scope in
     /// `scopes` and the method's procedure.
     method_scopes: Vec<(usize, ProcId)>,
@@ -153,6 +156,7 @@ impl Checker {
             used_type_names: HashSet::new(),
             uncalled: None,
             in_dead: false,
+            in_receiver: false,
             declaring_type: false,
             unit_exports: HashMap::new(),
             current_unit: None,
@@ -2828,6 +2832,14 @@ impl Checker {
                     Type::Error
                 }
                 Some(Resolved::Sym(sym)) => match self.a.symbols[sym].kind.clone() {
+                    // As in TP ("Invalid variable reference"): a `const`
+                    // parameter can't be assigned to, nor its fields or
+                    // elements, nor passed by `var`, nor read into. (Writing
+                    // through it, `p^ := 5`, is fine: that's not the pointer.)
+                    SymKind::Var(v) if write && !self.in_receiver && v.role == VarRole::Param(ParamMode::Const) => {
+                        self.error(e.span, format!("`{}` is a `const` parameter, so it can't be changed", ident.name));
+                        Type::Error
+                    }
                     SymKind::Var(v) => {
                         self.a.refs.insert(e.id, sym);
                         self.use_var(sym, write);
@@ -3443,7 +3455,9 @@ impl Checker {
             return self.proc_call(e, callee, None, &p, args);
         }
         // The receiver is passed as `&mut self`, so it counts as a write.
+        self.in_receiver = true;
         let receiver_ty = self.place(receiver, true);
+        self.in_receiver = false;
         let Type::Object(object) = &receiver_ty else {
             if receiver_ty != Type::Error {
                 self.error(method.span, format!("a {receiver_ty} value has no methods"));

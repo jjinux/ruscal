@@ -117,6 +117,9 @@ Statements
   equal (300 for a `Byte`, a range like `5..1`) is an error
 - Procedure calls; `Exit`; `Halt` / `Halt(n)`
 - Value, `var` and `const` parameters (TP 7); passing arrays, records and strings both ways.
+  A `const` parameter can't be changed (assigned, passed by `var`, read
+  into, changed through `with`), as in TP; a method may be called on one,
+  and `p^ := x` writes through one.
   A parameter's or result's type is a type's name, as in TP: `p: ^Node`
   is an error that says to declare `PNode = ^Node` and use that.
   Different fields of one record may be passed as two `var` arguments
