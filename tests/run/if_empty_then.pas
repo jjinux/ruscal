@@ -15,4 +15,10 @@ begin
    { nothing here either }
    else
       WriteLn(2);
+   if I = 2 then
+   else { a comment after else is about the else branch }
+      WriteLn(3);
+   if I = 1 then { this one is about the then branch }
+   else { and this one about the else branch }
+      WriteLn(4);
 end.

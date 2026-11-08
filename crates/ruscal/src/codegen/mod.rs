@@ -2004,8 +2004,6 @@ impl<'a> Codegen<'a> {
         }
     }
 
-    /// A statement as the body of `if`/`while`/...: always a `{ }` block in
-    /// Rust, and a Pascal `begin ... end` doesn't need a second pair.
     /// A `match` arm written from `start` as `pattern => {`, one statement
     /// and `}` becomes `pattern => statement,`, as a person would write it
     /// (`0 => pwrite!(")"),`). Not with a comment, or for a `let` (which
@@ -2025,6 +2023,8 @@ impl<'a> Codegen<'a> {
         self.out.push_str(&compact);
     }
 
+    /// A statement as the body of `if`/`while`/...: always a `{ }` block in
+    /// Rust, and a Pascal `begin ... end` doesn't need a second pair.
     fn block_body(&mut self, s: &Stmt) {
         self.indent += 1;
         match &s.kind {

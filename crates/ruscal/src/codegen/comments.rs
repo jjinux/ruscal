@@ -236,7 +236,9 @@ struct Anchors<'a> {
     /// The procedures the walk is inside, for the keys of `headings` and
     /// `bodies`: a nested procedure isn't the body of an outer heading.
     scope: Vec<String>,
-    /// The anchors that are the `end` of a block.
+    /// The anchors that end before an `else` can come: a block's `end`, and
+    /// an empty `then` branch (at its `else`). A comment after the `else`
+    /// on that line belongs to the else branch.
     block_ends: std::collections::HashSet<usize>,
 }
 
@@ -363,6 +365,7 @@ impl Anchors<'_> {
                 // `else`, so a comment there stays in the `then` block.
                 if then_branch.kind == StmtKind::Empty && else_branch.is_some() {
                     self.anchors.push((then_branch.span.start, then_branch.span.start));
+                    self.block_ends.insert(then_branch.span.start);
                 }
                 self.stmt(then_branch);
                 if let Some(e) = else_branch {

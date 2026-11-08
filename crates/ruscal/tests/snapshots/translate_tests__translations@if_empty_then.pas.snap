@@ -33,6 +33,17 @@ fn pascal_main() {
     } else {
         pwriteln!(2);
     }
+    if i == 2 {
+    } else {
+        // a comment after else is about the else branch
+        pwriteln!(3);
+    }
+    if i == 1 {
+        // this one is about the then branch
+    } else {
+        // and this one about the else branch
+        pwriteln!(4);
+    }
 }
 
 fn main() {
