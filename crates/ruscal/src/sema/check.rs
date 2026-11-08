@@ -629,9 +629,10 @@ impl Checker {
             return;
         };
         let Some(value) = self.eval_const(e) else {
-            match self.division_by_zero(e) {
-                Some(span) => self.error(span, "division by zero"),
-                None => self.error(e.span, "expected a constant expression"),
+            match (self.division_by_zero(e), self.invalid_typecast(e)) {
+                (Some(span), _) => self.error(span, "division by zero"),
+                (None, Some((span, message))) => self.error(span, message),
+                (None, None) => self.error(e.span, "expected a constant expression"),
             }
             return;
         };
@@ -1630,6 +1631,29 @@ impl Checker {
         };
         match &self.a.symbols[self.lookup(&id.key())?].kind {
             SymKind::TypeName(target) if args.len() == 1 => Some(target.clone()),
+            _ => None,
+        }
+    }
+
+    /// Where a constant expression typecasts a Real or a string to an
+    /// ordinal type (`Integer(1.5)`, `Integer('ab')`), which TP refuses
+    /// ("Invalid type cast"), if it does, with the message to give.
+    fn invalid_typecast(&self, e: &Expr) -> Option<(Span, String)> {
+        match &e.kind {
+            ExprKind::Call { callee, args } => {
+                let target = self.typecast_target(callee, args)?;
+                if !target.is_ordinal() {
+                    return None;
+                }
+                let (what, hint) = match self.eval_const(&args[0])? {
+                    ConstVal::Real(_) => ("a Real", "; use `Trunc` or `Round`"),
+                    ConstVal::Str(s) if s.len() != 1 => ("a string", ""),
+                    _ => return None,
+                };
+                Some((e.span, format!("invalid type cast: {what} can't be cast to {target}{hint}")))
+            }
+            ExprKind::Binary { lhs, rhs, .. } => self.invalid_typecast(lhs).or_else(|| self.invalid_typecast(rhs)),
+            ExprKind::Unary { operand, .. } => self.invalid_typecast(operand),
             _ => None,
         }
     }

@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/const_invalid_typecast.pas
+---
+const_invalid_typecast.pas:5:8: error: invalid type cast: a Real can't be cast to Integer; use `Trunc` or `Round`
+   A = Integer(1.5);
+       ^^^^^^^^^^^^
+
+const_invalid_typecast.pas:6:8: error: invalid type cast: a string can't be cast to Byte
+   B = Byte('ab');
+       ^^^^^^^^^^
+
+const_invalid_typecast.pas:7:12: error: invalid type cast: a Real can't be cast to Word; use `Trunc` or `Round`
+   C = 2 * Word(0.5);
+           ^^^^^^^^^

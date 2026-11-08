@@ -356,7 +356,8 @@ Last: raw bytes and C strings
   - [x] `Halt` inside `call` with `panic = "abort"` aborted with "Halt(0)" instead of exiting with its code.
   - [x] The abort note's wording assumed `call`; `cast` lost its doc comment to `is_unsigned`; the test matched "Runtime error 2" in "201".
   - [x] `Byte(i shr 1)` and `Word(Integer(i shr 1))` kept a needless `as i16`. (Still open, cosmetic: `Word((i shr 1) shr 1)` has `as i16 as u16` on the inner shift.)
-  - [ ] A typecast of a real, a string or an enum value out of range in a constant says "expected a constant expression" (and then "unknown identifier"); a specific message would be better (fpc: "Illegal type conversion").
+  - [x] A typecast of a real, a string or an enum value out of range in a constant says "expected a constant expression" (and then "unknown identifier"); a specific message would be better (fpc: "Illegal type conversion"). A Real or a string: "invalid type cast", as TP 7 says ("Invalid type cast").
+  - [ ] An enum typecast out of range in a constant (`Color(5)`) still says "expected a constant expression". TP 7 accepts it (checked in DOSBox), but a Rust enum can't hold the value, so it's a limit of Rust: a specific message needs a `docs/rust_limits.md` section with a rewrite (an integer instead of the enum).
   - [x] PUNT: `const X = Small(300)` for `type Small = 0..10` gives 44, unchecked; fpc reports a range error. TP 7 unverified (for the user, above).
 - [x] Findings of review batch M (a7c84bf..c537266):
   - [x] With `panic = "abort"`, an error inside `call` or an I/O error under `{$I-}` ended the program with nothing on stderr.
