@@ -75,12 +75,12 @@ struct Named {
 file_record!(Named { name: string 4, n });
 
 /// Pascal: `procedure SetName(var Data; const S: string);`
-fn set_name(data: &mut dyn ByteView, s: PString) {
+fn set_name(data: &mut dyn ByteView, s: &PString) {
     // An untyped parameter is the caller's variable as Turbo Pascal's bytes;
     // `Bytes` copies them, and when it's dropped (at any `return`) it
     // writes them back into the variable.
     let mut data = Bytes::of(data);
-    data.write_string(&(s + "z"), 4);
+    data.write_string(&(*s + "z"), 4);
 }
 
 /// The main program: the `begin ... end.` block of `StringPlaces`.
@@ -103,7 +103,7 @@ fn pascal_main() {
     pwriteln!(*ps.get());
     t = pstr("Hel");
     nm.n = 258;
-    set_name(&mut nm, t);
+    set_name(&mut nm, &t);
     pwriteln!(nm.name, " ", nm.n);
 }
 

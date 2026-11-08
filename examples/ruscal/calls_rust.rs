@@ -1,19 +1,20 @@
 //! The Rust half of calls_rust.pas: routines the Pascal program declares
 //! `external`, linked with `{$L calls_rust.rs}`. Each takes Ruscal's
-//! usual types (Integer is `i16`, a string `PString`, a `var` parameter
+//! usual types (Integer is `i16`, a string `PString`, a `const` string
+//! `&PString` (Turbo Pascal passed it by reference), a `var` parameter
 //! `&mut`); `ruscal emit calls_rust.pas` shows the signatures.
 
 use super::{TLess, TNumbers};
 use ruscal_runtime::prelude::*;
 
 /// An environment variable, or '' if it isn't set.
-pub fn env_var(name: PString) -> PString {
+pub fn env_var(name: &PString) -> PString {
     let value = std::env::var(name.to_string()).unwrap_or_default();
     PString::from(value.as_str())
 }
 
 /// How many words a line has (Rust's `split_whitespace`).
-pub fn word_count(line: PString) -> i16 {
+pub fn word_count(line: &PString) -> i16 {
     line.to_string().split_whitespace().count() as i16
 }
 

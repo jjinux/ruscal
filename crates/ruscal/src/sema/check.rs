@@ -3586,6 +3586,7 @@ impl Checker {
             // Objects have no variant parts.
             variant_bytes: false,
             untyped: false,
+            shared: false,
             span: receiver.span,
         });
         self.user_call_with(e, pid, args, receiver_arg)
@@ -3668,6 +3669,7 @@ impl Checker {
                         through_pointer,
                         variant_bytes: false,
                         untyped: true,
+                        shared: false,
                         span: arg.span,
                     });
                 }
@@ -3719,6 +3721,7 @@ impl Checker {
                         through_pointer: Self::through_pointer(arg),
                         variant_bytes: bytes,
                         untyped: false,
+                        shared: false,
                         span: arg.span,
                     });
                 }
@@ -3727,6 +3730,26 @@ impl Checker {
                     Some(arg_ty) => arg_ty,
                     None => self.expr(arg),
                 };
+                // A `const` parameter TP passes by reference borrows the
+                // argument (shared), if it's a variable: for the aliasing
+                // check (see `Passing`).
+                if role == VarRole::Param(ParamMode::Const)
+                    && super::types::const_by_reference(&ty)
+                    && let Some(root) = self.place_root(arg)
+                {
+                    var_args.push(VarArg {
+                        param,
+                        root,
+                        whole: matches!(arg.kind, ExprKind::Name(_)),
+                        fields: Self::place_fields(arg).0,
+                        indexed: !Self::place_fields(arg).1,
+                        through_pointer: Self::through_pointer(arg),
+                        variant_bytes: self.through_variant_bytes(arg),
+                        untyped: false,
+                        shared: true,
+                        span: arg.span,
+                    });
+                }
                 if let Type::OpenArray(elem) = &ty
                     && !ty.accepts(&arg_ty)
                 {
@@ -3784,7 +3807,7 @@ impl Checker {
                 );
             }
         }
-        let var_roots: Vec<SymId> = var_args.iter().map(|arg| arg.root).collect();
+        let var_roots: Vec<SymId> = var_args.iter().filter(|arg| !arg.shared).map(|arg| arg.root).collect();
         if !var_args.is_empty() {
             self.call_sites.push(CallSite { caller: cur, callee: p, var_args });
         }

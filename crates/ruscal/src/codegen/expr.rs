@@ -1944,7 +1944,20 @@ impl<'a> Codegen<'a> {
             } else if var.role == crate::sema::VarRole::Param(ParamMode::Var) {
                 parts.push(self.place_mut(arg));
             } else {
-                let code = self.coerce(arg, &ty).0;
+                // A `const` parameter TP passes by reference: a reference to
+                // the argument (`&s`, `&pstr("abc")`), or the reference we
+                // hold already (`s`).
+                let by_ref = self.a.passing(*param) == crate::sema::Passing::Ref;
+                let reference = |(code, precedence): Code| -> String {
+                    if !by_ref {
+                        return code;
+                    }
+                    match code.strip_prefix('*') {
+                        Some(name) if name.chars().all(|c| c.is_alphanumeric() || c == '_') => name.to_string(),
+                        _ => format!("&{}", paren((code, precedence), prec::UNARY)),
+                    }
+                };
+                let (code, precedence) = self.coerce(arg, &ty);
                 // `f(&mut x, x.size)` borrows `x` mutably and then reads it,
                 // which Rust rejects; Pascal evaluates the argument first
                 // anyway. Compute it into a temporary before the call.
@@ -1978,13 +1991,13 @@ impl<'a> Codegen<'a> {
                     }
                     let temp = self.temp_name(&self.a.sym(*param).rust_name.clone());
                     self.pending.push(format!("let {temp} = {code};"));
-                    parts.push(temp);
+                    parts.push(reference((temp, prec::POSTFIX)));
                 } else {
                     // A literal can't change, so it needn't move.
                     if !matches!(arg.kind, ExprKind::Int(_) | ExprKind::Real(_) | ExprKind::Str(_)) {
                         values_before.push((parts.len(), *param, self.has_call(arg)));
                     }
-                    parts.push(code);
+                    parts.push(reference((code, precedence)));
                 }
             }
             if is_var_arg && super::contains_deref(arg) {

@@ -40,7 +40,7 @@ use ruscal_runtime::prelude::*;
 // Written in Rust, in `rust_externals.rs`: `pub fn is_close(a: f64, b: f64) -> bool`
 
 // Pascal: `procedure Greet(const Name: string);`
-// Written in Rust, in `rust_externals.rs`: `pub fn greet(name: PString)`
+// Written in Rust, in `rust_externals.rs`: `pub fn greet(name: &PString)`
 
 /// The main program: the `begin ... end.` block of `RustExternals`.
 /// Its local variables are the Pascal program's global variables.
@@ -51,9 +51,9 @@ fn pascal_main() {
     rust_externals::double_it(&mut n);
     pwriteln!(n);
     pwriteln!(rust_externals::is_close(0.1 + 0.2, 0.3), " ", rust_externals::is_close(1.0, 2.0));
-    rust_externals::greet(pstr("Pascal"));
+    rust_externals::greet(&pstr("Pascal"));
     pwriteln!(rustlink::gcd(84, 36), " ", rustlink::gcd(-12, 18));
-    pwriteln!(rustlink::reversed(pstr("stressed")));
+    pwriteln!(rustlink::reversed(&pstr("stressed")));
 }
 
 fn main() {
@@ -81,7 +81,7 @@ use ruscal_runtime::prelude::*;
 // Written in Rust, in `rustlink.rs`: `pub fn gcd(a: i32, b: i32) -> i32`
 
 // Pascal: `function Reversed(const S: string): string;`
-// Written in Rust, in `rustlink.rs`: `pub fn reversed(s: PString) -> PString`
+// Written in Rust, in `rustlink.rs`: `pub fn reversed(s: &PString) -> PString`
 
 // ===== src/rust_externals.rs =====
 //! The Rust half of rust_externals.pas.

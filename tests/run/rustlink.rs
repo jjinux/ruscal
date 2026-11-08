@@ -8,7 +8,7 @@ pub fn gcd(a: i32, b: i32) -> i32 {
 }
 
 /// The string backwards.
-pub fn reversed(s: PString) -> PString {
+pub fn reversed(s: &PString) -> PString {
     let mut bytes = s.as_bytes().to_vec();
     bytes.reverse();
     PString::from(bytes.as_slice())

@@ -820,6 +820,21 @@ pub fn serialized_size(ty: &Type) -> Option<i64> {
     })
 }
 
+/// Does Turbo Pascal pass a `const` parameter of this type by reference?
+/// A string always; a record, array or object unless it's exactly 1, 2 or
+/// 4 bytes (those are copied, as a scalar or a set always is). Checked in
+/// TP 7 (`c/RUSCAL/CPASS.PAS`): it shows when the routine changes, through
+/// a global, the variable it was given, or calls a method on the parameter.
+/// A type with no size in TP's layout (a record holding a file) goes by
+/// reference too.
+pub fn const_by_reference(ty: &Type) -> bool {
+    match ty {
+        Type::Str { .. } => true,
+        Type::Record(_) | Type::Array(_) | Type::Object(_) => !matches!(serialized_size(ty), Some(1 | 2 | 4)),
+        _ => false,
+    }
+}
+
 /// The bytes a set takes in TP's layout: the first of the 32 bytes of the
 /// whole bitmap it keeps (its lowest value's), and how many.
 pub fn set_bytes(ty: &Type) -> (usize, usize) {

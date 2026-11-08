@@ -44,7 +44,7 @@ fn show(
     to_string: &mut bool,
     output2: &mut PString,
     hex: PString,
-    s: PString,
+    s: &PString,
 ) {
     let mut v: PJsonValue = Ptr::nil();
     v = json_parse(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed, s);
@@ -91,30 +91,30 @@ fn pascal_main() {
         &mut at_end,
         &mut where_,
         &mut failed,
-        pstr(
+        &pstr(
             "{\"name\": \"Ann\", \"age\": 37, \"tags\": [\"a\", \"b\\n\"], \"ok\": true, \"none\": null, \"pi\": 3.25}",
         ),
     );
     pwriteln!(
-        json_get_string(doc.clone(), pstr("name")),
+        json_get_string(doc.clone(), &pstr("name")),
         " ",
-        json_get_integer(doc.clone(), pstr("age")),
+        json_get_integer(doc.clone(), &pstr("age")),
         " ",
-        json_count(json_get(doc.clone(), pstr("tags"))),
+        json_count(json_get(doc.clone(), &pstr("tags"))),
         " ",
-        json_get_bool(doc.clone(), pstr("ok")),
+        json_get_bool(doc.clone(), &pstr("ok")),
         " ",
-        json_kind(json_get(doc.clone(), pstr("none"))) == TJsonKind::JkNull
+        json_kind(json_get(doc.clone(), &pstr("none"))) == TJsonKind::JkNull
     );
     pwriteln!(
         "missing: [",
-        json_get_string(doc.clone(), pstr("nope")),
+        json_get_string(doc.clone(), &pstr("nope")),
         "] ",
-        json_get_integer(doc.clone(), pstr("nope")),
+        json_get_integer(doc.clone(), &pstr("nope")),
         " ",
-        json_get(doc.clone(), pstr("nope")).is_nil()
+        json_get(doc.clone(), &pstr("nope")).is_nil()
     );
-    pwriteln!("second tag: ", json_string(json_item(json_get(doc.clone(), pstr("tags")), 1)) == "b\n");
+    pwriteln!("second tag: ", json_string(json_item(json_get(doc.clone(), &pstr("tags")), 1)) == "b\n");
     json_write(&mut to_string, &mut output2, hex, &mut PText::console(), doc.clone(), 0);
     pwriteln!();
     json_write(&mut to_string, &mut output2, hex, &mut PText::console(), doc.clone(), 2);
@@ -134,7 +134,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("[-0.25, 1e3, 12.5E-1, 0, -7]"),
+        &pstr("[-0.25, 1e3, 12.5E-1, 0, -7]"),
     );
     show(
         &mut json_error,
@@ -149,7 +149,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr(b"\"tab\\tquote\\\" back\\\\ slash\\/ A\xc3\xa9\""),
+        &pstr(b"\"tab\\tquote\\\" back\\\\ slash\\/ A\xc3\xa9\""),
     );
     show(
         &mut json_error,
@@ -164,7 +164,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("{\"a\": {\"b\": [[], {}]}, \"c\": []}"),
+        &pstr("{\"a\": {\"b\": [[], {}]}, \"c\": []}"),
     );
     show(
         &mut json_error,
@@ -179,7 +179,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("  true  "),
+        &pstr("  true  "),
     );
     // \u escapes above 255 (a surrogate pair too) read as '?'.
     show(
@@ -195,7 +195,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("\"") + "\\" + "u0041" + "\\" + "u20ac" + "\\" + "ud83d" + "\\" + "ude00\"",
+        &(pstr("\"") + "\\" + "u0041" + "\\" + "u20ac" + "\\" + "ud83d" + "\\" + "ude00\""),
     );
     // Errors.
     show(
@@ -211,7 +211,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("[1e400]"),
+        &pstr("[1e400]"),
     );
     show(
         &mut json_error,
@@ -226,7 +226,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("[1, 2,"),
+        &pstr("[1, 2,"),
     );
     show(
         &mut json_error,
@@ -241,7 +241,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("{\"a\" 1}"),
+        &pstr("{\"a\" 1}"),
     );
     show(
         &mut json_error,
@@ -256,7 +256,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("{a: 1}"),
+        &pstr("{a: 1}"),
     );
     show(
         &mut json_error,
@@ -271,7 +271,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("[1] 2"),
+        &pstr("[1] 2"),
     );
     show(
         &mut json_error,
@@ -286,7 +286,7 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("tru"),
+        &pstr("tru"),
     );
     show(
         &mut json_error,
@@ -301,22 +301,22 @@ fn pascal_main() {
         &mut to_string,
         &mut output2,
         hex,
-        pstr("\"\\q\""),
+        &pstr("\"\\q\""),
     );
     // Building: JsonSet replaces a member in place.
     people = json_new_array().clone();
     for i in 1_i16..=3 {
         p = json_new_object().clone();
-        json_set(p.clone(), pstr("id"), json_new_number(f64::from(i)));
-        json_set(p.clone(), pstr("half"), json_new_number(f64::from(i) / 2.0));
+        json_set(p.clone(), &pstr("id"), json_new_number(f64::from(i)));
+        json_set(p.clone(), &pstr("half"), json_new_number(f64::from(i) / 2.0));
         json_add(people.clone(), p.clone());
     }
-    json_set(json_item(people.clone(), 1), pstr("id"), json_new_string(pstr("two")));
+    json_set(json_item(people.clone(), 1), &pstr("id"), json_new_string(&pstr("two")));
     json_add(people.clone(), json_new_bool(false));
     json_add(people.clone(), json_new_null().clone());
     pwriteln!(json_to_string(&mut to_string, &mut output2, hex, people.clone()));
     // A round trip through a file.
-    json_save(&mut to_string, &mut output2, hex, pstr("rsc_json.json"), people.clone(), 3);
+    json_save(&mut to_string, &mut output2, hex, &pstr("rsc_json.json"), people.clone(), 3);
     json_free(people.clone());
     doc = json_load(
         &mut json_error,
@@ -328,14 +328,14 @@ fn pascal_main() {
         &mut at_end,
         &mut where_,
         &mut failed,
-        pstr("rsc_json.json"),
+        &pstr("rsc_json.json"),
     );
     pwriteln!(
         json_count(doc.clone()),
         " ",
-        json_get_string(json_item(doc.clone(), 1), pstr("id")),
+        json_get_string(json_item(doc.clone(), 1), &pstr("id")),
         " ",
-        wd(json_get_number(json_item(doc.clone(), 2), pstr("half")), 0, 1)
+        wd(json_get_number(json_item(doc.clone(), 2), &pstr("half")), 0, 1)
     );
     json_write(&mut to_string, &mut output2, hex, &mut PText::console(), doc.clone(), 3);
     pwriteln!();
@@ -345,13 +345,13 @@ fn pascal_main() {
     // A string whose escaped form is longer than 255 characters is written
     // whole, and reads back.
     doc = json_new_array().clone();
-    p = json_new_string(PString::new());
+    p = json_new_string(&PString::new());
     for i in 1_i16..=150 {
         let value = p.get().str + "\"";
         p.get_mut().str = value;
     }
     json_add(doc.clone(), p.clone());
-    json_save(&mut to_string, &mut output2, hex, pstr("rsc_json.json"), doc.clone(), 0);
+    json_save(&mut to_string, &mut output2, hex, &pstr("rsc_json.json"), doc.clone(), 0);
     json_free(doc.clone());
     doc = json_load(
         &mut json_error,
@@ -363,7 +363,7 @@ fn pascal_main() {
         &mut at_end,
         &mut where_,
         &mut failed,
-        pstr("rsc_json.json"),
+        &pstr("rsc_json.json"),
     );
     pwriteln!("150 quotes: ", json_string(json_item(doc.clone(), 0)).length());
     json_free(doc.clone());
@@ -378,7 +378,7 @@ fn pascal_main() {
         &mut at_end,
         &mut where_,
         &mut failed,
-        pstr("no_such_file.json"),
+        &pstr("no_such_file.json"),
     );
     pwriteln!(doc.is_nil(), " ", json_error);
 }
@@ -510,11 +510,11 @@ pub fn json_new_number(x: f64) -> PJsonValue {
 }
 
 /// Pascal: `function JsonNewString(const S: string): PJsonValue;`
-pub fn json_new_string(s: PString) -> PJsonValue {
+pub fn json_new_string(s: &PString) -> PJsonValue {
     let mut result: PJsonValue = Ptr::nil();
     let mut v: PJsonValue = Ptr::nil();
     v = new_value(TJsonKind::JkString);
-    v.get_mut().str = s;
+    v.get_mut().str = *s;
     result = v.clone();
     result
 }
@@ -573,17 +573,17 @@ pub fn json_free(mut v: PJsonValue) {
 
 // Set Obj's member Key to V, in place of one it had.
 /// Pascal: `procedure JsonSet(Obj: PJsonValue; const Key: string; V: PJsonValue);`
-pub fn json_set(obj: PJsonValue, key: PString, v: PJsonValue) {
+pub fn json_set(obj: PJsonValue, key: &PString, v: PJsonValue) {
     let mut member: PJsonValue = Ptr::nil();
     let mut before: PJsonValue = Ptr::nil();
     if obj.is_nil() || obj.get().kind != TJsonKind::JkObject || v.is_nil() {
         json_free(v.clone());
         return;
     }
-    v.get_mut().key = key;
+    v.get_mut().key = *key;
     before = Ptr::nil();
     member = obj.get().first.clone();
-    while !member.is_nil() && member.get().key != key {
+    while !member.is_nil() && member.get().key != *key {
         before = member.clone();
         let next = member.get().next.clone();
         member = next;
@@ -648,13 +648,13 @@ pub fn json_item(v: PJsonValue, mut index: i16) -> PJsonValue {
 }
 
 /// Pascal: `function JsonGet(V: PJsonValue; const Key: string): PJsonValue;`
-pub fn json_get(v: PJsonValue, key: PString) -> PJsonValue {
+pub fn json_get(v: PJsonValue, key: &PString) -> PJsonValue {
     let mut result: PJsonValue = Ptr::nil();
     let mut member: PJsonValue = Ptr::nil();
     member = Ptr::nil();
     if !v.is_nil() && v.get().kind == TJsonKind::JkObject {
         member = v.get().first.clone();
-        while !member.is_nil() && member.get().key != key {
+        while !member.is_nil() && member.get().key != *key {
             let next = member.get().next.clone();
             member = next;
         }
@@ -700,28 +700,28 @@ pub fn json_bool(v: PJsonValue) -> bool {
 }
 
 /// Pascal: `function JsonGetString(V: PJsonValue; const Key: string): string;`
-pub fn json_get_string(v: PJsonValue, key: PString) -> PString {
+pub fn json_get_string(v: PJsonValue, key: &PString) -> PString {
     let mut result: PString = PString::new();
     result = json_string(json_get(v.clone(), key));
     result
 }
 
 /// Pascal: `function JsonGetNumber(V: PJsonValue; const Key: string): Real;`
-pub fn json_get_number(v: PJsonValue, key: PString) -> f64 {
+pub fn json_get_number(v: PJsonValue, key: &PString) -> f64 {
     let mut result: f64 = 0.0;
     result = json_number(json_get(v.clone(), key));
     result
 }
 
 /// Pascal: `function JsonGetInteger(V: PJsonValue; const Key: string): LongInt;`
-pub fn json_get_integer(v: PJsonValue, key: PString) -> i32 {
+pub fn json_get_integer(v: PJsonValue, key: &PString) -> i32 {
     let mut result: i32 = 0;
     result = json_integer(json_get(v.clone(), key));
     result
 }
 
 /// Pascal: `function JsonGetBool(V: PJsonValue; const Key: string): Boolean;`
-pub fn json_get_bool(v: PJsonValue, key: PString) -> bool {
+pub fn json_get_bool(v: PJsonValue, key: &PString) -> bool {
     let mut result: bool = false;
     result = json_bool(json_get(v.clone(), key));
     result
@@ -762,15 +762,15 @@ pub fn next_char(
 /// Pascal: `procedure Fail(const Why: string);`
 ///
 /// Uses globals, which are passed in as parameters.
-pub fn fail(json_error: &mut PString, at_end: bool, where_: i32, failed: &mut bool, why: PString) {
+pub fn fail(json_error: &mut PString, at_end: bool, where_: i32, failed: &mut bool, why: &PString) {
     let mut at: PString = PString::new();
     if !*failed {
         *failed = true;
         at = pas_str(where_);
         if at_end {
-            *json_error = why + " at the end";
+            *json_error = *why + " at the end";
         } else {
-            *json_error = why + " at character " + at;
+            *json_error = *why + " at character " + at;
         }
     }
 }
@@ -811,7 +811,7 @@ pub fn expect(
     if *ch == c {
         next_char(from_file, source, source_pos, input2, ch, at_end, where_);
     } else {
-        fail(json_error, *at_end, *where_, failed, pstr("expected '") + c + "'");
+        fail(json_error, *at_end, *where_, failed, &(pstr("expected '") + c + "'"));
     }
 }
 
@@ -840,7 +840,7 @@ pub fn hex_digits(
             b'0'..=b'9' => d = i16::from(*ch) - i16::from(b'0'),
             b'A'..=b'F' => d = i16::from(ch.to_ascii_uppercase()) - i16::from(b'A') + 10,
             _ => {
-                fail(json_error, *at_end, *where_, failed, pstr("expected a hex digit"));
+                fail(json_error, *at_end, *where_, failed, &pstr("expected a hex digit"));
                 d = 0;
             }
         }
@@ -873,7 +873,7 @@ pub fn parse_string(
     next_char(from_file, source, source_pos, input2, ch, at_end, where_);
     while !*failed && *ch != b'"' {
         if *at_end {
-            fail(json_error, *at_end, *where_, failed, pstr("a string doesn't end"));
+            fail(json_error, *at_end, *where_, failed, &pstr("a string doesn't end"));
         } else {
             c = *ch;
             if c == b'\\' {
@@ -895,7 +895,7 @@ pub fn parse_string(
                         }
                     }
                     _ => {
-                        fail(json_error, *at_end, *where_, failed, pstr("unknown escape \\") + *ch);
+                        fail(json_error, *at_end, *where_, failed, &(pstr("unknown escape \\") + *ch));
                     }
                 }
             }
@@ -937,7 +937,7 @@ pub fn parse_number(
     val(s, &mut x, &mut code);
     // Turbo Pascal's Real goes up to about 1.7E38.
     if code != 0 || x.abs() > 1.7e38 {
-        fail(json_error, *at_end, *where_, failed, pstr("a bad number"));
+        fail(json_error, *at_end, *where_, failed, &pstr("a bad number"));
     }
     result = json_new_number(x);
     result
@@ -971,7 +971,7 @@ pub fn parse_word(
         result = json_new_bool(false);
     } else {
         if w_ != "null" {
-            fail(json_error, *at_end, *where_, failed, pstr("expected a value"));
+            fail(json_error, *at_end, *where_, failed, &pstr("expected a value"));
         }
         result = json_new_null().clone();
     }
@@ -1019,7 +1019,7 @@ pub fn parse_list(
             if *ch == b'"' {
                 key = parse_string(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed);
             } else {
-                fail(json_error, *at_end, *where_, failed, pstr("expected a key"));
+                fail(json_error, *at_end, *where_, failed, &pstr("expected a key"));
             }
             expect(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed, b':');
         }
@@ -1086,7 +1086,7 @@ pub fn parse_value(
             )
         }
         b'"' => {
-            result = json_new_string(parse_string(
+            result = json_new_string(&parse_string(
                 json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed,
             ))
         }
@@ -1097,7 +1097,7 @@ pub fn parse_value(
             result = parse_word(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed).clone()
         }
         _ => {
-            fail(json_error, *at_end, *where_, failed, pstr("expected a value"));
+            fail(json_error, *at_end, *where_, failed, &pstr("expected a value"));
             result = json_new_null().clone();
         }
     }
@@ -1128,7 +1128,7 @@ pub fn parse_all(
     v = parse_value(json_error, from_file, source, source_pos, input2, ch, at_end, where_, failed).clone();
     skip_space(from_file, source, source_pos, input2, ch, at_end, where_);
     if !*at_end {
-        fail(json_error, *at_end, *where_, failed, pstr("more after the value"));
+        fail(json_error, *at_end, *where_, failed, &pstr("more after the value"));
     }
     if *failed {
         json_free(v.clone());
@@ -1151,11 +1151,11 @@ pub fn json_parse(
     at_end: &mut bool,
     where_: &mut i32,
     failed: &mut bool,
-    s: PString,
+    s: &PString,
 ) -> PJsonValue {
     let mut result: PJsonValue = Ptr::nil();
     *from_file = false;
-    *source = s;
+    *source = *s;
     *source_pos = 1;
     result = parse_all(json_error, *from_file, *source, source_pos, input2, ch, at_end, where_, failed).clone();
     result
@@ -1174,15 +1174,15 @@ pub fn json_load(
     at_end: &mut bool,
     where_: &mut i32,
     failed: &mut bool,
-    file_name: PString,
+    file_name: &PString,
 ) -> PJsonValue {
     let mut result: PJsonValue = Ptr::nil();
-    input2.assign(file_name);
+    input2.assign(*file_name);
     // `{$I-}`: an I/O error in `io_unchecked` sets `IOResult` instead of
     // stopping the program.
     io_unchecked(|| input2.reset());
     if io_result() != 0 {
-        *json_error = pstr("cannot open ") + file_name;
+        *json_error = pstr("cannot open ") + *file_name;
         result = Ptr::nil();
         return result;
     }
@@ -1217,15 +1217,15 @@ pub fn number_text(x: f64) -> PString {
 /// Pascal: `procedure Put(var F: Text; const S: string);`
 ///
 /// Uses globals, which are passed in as parameters.
-pub fn put(to_string: bool, output2: &mut PString, f: &mut PText, s: PString) {
+pub fn put(to_string: bool, output2: &mut PString, f: &mut PText, s: &PString) {
     if to_string {
         if output2.length() + s.length() <= 255 {
-            *output2 = *output2 + s;
+            *output2 = *output2 + *s;
         } else {
-            *output2 = (*output2 + s).copy(1, 255);
+            *output2 = (*output2 + *s).copy(1, 255);
         }
     } else {
-        fwrite!(f, s);
+        fwrite!(f, *s);
     }
 }
 
@@ -1235,29 +1235,29 @@ pub fn put(to_string: bool, output2: &mut PString, f: &mut PText, s: PString) {
 /// Pascal: `procedure PutQuoted(var F: Text; const S: string);`
 ///
 /// Uses globals, which are passed in as parameters.
-pub fn put_quoted(to_string: bool, output2: &mut PString, hex: PString, f: &mut PText, s: PString) {
-    put(to_string, output2, f, pstr("\""));
+pub fn put_quoted(to_string: bool, output2: &mut PString, hex: PString, f: &mut PText, s: &PString) {
+    put(to_string, output2, f, &pstr("\""));
     for i in 1..=s.length() {
         match s[i] {
-            b'"' => put(to_string, output2, f, pstr("\\\"")),
-            b'\\' => put(to_string, output2, f, pstr("\\\\")),
-            b'\x08' => put(to_string, output2, f, pstr("\\b")),
-            b'\t' => put(to_string, output2, f, pstr("\\t")),
-            b'\n' => put(to_string, output2, f, pstr("\\n")),
-            b'\x0c' => put(to_string, output2, f, pstr("\\f")),
-            b'\r' => put(to_string, output2, f, pstr("\\r")),
+            b'"' => put(to_string, output2, f, &pstr("\\\"")),
+            b'\\' => put(to_string, output2, f, &pstr("\\\\")),
+            b'\x08' => put(to_string, output2, f, &pstr("\\b")),
+            b'\t' => put(to_string, output2, f, &pstr("\\t")),
+            b'\n' => put(to_string, output2, f, &pstr("\\n")),
+            b'\x0c' => put(to_string, output2, f, &pstr("\\f")),
+            b'\r' => put(to_string, output2, f, &pstr("\\r")),
             b'\x00'..=b'\x07' | b'\x0b' | b'\x0e'..=b'\x1f' => put(
                 to_string,
                 output2,
                 f,
-                pstr("\\u00") + hex[i16::from(s[i]) / 16 + 1] + hex[i16::from(s[i]) % 16 + 1],
+                &(pstr("\\u00") + hex[i16::from(s[i]) / 16 + 1] + hex[i16::from(s[i]) % 16 + 1]),
             ),
             _ => {
-                put(to_string, output2, f, pstr(s[i]));
+                put(to_string, output2, f, &pstr(s[i]));
             }
         }
     }
-    put(to_string, output2, f, pstr("\""));
+    put(to_string, output2, f, &pstr("\""));
 }
 
 /// Pascal: `procedure NewLine(var F: Text; Indent, Depth: Integer);`
@@ -1266,7 +1266,7 @@ pub fn put_quoted(to_string: bool, output2: &mut PString, hex: PString, f: &mut 
 pub fn new_line(to_string: bool, output2: &mut PString, f: &mut PText, indent: i16, depth: i16) {
     if indent > 0 {
         if to_string {
-            put(to_string, output2, f, pstr(" "));
+            put(to_string, output2, f, &pstr(" "));
         } else {
             fwriteln!(f);
             for i in 1..=indent * depth {
@@ -1290,55 +1290,55 @@ pub fn write_value(
 ) {
     let mut member: PJsonValue = Ptr::nil();
     match json_kind(v.clone()) {
-        TJsonKind::JkNull => put(to_string, output2, f, pstr("null")),
+        TJsonKind::JkNull => put(to_string, output2, f, &pstr("null")),
         TJsonKind::JkBoolean => {
             if v.get().bool {
-                put(to_string, output2, f, pstr("true"));
+                put(to_string, output2, f, &pstr("true"));
             } else {
-                put(to_string, output2, f, pstr("false"));
+                put(to_string, output2, f, &pstr("false"));
             }
         }
         TJsonKind::JkNumber => {
             let x = v.get().number;
             let s = number_text(x);
-            put(to_string, output2, f, s);
+            put(to_string, output2, f, &s);
         }
         TJsonKind::JkString => {
             let s = v.get().str;
-            put_quoted(to_string, output2, hex, f, s);
+            put_quoted(to_string, output2, hex, f, &s);
         }
         TJsonKind::JkArray | TJsonKind::JkObject => {
             if v.get().kind == TJsonKind::JkArray {
-                put(to_string, output2, f, pstr("["));
+                put(to_string, output2, f, &pstr("["));
             } else {
-                put(to_string, output2, f, pstr("{"));
+                put(to_string, output2, f, &pstr("{"));
             }
             member = v.get().first.clone();
             while !member.is_nil() {
                 new_line(to_string, output2, f, indent, depth + 1);
                 if v.get().kind == TJsonKind::JkObject {
                     let s = member.get().key;
-                    put_quoted(to_string, output2, hex, f, s);
+                    put_quoted(to_string, output2, hex, f, &s);
                     if indent > 0 {
-                        put(to_string, output2, f, pstr(": "));
+                        put(to_string, output2, f, &pstr(": "));
                     } else {
-                        put(to_string, output2, f, pstr(":"));
+                        put(to_string, output2, f, &pstr(":"));
                     }
                 }
                 write_value(to_string, output2, hex, f, member.clone(), indent, depth + 1);
                 let next = member.get().next.clone();
                 member = next;
                 if !member.is_nil() {
-                    put(to_string, output2, f, pstr(","));
+                    put(to_string, output2, f, &pstr(","));
                 }
             }
             if !v.get().first.is_nil() {
                 new_line(to_string, output2, f, indent, depth);
             }
             if v.get().kind == TJsonKind::JkArray {
-                put(to_string, output2, f, pstr("]"));
+                put(to_string, output2, f, &pstr("]"));
             } else {
-                put(to_string, output2, f, pstr("}"));
+                put(to_string, output2, f, &pstr("}"));
             }
         }
     }
@@ -1366,12 +1366,12 @@ pub fn json_save(
     to_string: &mut bool,
     output2: &mut PString,
     hex: PString,
-    file_name: PString,
+    file_name: &PString,
     v: PJsonValue,
     indent: i16,
 ) {
     let mut f: PText = PText::default();
-    f.assign(file_name);
+    f.assign(*file_name);
     f.rewrite();
     json_write(to_string, output2, hex, &mut f, v.clone(), indent);
     fwriteln!(f);

@@ -70,9 +70,9 @@ fn set_field(data: &mut dyn ByteView) {
 }
 
 /// Pascal: `procedure SetName(var Data; const s: string);`
-fn set_name(data: &mut dyn ByteView, s: PString) {
+fn set_name(data: &mut dyn ByteView, s: &PString) {
     let mut data = Bytes::of(data);
-    data.write_string(&s, 5);
+    data.write_string(&*s, 5);
 }
 
 /// The main program: the `begin ... end.` block of `UntypedCasts`.
@@ -88,7 +88,7 @@ fn pascal_main() {
     pwriteln!(r.a, " ", r.b);
     nr.name = pstr("abc");
     nr.n = 258;
-    set_name(&mut nr, pstr("xy"));
+    set_name(&mut nr, &pstr("xy"));
     pwriteln!(nr.name, " ", nr.n);
 }
 

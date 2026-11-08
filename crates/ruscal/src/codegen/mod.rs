@@ -23,7 +23,9 @@ use crate::ast::*;
 use crate::diag::{SourceMap, Span};
 use crate::sema::goto::GotoBlock;
 use crate::sema::types::{ObjectType, RecordType, VariantPart, serialized_size};
-use crate::sema::{Access, Analysis, Builtin, CaptureMode, IntKind, MAIN, ProcId, SymId, SymKind, Type, VarRole};
+use crate::sema::{
+    Access, Analysis, Builtin, CaptureMode, IntKind, MAIN, Passing, ProcId, SymId, SymKind, Type, VarRole,
+};
 
 /// What [`generate`] writes Rust for: the program and its units, with what
 /// the driver learned about them.
@@ -1844,6 +1846,10 @@ impl<'a> Codegen<'a> {
                 // An untyped `var Data`: any variable, as its bytes.
                 (VarRole::Param(ParamMode::Var), Type::Untyped) => (name, "&mut dyn ByteView".to_string()),
                 (VarRole::Param(ParamMode::Var), _) => (name, format!("&mut {ty}")),
+                // A `const` string, or a record bigger than 4 bytes: TP passes
+                // it by reference, and so does the Rust.
+                _ if self.a.passing(param) == Passing::Ref => (name, format!("&{ty}")),
+                _ if self.a.passing(param) == Passing::RefMut => (name, format!("&mut {ty}")),
                 // A value or `const` open array: the caller's elements.
                 (_, Type::OpenArray(_)) => (name, format!("&{ty}")),
                 _ if self.a.mutated.contains(&param) => (format!("mut {name}"), ty),

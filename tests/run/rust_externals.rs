@@ -12,7 +12,8 @@ pub fn is_close(a: f64, b: f64) -> bool {
     (a - b).abs() < 1e-9
 }
 
-/// Output through the runtime, like Pascal's own Write.
-pub fn greet(name: PString) {
+/// Output through the runtime, like Pascal's own Write. A `const` string
+/// comes by reference, as Turbo Pascal passed it.
+pub fn greet(name: &PString) {
     pwriteln!("hello, ", name, " (from Rust)");
 }

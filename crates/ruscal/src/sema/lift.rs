@@ -269,7 +269,9 @@ pub(super) fn check_aliasing(a: &Analysis, sites: &[CallSite]) -> Vec<Diagnostic
         for (i, arg) in site.var_args.iter().enumerate() {
             let VarArg { root, span, .. } = *arg;
             let name = &a.sym(root).name;
-            if let Some(earlier) = site.var_args[..i].iter().find(|earlier| earlier.overlaps(arg)) {
+            // (Two shared borrows of one variable are fine.)
+            let conflicting = |earlier: &&VarArg| earlier.overlaps(arg) && !(earlier.shared && arg.shared);
+            if let Some(earlier) = site.var_args[..i].iter().find(conflicting) {
                 // `a[1]` and `a[2]` may well be different elements, but Rust
                 // can't tell, so say why they count as the same.
                 let why = if earlier.untyped || arg.untyped {
@@ -281,25 +283,33 @@ pub(super) fn check_aliasing(a: &Analysis, sites: &[CallSite]) -> Vec<Diagnostic
                 } else {
                     ""
                 };
+                let what = if earlier.shared || arg.shared {
+                    "by `var` and as a `const` parameter (which Turbo Pascal passes by reference) in this call to `{}`; Rust doesn't allow a mutable reference to a variable alongside another reference to it"
+                } else {
+                    "by `var` more than once in this call to `{}`; Rust doesn't allow two mutable references to the same variable"
+                };
+                let what = what.replace("{}", &callee.name);
                 errors.push(Diagnostic::new(
                     span,
-                    format!(
-                        "`{name}` is passed by `var` more than once in this call to `{}`; Rust doesn't allow two mutable references to the same variable{why}{}",
-                        callee.name,
-                        super::rewrite_link("two-var-arguments")
-                    ),
+                    format!("`{name}` is passed {what}{why}{}", super::rewrite_link("two-var-arguments")),
                 ));
             } else if callee
                 .captures
                 .iter()
                 // Through a pointer, the argument only reads the pointer
                 // itself, which a callee that reads it too doesn't mind.
-                .any(|c| c.sym == root && !(arg.through_pointer && c.mode != CaptureMode::RefMut))
+                // And a shared one only minds a callee that changes it.
+                .any(|c| c.sym == root && !((arg.through_pointer || arg.shared) && c.mode != CaptureMode::RefMut))
             {
+                let how = if arg.shared {
+                    "as a `const` parameter (which Turbo Pascal passes by reference)"
+                } else {
+                    "by `var`"
+                };
                 errors.push(Diagnostic::new(
                     span,
                     format!(
-                        "`{name}` is passed by `var` to `{}`, which also uses `{name}` directly; Rust doesn't allow two references to the same variable when one of them is mutable{}",
+                        "`{name}` is passed {how} to `{}`, which also uses `{name}` directly; Rust doesn't allow two references to the same variable when one of them is mutable{}",
                         callee.name,
                         super::rewrite_link("var-and-global")
                     ),

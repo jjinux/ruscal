@@ -101,7 +101,7 @@ fn grow(n: &mut i16) {
 }
 
 /// Pascal: `function Area(const Fig: Fig): Integer;`
-fn area(fig: Fig) -> i16 {
+fn area(fig: &Fig) -> i16 {
     let mut result: i16 = 0;
     match fig.kind {
         Shape::Circle => result = 3 * fig.r * fig.r,
@@ -126,12 +126,12 @@ fn pascal_main() {
     f.kind = Shape::Rect;
     f.w = 3;
     f.h = 4;
-    pwriteln!(area(f), " ", Fig::SERIALIZED_SIZE);
+    pwriteln!(area(&f), " ", Fig::SERIALIZED_SIZE);
     // Pascal `with`: Rust has no equivalent, so each field is written out in full.
     pwriteln!(f.x + f.y + f.w);
     grow(&mut f.h);
-    pwriteln!(area(f));
-    pwriteln!(area(unit_circle), " ", unit_circle.kind as i16);
+    pwriteln!(area(&f));
+    pwriteln!(area(&unit_circle), " ", unit_circle.kind as i16);
     a.name = pstr("savings");
     a.open = true;
     a.balance = 100000;
@@ -149,9 +149,9 @@ fn pascal_main() {
     fl.read(&mut g);
     pwriteln!(g.kind as i16, " ", g.w, " ", g.h);
     fl.read(&mut g);
-    pwriteln!(g.kind as i16, " ", g.r, " ", area(g));
+    pwriteln!(g.kind as i16, " ", g.r, " ", area(&g));
     fl.read(&mut g);
-    pwriteln!(g.kind as i16, " ", area(g), " ", fl.file_size());
+    pwriteln!(g.kind as i16, " ", area(&g), " ", fl.file_size());
     fl.close();
     fl.erase();
 }

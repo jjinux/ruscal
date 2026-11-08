@@ -98,6 +98,19 @@ pub struct Var {
     pub role: VarRole,
 }
 
+/// How a parameter is passed in Rust: a copy, or a reference to the
+/// caller's variable, shared or mutable. A `var` parameter is `RefMut`; a
+/// `const` one TP passes by reference (`types::const_by_reference`) is
+/// `Ref`, or `RefMut` if the routine calls a method on it (which changes
+/// the caller's object in TP); every other one is `Value`. (An open array
+/// is always reached through a reference too; see `Analysis::access`.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Passing {
+    Value,
+    Ref,
+    RefMut,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VarRole {
     Local,
@@ -320,6 +333,9 @@ pub struct Analysis {
     /// Variables that are modified somewhere and so need `let mut` (or a
     /// `mut` parameter).
     pub mutated: HashSet<SymId>,
+    /// The `const` parameters passed by reference that are `&mut` in Rust:
+    /// a method is called on one (see [`Passing`]).
+    pub const_ref_mut: HashSet<SymId>,
     /// Typed constants (initialized variables), with their declarations so
     /// codegen can emit the initial value.
     pub typed_consts: HashMap<SymId, crate::ast::ConstDecl>,
@@ -377,6 +393,18 @@ impl Analysis {
         &self.symbols[sym].rust_name
     }
 
+    /// How parameter `param` is passed (see [`Passing`]).
+    pub fn passing(&self, param: SymId) -> Passing {
+        let var = self.var(param);
+        match var.role {
+            VarRole::Param(ParamMode::Var) => Passing::RefMut,
+            VarRole::Param(ParamMode::Const) if types::const_by_reference(&var.ty) => {
+                if self.const_ref_mut.contains(&param) { Passing::RefMut } else { Passing::Ref }
+            }
+            _ => Passing::Value,
+        }
+    }
+
     /// How variable `sym` is reached from inside procedure `proc`.
     pub fn access(&self, proc: ProcId, sym: SymId) -> Access {
         if self.alias_param(proc, sym).is_some() {
@@ -385,7 +413,7 @@ impl Analysis {
         let var = self.var(sym);
         if var.owner == proc {
             return match (var.role, &var.ty) {
-                (VarRole::Param(ParamMode::Var), _) => Access::Reference,
+                (VarRole::Param(_), _) if self.passing(sym) != Passing::Value => Access::Reference,
                 // An open array parameter is always a reference, to the
                 // caller's elements or (a value one it changes) its copy.
                 (VarRole::Param(_), Type::OpenArray(_)) => Access::Reference,
@@ -534,6 +562,9 @@ pub struct VarArg {
     /// True if the parameter is untyped (`var Buf`): its bytes run on to
     /// the end of the whole variable, which they borrow.
     pub untyped: bool,
+    /// True for a `const` parameter passed by reference (`Passing::Ref`):
+    /// a shared borrow, which may overlap another shared one.
+    pub shared: bool,
     pub span: Span,
 }
 
