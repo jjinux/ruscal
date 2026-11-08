@@ -1840,11 +1840,19 @@ impl<'a> Codegen<'a> {
         }
         let params = info.params.clone();
         // Variables this call borrows mutably (`var` arguments).
+        // (And outer variables the routine changes, passed first as `&mut g`:
+        // `V(G)` by value, where `V` also changes `G`, copies `G` first.)
         let borrowed: Vec<String> = params
             .iter()
             .zip(args)
             .filter(|(p, _)| self.a.var(**p).role == crate::sema::VarRole::Param(ParamMode::Var))
             .map(|(_, arg)| root_key(arg))
+            .chain(
+                info.captures
+                    .iter()
+                    .filter(|cap| cap.mode == crate::sema::CaptureMode::RefMut)
+                    .map(|cap| self.a.sym(cap.sym).name.to_ascii_lowercase()),
+            )
             .collect();
         // Heap records shared by more than one `var` argument (`q^.x, q^.y`).
         let is_var = |p: &usize| self.a.var(*p).role == crate::sema::VarRole::Param(ParamMode::Var);
