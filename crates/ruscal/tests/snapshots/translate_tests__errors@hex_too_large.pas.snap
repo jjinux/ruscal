@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/hex_too_large.pas
+---
+hex_too_large.pas:5:12: error: hexadecimal number is too large: the largest is $FFFFFFFF
+   WriteLn($100000000);
+           ^^^^^^^^^^

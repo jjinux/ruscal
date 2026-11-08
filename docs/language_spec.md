@@ -87,7 +87,9 @@ Expressions
 - Comparisons on numbers, chars, strings, booleans, enums
 - String concatenation `+`, char/string mixing
 - Integer, real (`1.5`, `1E3`), char (`'a'`, `#13`, `^M`), string (`'it''s'`),
-  boolean literals; `nil`
+  boolean literals; `nil`. A hex integer (`$FF`) is a 32-bit pattern, as
+  in TP: up to `$FFFFFFFF`, and past `$7FFFFFFF` it's a negative LongInt
+  (`$FFFFFFFF` is -1).
 - Typecasts between ordinal types `Integer(c)`, `Char(65)`, `Ord`, `Chr`
 - Constant expressions in `const` sections, array bounds and `case` labels,
   worked out in 32 bits as in TP (`C + 1` with `C = 32767` is 32768), and

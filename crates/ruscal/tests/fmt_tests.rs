@@ -105,6 +105,11 @@ fn formatting_keeps_tokens() {
 fn test_programs_are_formatted() {
     for file in test_programs() {
         let source = std::fs::read(&file).unwrap();
+        // An error test the lexer rejects (`$100000000`) can't be
+        // formatted, as `ruscal fmt` says too.
+        if file.parent().is_some_and(|d| d.ends_with("errors")) && tokenize(&source).is_err() {
+            continue;
+        }
         let formatted = format_files(&[&source]).unwrap();
         assert!(formatted[0] == source, "{} is not formatted; run `ruscal fmt` on it", file.display());
     }

@@ -13,7 +13,7 @@
 //! - Strings use single quotes; a quote inside a string is doubled (`'it''s'`).
 //!   Control characters can be spliced in with `#13` or `^M`, and adjacent
 //!   pieces form one literal: `'line'#13#10`.
-//! - `$FF` is a hexadecimal integer.
+//! - `$FF` is a hexadecimal integer, a 32-bit pattern (`$FFFFFFFF` is -1).
 
 use crate::diag::{Diagnostic, Span};
 use crate::token::{Keyword, Token, TokenKind};
@@ -274,7 +274,13 @@ impl<'a> Lexer<'a> {
         }
         let text = std::str::from_utf8(&self.src[digits_start..self.pos]).unwrap();
         let value = i64::from_str_radix(text, 16).map_err(|_| self.error(start, "invalid hexadecimal number"))?;
-        self.push(TokenKind::Integer(value), start);
+        // As in TP, a hex constant is a 32-bit pattern: up to `$FFFFFFFF`,
+        // and one past `$7FFFFFFF` is a negative LongInt (`$FFFFFFFF` is
+        // -1, as the bits of an `i32`).
+        let Ok(bits) = u32::try_from(value) else {
+            return Err(self.error(start, "hexadecimal number is too large: the largest is $FFFFFFFF"));
+        };
+        self.push(TokenKind::Integer(i64::from(bits as i32)), start);
         Ok(())
     }
 
