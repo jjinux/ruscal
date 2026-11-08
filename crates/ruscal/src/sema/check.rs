@@ -539,7 +539,11 @@ impl Checker {
                         Some((host, _, _)) => host.clone(),
                         None => {
                             self.declaring_type = true;
+                            // A record or enum written inside it (`array[1..2]
+                            // of record ... end`) is named after the type.
+                            let outer = self.field_name.replace(t.name.name.clone());
                             let ty = self.resolve_named_type(&t.ty, Some(&t.name.name));
+                            self.field_name = outer;
                             self.declaring_type = false;
                             ty
                         }
@@ -990,6 +994,11 @@ impl Checker {
                     Type::Error
                 }
             };
+            // As in TP ("Files must be var parameters"): a file can't be
+            // copied, and a `const` one couldn't be read or written.
+            if matches!(ty, Type::Text | Type::File(_)) && group.mode != ParamMode::Var {
+                self.error(group.names[0].span, format!("a {ty} parameter must be a `var` parameter"));
+            }
             let bounds = group.ty.as_ref().and_then(|t| self.subrange_bounds(t));
             for name in &group.names {
                 let param = self.declare_var(name, ty.clone(), pid, VarRole::Param(group.mode));
@@ -1247,8 +1256,6 @@ impl Checker {
         ty
     }
 
-    /// A record's fields, added to `resolved` (where a name may not repeat:
-    /// the variants' fields share one namespace with the fixed ones).
     /// The Pascal name for a record or enum type: the name it's declared
     /// under (`type TPair = record ...`), or, for one written in place, an
     /// `Anonymous` name after the variable or field it's for (`var Pair:
@@ -1262,6 +1269,8 @@ impl Checker {
         }
     }
 
+    /// A record's fields, added to `resolved` (where a name may not repeat:
+    /// the variants' fields share one namespace with the fixed ones).
     fn record_fields(&mut self, groups: &[FieldDecl], resolved: &mut Vec<Field>) {
         for group in groups {
             let outer = self.field_name.replace(group.names[0].name.clone());
@@ -1646,7 +1655,8 @@ impl Checker {
                     return None;
                 }
                 let (what, hint) = match self.eval_const(&args[0])? {
-                    ConstVal::Real(_) => ("a Real", "; use `Trunc` or `Round`"),
+                    ConstVal::Real(_) if target.is_integer() => ("a Real", "; use `Trunc` or `Round`"),
+                    ConstVal::Real(_) => ("a Real", ""),
                     ConstVal::Str(s) if s.len() != 1 => ("a string", ""),
                     _ => return None,
                 };
@@ -2590,9 +2600,30 @@ impl Checker {
         if ty != Type::Error
             && let Some(value) = self.eval_const(e)
         {
+            if self.overflows_32_bits(e, &value) {
+                self.error(e.span, "overflow in a constant expression: the result doesn't fit in a LongInt");
+                return Type::Error;
+            }
             self.a.consts.insert(e.id, value);
         }
         ty
+    }
+
+    /// Does constant arithmetic `e` (worth `value`) overflow 32 bits, which
+    /// TP refuses when it compiles ("Overflow in arithmetic operation":
+    /// `-$80000000`, `MaxLongInt + 1`)? Only where its operands fit, so one
+    /// mistake gives one error.
+    fn overflows_32_bits(&self, e: &Expr, value: &ConstVal) -> bool {
+        let ConstVal::Int(n) = value else { return false };
+        if i32::try_from(*n).is_ok() {
+            return false;
+        }
+        let fits = |operand: &Expr| matches!(self.a.consts.get(&operand.id), Some(ConstVal::Int(m)) if i32::try_from(*m).is_ok());
+        match &e.kind {
+            ExprKind::Unary { op: UnaryOp::Neg, operand } => fits(operand),
+            ExprKind::Binary { op: BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul, lhs, rhs } => fits(lhs) && fits(rhs),
+            _ => false,
+        }
     }
 
     /// A procedural place as a value, not called even if it's a function
@@ -3047,7 +3078,11 @@ impl Checker {
     fn select_index(&mut self, base: Type, indexes: &[Expr], span: Span) -> Type {
         let mut ty = base;
         for index in indexes {
+            // An index isn't part of a method call's receiver (`A[Next(N)].Show`
+            // can't pass a `const` parameter `N` by `var`).
+            let outer = std::mem::replace(&mut self.in_receiver, false);
             let index_ty = self.expr(index);
+            self.in_receiver = outer;
             ty = match &ty {
                 Type::Array(a) => {
                     if !a.index.accepts(&index_ty) && !(a.index.is_integer() && index_ty.is_integer()) {
@@ -3498,9 +3533,9 @@ impl Checker {
             return self.proc_call(e, callee, None, &p, args);
         }
         // The receiver is passed as `&mut self`, so it counts as a write.
-        self.in_receiver = true;
+        let outer = std::mem::replace(&mut self.in_receiver, true);
         let receiver_ty = self.place(receiver, true);
-        self.in_receiver = false;
+        self.in_receiver = outer;
         let Type::Object(object) = &receiver_ty else {
             if receiver_ty != Type::Error {
                 self.error(method.span, format!("a {receiver_ty} value has no methods"));

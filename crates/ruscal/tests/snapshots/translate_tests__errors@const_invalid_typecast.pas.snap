@@ -14,3 +14,7 @@ const_invalid_typecast.pas:6:8: error: invalid type cast: a string can't be cast
 const_invalid_typecast.pas:7:12: error: invalid type cast: a Real can't be cast to Word; use `Trunc` or `Round`
    C = 2 * Word(0.5);
            ^^^^^^^^^
+
+const_invalid_typecast.pas:8:8: error: invalid type cast: a Real can't be cast to Boolean
+   D = Boolean(1.5);
+       ^^^^^^^^^^^^

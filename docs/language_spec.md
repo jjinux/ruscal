@@ -92,7 +92,8 @@ Expressions
   (`$FFFFFFFF` is -1).
 - Typecasts between ordinal types `Integer(c)`, `Char(65)`, `Ord`, `Chr`
 - Constant expressions in `const` sections, array bounds and `case` labels,
-  worked out in 32 bits as in TP (`C + 1` with `C = 32767` is 32768), and
+  worked out in 32 bits as in TP (`C + 1` with `C = 32767` is 32768;
+  one that doesn't fit, `MaxLongInt + 1` or `-$80000000`, is an error), and
   kept in the Rust with their constants' names (`const M = K * 2 + 1` is
   `const M: i16 = K * 2 + 1;`), with TP 7's constant functions: `Abs`, `Chr`, `Hi`, `High`, `Length`,
   `Lo`, `Low`, `Odd`, `Ord`, `Pred`, `Round`, `SizeOf`, `Succ`, `Swap`,

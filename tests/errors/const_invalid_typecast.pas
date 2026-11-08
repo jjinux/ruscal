@@ -5,5 +5,6 @@ const
    A = Integer(1.5);
    B = Byte('ab');
    C = 2 * Word(0.5);
+   D = Boolean(1.5);
 begin
 end.

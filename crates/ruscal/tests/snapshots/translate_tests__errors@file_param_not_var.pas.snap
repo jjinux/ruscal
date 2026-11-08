@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/file_param_not_var.pas
+---
+file_param_not_var.pas:5:21: error: a Text parameter must be a `var` parameter
+procedure Put(const F: Text);
+                    ^
+
+file_param_not_var.pas:7:15: error: `F` is a `const` parameter, so it can't be changed
+      WriteLn(F, 'x');
+              ^
+
+file_param_not_var.pas:10:16: error: a file of Integer parameter must be a `var` parameter
+procedure Copy(F: file of Integer);
+               ^

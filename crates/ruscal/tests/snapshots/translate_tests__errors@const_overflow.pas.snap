@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/const_overflow.pas
+---
+const_overflow.pas:5:10: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   Neg = -$80000000;
+         ^^^^^^^^^^
+
+const_overflow.pas:6:10: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   Big = MaxLongInt + 1;
+         ^^^^^^^^^^^^^^
+
+const_overflow.pas:9:12: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   WriteLn(-$80000000, Fine);
+           ^^^^^^^^^^
