@@ -107,13 +107,13 @@ type Pair = PArray<Rec, 1, 2>;
 
 /// Pascal: `packed record A: Integer; S: string[5]; end`
 #[derive(Clone, Copy, Debug, Default)]
-struct Anon {
+struct AnonymousAnon {
     a: i16,
     s: PString,
 }
 
-impl Anon {
-    /// Pascal's `SizeOf(Anon)`: its bytes in Turbo Pascal's layout.
+impl AnonymousAnon {
+    /// Pascal's `SizeOf(AnonymousAnon)`: its bytes in Turbo Pascal's layout.
     pub const SERIALIZED_SIZE: usize = 2 + serialized_string_size(5);
 }
 
@@ -129,7 +129,7 @@ fn pascal_main() {
     let mut r: Rec = Rec::default();
     let ps: Pair = Pair::default();
     let b: Bytes_ = Bytes_::default();
-    let anon: Anon = Anon::default();
+    let anon: AnonymousAnon = AnonymousAnon::default();
     let mut w_: u16 = 0;
     let mut l: i32 = 0;
     let mut count: i16 = 0;
@@ -150,7 +150,7 @@ fn pascal_main() {
         " ",
         2 * Rec::SERIALIZED_SIZE,
         " ",
-        Anon::SERIALIZED_SIZE
+        AnonymousAnon::SERIALIZED_SIZE
     );
     pwriteln!(TWICE, " ", TOTAL, " ", typed, " ", 2, " ", b.high());
     pwriteln!(ps.high() + 25, " ", Rec::SERIALIZED_SIZE as i16 - Point::SERIALIZED_SIZE as i16 * 2);

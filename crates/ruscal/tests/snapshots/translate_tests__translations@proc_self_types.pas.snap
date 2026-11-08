@@ -83,13 +83,13 @@ impl std::ops::Deref for Func {
 
 /// Pascal: `record Id: Integer; Next: State; end`
 #[derive(Clone, Copy, Debug, Default)]
-struct Saved {
+struct AnonymousSaved {
     id: i16,
     next: State,
 }
 
-impl Saved {
-    /// Pascal's `SizeOf(Saved)`: its bytes in Turbo Pascal's layout.
+impl AnonymousSaved {
+    /// Pascal's `SizeOf(AnonymousSaved)`: its bytes in Turbo Pascal's layout.
     /// That's also what a typed file stores, so it's called the serialized
     /// size; the Rust value's size in memory (`std::mem::size_of`) differs.
     pub const SERIALIZED_SIZE: usize = 2 + 4;
@@ -138,7 +138,7 @@ fn pascal_main() {
     let mut current: State = State::nil();
     let mut steps: i16 = 0;
     let mut fact: Func = Func::nil();
-    let mut saved: Saved = Saved::default();
+    let mut saved: AnonymousSaved = AnonymousSaved::default();
     let mut f: PFile<State> = PFile::default();
     current = State::of(first, "First");
     steps = 0;
@@ -151,7 +151,7 @@ fn pascal_main() {
     pwriteln!(fact.get()(fact, 10));
     saved.id = 7;
     saved.next = State::of(second, "Second");
-    pwriteln!(Saved::SERIALIZED_SIZE, " ", !saved.next.is_nil());
+    pwriteln!(AnonymousSaved::SERIALIZED_SIZE, " ", !saved.next.is_nil());
     f.assign("proc_self_types.dat");
     f.rewrite();
     f.write(&saved.next);

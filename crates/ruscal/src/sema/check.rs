@@ -77,6 +77,9 @@ pub(super) struct Checker {
     unit_exports: HashMap<String, HashMap<String, SymId>>,
     /// True while resolving the right-hand side of a `type` declaration.
     declaring_type: bool,
+    /// The record field whose type is being resolved, which names an
+    /// anonymous record or enum declared in place (`AnonymousPair`).
+    field_name: Option<String>,
     /// Bounds of type names declared as subranges (`Index = 1..10`).
     subrange_types: HashMap<SymId, (Type, i64, i64)>,
     /// Bounds of variables and parameters declared with a subrange type
@@ -158,6 +161,7 @@ impl Checker {
             in_dead: false,
             in_receiver: false,
             declaring_type: false,
+            field_name: None,
             unit_exports: HashMap::new(),
             current_unit: None,
             pending_pointers: Vec::new(),
@@ -1049,7 +1053,7 @@ impl Checker {
                 None => Type::Error,
             },
             TypeExpr::Enum(names, _) => {
-                let rust_name = self.type_name(name.unwrap_or("Enum"));
+                let rust_name = self.type_name(&self.anonymous_name(name, "Enum"));
                 let variants = names.iter().map(|n| names::camel_case(&n.name)).collect();
                 let pascal_names = names.iter().map(|n| n.name.clone()).collect();
                 let ty = Type::Enum(Rc::new(EnumType { rust_name, variants, pascal_names, in_one_byte: false }));
@@ -1112,7 +1116,7 @@ impl Checker {
             }
             TypeExpr::Proc { kind, params, ret, span } => self.proc_type(*kind, params, ret.as_deref(), *span, name),
             TypeExpr::Record(fields, variant, _) => {
-                let rust_name = self.type_name(name.unwrap_or("Record"));
+                let rust_name = self.type_name(&self.anonymous_name(name, "Record"));
                 let mut resolved: Vec<Field> = Vec::new();
                 self.record_fields(fields, &mut resolved);
                 let variant = variant.as_deref().and_then(|v| self.variant_part(v, &mut resolved));
@@ -1244,9 +1248,24 @@ impl Checker {
 
     /// A record's fields, added to `resolved` (where a name may not repeat:
     /// the variants' fields share one namespace with the fixed ones).
+    /// The Pascal name for a record or enum type: the name it's declared
+    /// under (`type TPair = record ...`), or, for one written in place, an
+    /// `Anonymous` name after the variable or field it's for (`var Pair:
+    /// record ...` and a field `Pair: record ...` are `AnonymousPair`), so
+    /// it can't be taken for a type the program named.
+    fn anonymous_name(&self, name: Option<&str>, kind: &str) -> String {
+        match (name, self.field_name.as_deref()) {
+            (Some(name), _) if self.declaring_type => name.to_string(),
+            (Some(name), _) | (None, Some(name)) => format!("anonymous_{name}"),
+            (None, None) => kind.to_string(),
+        }
+    }
+
     fn record_fields(&mut self, groups: &[FieldDecl], resolved: &mut Vec<Field>) {
         for group in groups {
+            let outer = self.field_name.replace(group.names[0].name.clone());
             let ty = self.resolve_type(&group.ty);
+            self.field_name = outer;
             for n in &group.names {
                 self.add_field(n, ty.clone(), resolved);
             }

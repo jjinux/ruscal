@@ -38,7 +38,7 @@ struct PFile_ {
 
 /// Pascal: `(Red, Green, Blue)`
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
-enum C {
+enum AnonymousC {
     #[default]
     Red,
     Green,
@@ -48,14 +48,14 @@ enum C {
 // Pascal enumerations are ordinal types: they can index arrays, drive
 // `for` loops and go through `Succ`/`Pred`. These impls connect the enum
 // to the runtime's support for that.
-impl Ordinal for C {
+impl Ordinal for AnonymousC {
     fn ord(self) -> i64 {
         self as i64
     }
 }
 
-impl Enumerated for C {
-    const VALUES: &'static [Self] = &[C::Red, C::Green, C::Blue];
+impl Enumerated for AnonymousC {
+    const VALUES: &'static [Self] = &[AnonymousC::Red, AnonymousC::Green, AnonymousC::Blue];
 }
 
 // Type names that the runtime also uses (PSet, PArray, Ptr, PText,
@@ -102,7 +102,7 @@ fn pascal_main() {
     set_rand_seed(1);
     set_rand_seed_(2);
     r = random_real();
-    for c in enum_range(C::Red, C::Blue) {
+    for c in enum_range(AnonymousC::Red, AnonymousC::Blue) {
         pwrite!(c as i16);
     }
     pwriteln!(" ", r < 1.0, " ", wd(random_real_(), 3, 1), " ", enum_range_(3));

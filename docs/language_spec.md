@@ -343,7 +343,9 @@ More language
 - Typed constants (`const Days: array[0..6] of String[9] = (...)`;
   `const x: integer = 5`), which are initialized variables in TP
 - Anonymous record types in `var` declarations (`EndPoint: record x, y:
-  integer; end`)
+  integer; end`) and in record fields. One (or an anonymous enum) becomes
+  a Rust type named after its variable or field, `AnonymousEndPoint`, so
+  it isn't taken for a type the program named.
 - Char-indexed and enum-indexed arrays; `for` over chars and enums
 - Shadowing of built-in names by user declarations (`procedure Exit(var
   leave: boolean)` and `type ShortString = string[20]` both appear in the

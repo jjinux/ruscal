@@ -18,14 +18,14 @@ use ruscal_runtime::prelude::*;
 
 /// Pascal: `record x, y: integer; end`
 #[derive(Clone, Copy, Debug, Default)]
-struct Point {
+struct AnonymousPoint {
     x: i16,
     y: i16,
 }
 
 /// Pascal: `record x, y, z: integer; end`
 #[derive(Clone, Copy, Debug, Default)]
-struct Point2 {
+struct AnonymousPoint2 {
     x: i16,
     y: i16,
     z: i16,
@@ -35,7 +35,7 @@ struct Point2 {
 // variable; two variables with the same name get `Point` and `Point2`.
 /// Pascal: `procedure First;`
 fn first() {
-    let mut point: Point = Point::default();
+    let mut point: AnonymousPoint = AnonymousPoint::default();
     point.x = 1;
     point.y = 2;
     pwriteln!("first: ", point.x, ",", point.y);
@@ -43,7 +43,7 @@ fn first() {
 
 /// Pascal: `procedure Second;`
 fn second() {
-    let mut point: Point2 = Point2::default();
+    let mut point: AnonymousPoint2 = AnonymousPoint2::default();
     point.x = 3;
     point.y = 4;
     point.z = 5;

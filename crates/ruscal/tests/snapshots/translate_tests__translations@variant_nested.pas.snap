@@ -55,15 +55,15 @@ impl Shape {
 
 /// Pascal: `record A, B: Word; end`
 #[derive(Clone, Copy, Debug, Default)]
-struct Record {
+struct AnonymousPair {
     a: u16,
     b: u16,
 }
 
-file_record!(Record { a, b });
+file_record!(AnonymousPair { a, b });
 
-impl Record {
-    /// Pascal's `SizeOf(Record)`: its bytes in Turbo Pascal's layout.
+impl AnonymousPair {
+    /// Pascal's `SizeOf(AnonymousPair)`: its bytes in Turbo Pascal's layout.
     pub const SERIALIZED_SIZE: usize = 2 + 2;
 }
 
@@ -130,13 +130,13 @@ impl Pun {
         self.variants.field(3)
     }
     // `Pair` is bytes 0 to 3
-    fn pair(&self) -> Record {
+    fn pair(&self) -> AnonymousPair {
         self.variants.get(0)
     }
-    fn set_pair(&mut self, pair: Record) {
+    fn set_pair(&mut self, pair: AnonymousPair) {
         self.variants.set(0, pair)
     }
-    fn pair_mut(&mut self) -> VariantField<'_, Record> {
+    fn pair_mut(&mut self) -> VariantField<'_, AnonymousPair> {
         self.variants.field(0)
     }
 }
