@@ -316,6 +316,10 @@ while writing it. Thank you to:
 - [Free Pascal](https://www.freepascal.org/). Running `fpc -Mtp` on our
   test programs gives us most of their expected output, so we can check
   that a translated program behaves as Turbo Pascal would.
+- [DOSBox](https://www.dosbox.com/), and the copy of Turbo Pascal 7 on
+  the [Internet Archive](https://archive.org/details/tp_20240418) that we
+  run in it. Where Free Pascal and Turbo Pascal differ, the real thing
+  settles what a program should do.
 - [daelsepara/turbo-pascal-assembly](https://github.com/daelsepara/turbo-pascal-assembly),
   an annotated disassembly of Turbo Pascal's System unit. It's how we know
   exactly how `Random` works.
