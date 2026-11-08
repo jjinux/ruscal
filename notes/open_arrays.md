@@ -33,54 +33,62 @@ array parameter of the same element type. Not allowed, with TP-like
 errors: assigning a whole open array (`a := b`), passing one to a
 fixed-size array parameter, a `string` variable for `array of Char`.
 
-**Runtime** (`ruscal_runtime::array`, next to `PArray`):
+**Runtime** (`ruscal_runtime::array`, next to `PArray`). After Fable's
+review of this plan, and the user's choice (2026-11-07), one *unsized*
+type, used through references, the way `str` and `Path` are:
 
 ```rust
-/// A value or `const` open array parameter: the caller's elements, indexed
-/// from 0.
-#[derive(Clone, Copy)]
-pub struct OpenArray<'a, T>(&'a [T]);
-/// A `var` open array parameter.
-pub struct OpenArrayMut<'a, T>(&'a mut [T]);
+#[derive(RefCast)]
+#[repr(transparent)]
+pub struct OpenArray<T>([T]);
 ```
 
-Both `Deref` to the slice (`len`, `iter`), and implement
-`Index<I: Ordinal>` (and `IndexMut` for `OpenArrayMut`) with the same
-"Range check error" 201 as `PArray`; `high()` returns `len - 1` as an
-`i64`, like `PArray::high`. `PArray` gets `as_open()`/`as_open_mut()`;
-`OpenArray::single(&x)`/`OpenArrayMut::single(&mut x)` wrap one variable
-(`std::slice::from_ref`); `OpenArrayMut::reborrow()` passes a `var` open
-array on; `OpenArray::from(b"xy")`-style for a string literal into
-`array of Char` (the bytes as `u8`, Ruscal's `Char`).
+A value or `const` parameter is `a: &OpenArray<i16>`, a `var` one
+`a: &mut OpenArray<i16>`. `OpenArray::new(&[T]) -> &OpenArray<T>` (and
+`new_mut`) turn a slice into one: that's a pointer cast, which needs
+`unsafe`, so the `ref-cast` crate's derive does it (the user preferred a
+small, widely used crate to an `unsafe` block of our own). It implements
+`Index<I: Ordinal>`/`IndexMut` with the same "Range check error" 201 as
+`PArray` (sharing its helper), `len`, `iter`, `high() -> i64` and
+`low() -> i64` (0). `PArray` gets `as_open()`/`as_open_mut()` (no `Deref`:
+`(*arr)[i]` would silently be 0-based).
 
-Why wrappers rather than plain `&[T]`/`&mut [T]`: Pascal indexes them with
-an `Integer` (`a[i]`, `i: i16`), and Rust can't implement `Index<i16>` for
-a slice (both are foreign: the orphan rule). The wrappers let the
-generated code index them exactly as it indexes a `PArray`, `a[i]`, with
-the same range check, and the signature still says what it is.
+Why a reference to an unsized type rather than sized wrappers: the
+codegen writes `var` parameters as `&mut {ty}`, captures as `&{ty}`/
+`&mut {ty}`, passes a held reference on by name, and builds procedural
+types from the same signature code; all of that works unchanged, with
+Rust's implicit reborrows, and signatures carry no lifetime. And why not
+plain `&[T]`: Pascal indexes with an `Integer`, and Rust can't implement
+`Index<i16>` for a slice (the orphan rule).
+
+**Sema.** `Type::OpenArray(Rc<Type>)`, only as a parameter's type (the
+parser's parameter type accepts `array of <type name>`; procedures,
+methods, procedural types and unit interfaces share that code). `rust()`
+is `OpenArray<T>`, and every open array parameter is reached through a
+reference (`access()` says `Reference`). `is_copy()` is false. `accepts`:
+an array of the same element type, a variable/expression of the element
+type (one element), another open array of the same element type, and a
+string literal or string constant for `array of Char`. Rejected, as TP
+does: `a := b`, an open array for a fixed-size array parameter, a `string`
+variable for `array of Char`, array constructors. An open array `var`
+parameter is left out of `find_param_aliases` (unifying it with a global
+would index the 1-based global through the 0-based parameter).
+`High`/`Low`/`SizeOf` of one aren't constants: they get a non-constant
+branch (type Integer), `High(a)` → `a.high()`, `Low(a)` → `a.low()`,
+`SizeOf(a)` → `a.len() * <element size>` (registering the element type
+for `SERIALIZED_SIZE`).
 
 **Codegen.**
-- Signatures: value/`const` → `a: OpenArray<'_, i16>`; `var` →
-  `a: OpenArrayMut<'_, i16>`.
-- A value parameter the routine changes (sema's `mutated`) is copied
-  first, with a teaching comment, as TP copies it:
-  `let mut a_copy = a.to_vec(); let mut a = OpenArrayMut::new(&mut a_copy);`
-  (alternative: a third type `OpenArrayBuf<T>(Vec<T>)`; I'd rather not add
-  a type for a rare case).
-- Arguments: `arr.as_open()` / `arr.as_open_mut()`;
-  `OpenArray::single(&x)` / `OpenArrayMut::single(&mut x)`; an open array
-  parameter passed on as is (it's `Copy`) or `a.reborrow()`; a `var` one
-  into a value/`const` one `a.as_open()`.
-- `Low(a)` → `0`; `High(a)` → `a.high()` (cast as `PArray`'s is);
-  `SizeOf(a)` → `a.len() * <element size>` (the element's
-  `SERIALIZED_SIZE` term or number).
-- Captured by a nested routine: `&OpenArray`/`&mut OpenArrayMut`, which
-  index through auto-deref.
-- `for i := Low(a) to High(a)` works as for a `PArray`.
-- `FillChar(a, SizeOf(a), 0)` / `Move` / `BlockWrite` on an open array
-  (an untyped parameter): `ByteView` for `OpenArrayMut` (and read-only
-  for `OpenArray`) if it's straightforward; otherwise a clear "not
-  supported yet" error and a TODO.
+- A value parameter the routine changes is copied first, with a
+  teaching comment, as TP copies it, keeping the binding a reference:
+  `let mut a_copy = a.to_vec(); let a = OpenArray::new_mut(&mut a_copy);`.
+- Arguments: `arr.as_open()` / `arr.as_open_mut()`; one variable
+  `OpenArray::new(std::slice::from_ref(&x))` (or a `single` helper); an
+  open array parameter passed on by name; a string literal or constant
+  for `array of Char` `OpenArray::new(b"xy")` / `NAME.as_bytes()`.
+- `FillChar`/`Move`/`BlockWrite` (untyped parameters): `ByteView` for
+  `OpenArray<T>`; `size_hint`/`string_capacity`/`enum_in_one_byte` learn
+  `Type::OpenArray` so `array of string[20]` has its size.
 
 **Not in scope:** `array of const` (not TP 7), array constructors (not
 TP 7), open array function results (not Pascal).
@@ -93,7 +101,11 @@ TP 7), open array function results (not Pascal).
   `reborrow`), `High`, the copied value parameter.
 - Error tests: `a := b`, a constant for a `var` open array, a wrong
   element type, a `string` variable for `array of Char`, an open array
-  outside a parameter list.
+  outside a parameter list, an open array for a fixed-size array
+  parameter. (Free Pascal accepts the last and `a := b`, so those can't
+  use `gen_expected.sh`; TP 7 rejects them.)
+- A global passed by `var` to an open array parameter of a routine that
+  also reads the global (the alias rule).
 
 ## Docs
 
