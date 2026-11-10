@@ -2649,7 +2649,11 @@ impl Checker {
         // isn't the receiver: a `const` parameter passed by `var` there is
         // still an error.
         let outer = std::mem::replace(&mut self.in_receiver, false);
+        // Nor is a place inside a value (the receiver of `q.Total` in
+        // `WriteLn(q.Total, q.Full)`) a standard routine's `var` argument.
+        let places = self.builtin_var_places.take();
         let ty = self.expr_checked(e);
+        self.builtin_var_places = places;
         self.in_receiver = outer;
         ty
     }
