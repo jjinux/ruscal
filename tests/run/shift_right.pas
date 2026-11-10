@@ -1,7 +1,8 @@
 program ShiftRight;
-{ shr is a logical shift: it fills with zeros, even for negative numbers.
-  (Free Pascal computes in 64 bits here, so this test's .out is written by
-  hand from Turbo Pascal's 16- and 32-bit results.) }
+{ shr is a logical shift: it fills with zeros, even for negative numbers,
+  in the operand's type (16 bits for an Integer), but a constant's in 32
+  bits (-300 shr 4 is 268435437). Expected output from Turbo Pascal 7 in
+  DOSBox. (Free Pascal computes in 64 bits here.) }
 var
    i: integer;
    l: longint;

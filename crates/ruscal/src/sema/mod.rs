@@ -340,6 +340,10 @@ pub struct Analysis {
     /// parameter of: in a virtual method's default body that needs the
     /// trait's `as_..._dyn()` (see codegen's `object_traits`).
     pub self_as_dyn: HashSet<String>,
+    /// A procedure nested in a method that passes the method's `Self` to a
+    /// `var` parameter of an object type: (the procedure, that type's root,
+    /// where). With virtual methods, `dispatch` refuses it (see there).
+    pub nested_self_args: Vec<(ProcId, String, Span)>,
     /// Typed constants (initialized variables), with their declarations so
     /// codegen can emit the initial value.
     pub typed_consts: HashMap<SymId, crate::ast::ConstDecl>,
@@ -487,6 +491,20 @@ fn dispatch(a: &mut Analysis) -> Vec<Diagnostic> {
                 a.dispatched.insert(caller);
                 changed = true;
             }
+        }
+    }
+    // `Paint(Self)` in a procedure nested in a method: the procedure holds
+    // only the object's own part, not the real object, so a virtual method
+    // called on the parameter would go to the wrong version.
+    for (p, root, span) in &a.nested_self_args {
+        if a.dispatch_roots.contains(root) {
+            errors.push(Diagnostic::new(
+                *span,
+                format!(
+                    "`{}` passes its method's `Self` to a `var` parameter of a type with virtual methods; Ruscal doesn't support that from a nested procedure yet",
+                    a.procs[*p].name
+                ),
+            ));
         }
     }
     // A method with the name of an ancestor's virtual method overrides it,

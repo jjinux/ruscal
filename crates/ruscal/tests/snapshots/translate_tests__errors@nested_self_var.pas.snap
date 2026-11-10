@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/nested_self_var.pas
+---
+nested_self_var.pas:32:16: error: `Helper` passes its method's `Self` to a `var` parameter of a type with virtual methods; Ruscal doesn't support that from a nested procedure yet
+         Paint(Self);
+               ^^^^

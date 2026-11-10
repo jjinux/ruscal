@@ -319,7 +319,10 @@ Objects (TP 5.5 OOP)
   constructor and `Dispose(p, Done)` a destructor), `inherited Method`,
   `Ancestor.Method(...)`, `New(p, Init(...))`, `New(PType, Init(...))` as a
   function, `Dispose(p, Done)`, `TypeOf` (compared with `=`/`<>`). Not yet:
-  a descendant hiding a static method that calls virtual ones
+  a descendant hiding a static method that calls virtual ones; a procedure
+  nested in a method that calls a virtual method of the method's object,
+  or passes its `Self` to a `var` parameter of a type with virtual methods
+  (both errors)
 
 Pointers
 

@@ -2592,6 +2592,11 @@ impl<'a> Codegen<'a> {
         {
             return Some(code);
         }
+        // `case b of $20..$2F:` keeps its hex: `0x20..=0x2F =>`.
+        if let ExprKind::Int(n) = e.kind {
+            let code = self.int_literal(e, n);
+            return code.starts_with("0x").then_some(code);
+        }
         let ExprKind::Name(_) = e.kind else { return None };
         let sym = self.a.sym(*self.a.refs.get(&e.id)?);
         match &sym.kind {

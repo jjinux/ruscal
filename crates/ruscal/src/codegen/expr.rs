@@ -1665,6 +1665,14 @@ impl<'a> Codegen<'a> {
                 ExprKind::Int(n) => Some(n),
                 _ => None,
             },
+            // A constant expression of literals (`Word(Integer(-1) shr 1)`):
+            // its value, worked out in 32 bits as TP does.
+            ExprKind::Binary { .. } | ExprKind::Call { .. } if !self.names_constant(&args[0]) => {
+                match self.a.consts.get(&args[0].id) {
+                    Some(crate::sema::ConstVal::Int(n)) => Some(*n),
+                    _ => None,
+                }
+            }
             _ => None,
         };
         if let Some(n) = number {
@@ -1673,7 +1681,12 @@ impl<'a> Codegen<'a> {
                 Type::Int(kind) => {
                     let value = kind.wrap(n);
                     let precedence = if value < 0 { prec::UNARY } else { prec::ATOM };
-                    return Some((format!("{value}_{}", kind.rust()), precedence));
+                    // `Word($FF00)` keeps its hex if the value didn't change.
+                    let text = match &args[0].kind {
+                        ExprKind::Int(_) if value == n => self.int_literal(&args[0], n),
+                        _ => value.to_string(),
+                    };
+                    return Some((format!("{text}_{}", kind.rust()), precedence));
                 }
                 _ => {}
             }
@@ -2335,13 +2348,24 @@ pub(super) fn cast(code: Code, from: &Type, to: &Type) -> Code {
     } else if let Some(inner) = code.0.strip_suffix(&format!(" as {}", from.rust()))
         && code.1 == prec::AS
         && !inner.contains(' ')
+        && bits(to) <= bits(from)
     {
         // `a.high() as i16 as u8` is `a.high() as u8`: narrowing twice keeps
-        // the same low bits as narrowing once (this cast narrows, or it'd
-        // have been `From`).
+        // the same low bits as narrowing once. (Not a cast that widens with
+        // another sign: `b as i8 as u16` sign-extends, `b as u16` doesn't.)
         (format!("{inner} as {rust}"), prec::AS)
     } else {
         (format!("{} as {rust}", paren(code, prec::AS)), prec::AS)
+    }
+}
+
+/// The bits of an ordinal type in Rust (`u8` for a Char, `i16` for an
+/// Integer...).
+fn bits(t: &Type) -> u32 {
+    match t {
+        Type::Int(IntKind::ShortInt | IntKind::Byte) | Type::Char | Type::Bool => 8,
+        Type::Int(IntKind::Integer | IntKind::Word) => 16,
+        _ => 32,
     }
 }
 

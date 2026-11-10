@@ -1,0 +1,23 @@
+{ Review batch M: more conversions of numbers (out of range, nested, as
+  the receiver of a method), not Odd of expressions, Succ of a
+  comparison, and bit operators next to shifts and arithmetic. Expected
+  output from Turbo Pascal 7 in DOSBox, which works a constant out in 32
+  bits, typecast or not: Integer(-1) shr 1 is 2147483647. }
+program CastsFolded;
+var
+   i, a: Integer;
+   l: LongInt;
+   b: Byte;
+begin
+   i := 5;
+   a := 2;
+   l := -3;
+   b := 7;
+   WriteLn(ShortInt(128), ' ', Integer(32768), ' ', Word(70000), ' ', Ord(Char(256)), ' ', Ord(Char(-1)));
+   WriteLn(Word(Integer(-1)), ' ', Integer(Word(65535)), ' ', LongInt(Word(-1)), ' ', Word(+5), ' ', Integer(+5));
+   WriteLn(Abs(Integer(-5)), ' ', Sqr(Integer(-5)), ' ', Lo(Integer(-300)), ' ', Integer(-1) shl a, ' ', Integer(-1) shr 1);
+   WriteLn(not Odd(i + 1), ' ', not Odd(-i), ' ', not not Odd(i), ' ', not Odd(l), ' ', not Odd(b));
+   WriteLn(i shl 1 and 3, ' ', i shl 1 or 1, ' ', i and 3 or a, ' ', i + 1 and 3, ' ', i and 7 and 3, ' ', Odd(b));
+   WriteLn(Byte(i shr 1), ' ', Word(Integer(i shr 1)), ' ', ShortInt(i shr 1));
+   WriteLn(Succ(i < 3), ' ', Pred(i = 5), ' ', i + 1 shl 1, ' ', i shl 1 shl 2, ' ', Word(Integer(-1) shr 1));
+end.

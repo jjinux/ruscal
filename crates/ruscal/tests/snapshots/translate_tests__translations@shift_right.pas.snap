@@ -19,9 +19,10 @@ use ruscal_runtime::prelude::*;
 /// The main program: the `begin ... end.` block of `ShiftRight`.
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
-    // shr is a logical shift: it fills with zeros, even for negative numbers.
-    // (Free Pascal computes in 64 bits here, so this test's .out is written by
-    // hand from Turbo Pascal's 16- and 32-bit results.)
+    // shr is a logical shift: it fills with zeros, even for negative numbers,
+    // in the operand's type (16 bits for an Integer), but a constant's in 32
+    // bits (-300 shr 4 is 268435437). Expected output from Turbo Pascal 7 in
+    // DOSBox. (Free Pascal computes in 64 bits here.)
     let mut i: i16 = 0;
     let mut l: i32 = 0;
     let mut s: i8 = 0;
@@ -37,7 +38,7 @@ fn pascal_main() {
         " ",
         ((i16::from(s) as u16) >> 1) as i16,
         " ",
-        ((-300_i16 as u16) >> 4) as i16
+        ((-300_i32 as u32) >> 4) as i32
     );
     pwriteln!(300 >> 4, " ", w_ >> 4);
 }

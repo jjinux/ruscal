@@ -938,9 +938,15 @@ impl Checker {
         } else if let Some((object, _)) = &self.a.procs[parent].self_param {
             // Nested inside a method: `Queue.AddQ`'s `Helper` becomes
             // `queue_add_q_helper`.
-            format!("{}_{}_{}", snake_case(&object.rust_name), self.a.procs[parent].rust_name, snake_case(&d.name.name))
+            format!(
+                "{}_{}_{}",
+                snake_case(&object.rust_name),
+                self.a.procs[parent].rust_name.trim_end_matches('_'),
+                snake_case(&d.name.name)
+            )
         } else {
-            format!("{}_{}", self.a.procs[parent].rust_name, snake_case(&d.name.name))
+            // (`use_inner`, not `use__inner`, inside `Use`, renamed `use_`.)
+            format!("{}_{}", self.a.procs[parent].rust_name.trim_end_matches('_'), snake_case(&d.name.name))
         };
         // Two units may both declare a `Name` function. The second one gets
         // its unit's name as a prefix (`labels_name`).
@@ -1777,8 +1783,14 @@ impl Checker {
                         BinaryOp::Or => Int(a | b),
                         BinaryOp::Xor => Int(a ^ b),
                         // A LongInt's bits: `1 shl 31` is MinLongInt, as in TP.
-                        BinaryOp::Shl if i32::try_from(a).is_ok() && (0..32).contains(&b) => {
-                            Int(i64::from((a as i32).wrapping_shl(b as u32)))
+                        // TP takes a constant shift's count mod 32 (`1 shl 32`
+                        // is 1), and `shr` is a LongInt's logical shift (`-1
+                        // shr 1` is MaxLongInt), as at run time.
+                        BinaryOp::Shl if i32::try_from(a).is_ok() && b >= 0 => {
+                            Int(i64::from((a as i32).wrapping_shl((b & 31) as u32)))
+                        }
+                        BinaryOp::Shr if i32::try_from(a).is_ok() && b >= 0 => {
+                            Int(i64::from(((a as i32 as u32) >> (b & 31)) as i32))
                         }
                         BinaryOp::Shl => Int(a.checked_shl(b as u32)?),
                         BinaryOp::Shr => Int(a.checked_shr(b as u32)?),
@@ -3752,6 +3764,10 @@ impl Checker {
                     && self.a.refs.get(&arg.id).is_some_and(|&s| self.a.symbols[s].rust_name == "self")
                 {
                     self.a.self_as_dyn.insert(o.rust_name.clone());
+                    if self.a.procs[cur].self_param.is_none() {
+                        let root = o.lineage().last().unwrap().0.rust_name.clone();
+                        self.a.nested_self_args.push((cur, root, arg.span));
+                    }
                 }
                 // An object may be passed where an ancestor is expected.
                 let descendant = match (&arg_ty, &ty) {

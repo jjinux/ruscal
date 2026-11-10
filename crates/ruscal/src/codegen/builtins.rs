@@ -330,7 +330,10 @@ impl<'a> Codegen<'a> {
                     (Some(_), Some(n)) if flip => (-n).to_string(),
                     (Some(_), Some(n)) if wraps => n.to_string(),
                     // (A literal needs no conversion, even into a `Char`.)
-                    (Some(step), Some(n)) if !named && matches!(step.kind, ExprKind::Int(_)) => n.to_string(),
+                    // (`Inc(b, $10)` keeps its hex: `b += 0x10`.)
+                    (Some(step), Some(n)) if !named && matches!(step.kind, ExprKind::Int(_)) => {
+                        self.int_literal(step, n)
+                    }
                     (Some(n), _) => self.coerce(n, &target_ty).0,
                     (None, _) => "1".to_string(),
                 };

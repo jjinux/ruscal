@@ -1,8 +1,8 @@
 { Review batch M: more conversions of numbers (out of range, nested, as
   the receiver of a method), not Odd of expressions, Succ of a
-  comparison, and bit operators next to shifts and arithmetic. Output
-  from fpc -Mtp, except Integer(-1) shr 1: TP shifts in 16 bits (32767),
-  Free Pascal in 64. }
+  comparison, and bit operators next to shifts and arithmetic. Expected
+  output from Turbo Pascal 7 in DOSBox, which works a constant out in 32
+  bits, typecast or not: Integer(-1) shr 1 is 2147483647. }
 program CastsFolded;
 var
    i, a: Integer;
