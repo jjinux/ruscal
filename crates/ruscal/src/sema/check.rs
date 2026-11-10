@@ -66,6 +66,12 @@ pub(super) struct Checker {
     /// Checking a method call's receiver: TP lets that be a `const`
     /// parameter (`o.Show`), though nothing else may change one.
     in_receiver: bool,
+    /// While a standard routine's arguments are checked: the variables its
+    /// `var` parameters get (root, fields, where), so `Val(S, I, I)` can be
+    /// refused as a user routine's call would be. And how deep `place` is,
+    /// so only an argument itself counts, not a place inside it.
+    builtin_var_places: Option<Vec<(SymId, Vec<String>, Span)>>,
+    place_depth: usize,
     /// For each method body we're inside: the index of its scope in
     /// `scopes` and the method's procedure.
     method_scopes: Vec<(usize, ProcId)>,
@@ -160,6 +166,8 @@ impl Checker {
             uncalled: None,
             in_dead: false,
             in_receiver: false,
+            builtin_var_places: None,
+            place_depth: 0,
             declaring_type: false,
             field_name: None,
             unit_exports: HashMap::new(),
@@ -2958,6 +2966,21 @@ impl Checker {
     /// and return its type. `write` is false for places that are only read
     /// through.
     fn place(&mut self, e: &Expr, write: bool) -> Type {
+        self.place_depth += 1;
+        let ty = self.place_checked(e, write);
+        self.place_depth -= 1;
+        if write
+            && self.place_depth == 0
+            && !Self::through_pointer(e)
+            && let Some(root) = self.place_root(e)
+            && let Some(places) = &mut self.builtin_var_places
+        {
+            places.push((root, Self::place_fields(e).0, e.span));
+        }
+        ty
+    }
+
+    fn place_checked(&mut self, e: &Expr, write: bool) -> Type {
         let ty = match &e.kind {
             ExprKind::Name(ident) => match self.resolve(&ident.key()) {
                 None => {
@@ -3924,6 +3947,29 @@ impl Checker {
     }
 
     fn builtin_call(&mut self, e: &Expr, b: Builtin, args: &[Expr]) -> Type {
+        // (`ReadLn(X, X)` reads into each in turn, so it's fine.)
+        let collect = !matches!(b, Builtin::Read | Builtin::Readln);
+        let outer = std::mem::replace(&mut self.builtin_var_places, collect.then(Vec::new));
+        let depth = std::mem::replace(&mut self.place_depth, 0);
+        let ty = self.builtin_call_checked(e, b, args);
+        self.place_depth = depth;
+        let places = std::mem::replace(&mut self.builtin_var_places, outer).unwrap_or_default();
+        for (i, (root, fields, span)) in places.iter().enumerate() {
+            if places[..i].iter().any(|(r, f, _)| r == root && super::fields_overlap(f, fields)) {
+                let name = self.a.symbols[*root].name.clone();
+                self.error(
+                    *span,
+                    format!(
+                        "`{name}` is passed by `var` more than once in this call to `{b:?}`; Rust doesn't allow two mutable references to the same variable{}",
+                        super::rewrite_link("two-var-arguments")
+                    ),
+                );
+            }
+        }
+        ty
+    }
+
+    fn builtin_call_checked(&mut self, e: &Expr, b: Builtin, args: &[Expr]) -> Type {
         use Builtin::*;
         let span = e.span;
         // A small helper for checking argument counts. A closure can't

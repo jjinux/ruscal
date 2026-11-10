@@ -5,6 +5,7 @@ program ReadableBits;
   does: printed, with a width, searched, compared, moved, Val'd. }
 const
    Mask = $FF00;
+   Back = -$10;
 var
    Buf: array[1..4] of Char;
    Nums: array[1..3] of Integer;
@@ -30,7 +31,7 @@ procedure Use(const S: string);
    end;
 
 begin
-   WriteLn(Mask and $0F00, ' ', $10);
+   WriteLn(Mask and $0F00, ' ', $10, ' ', Back);
    Nums[1] := 1;
    Nums[2] := 2;
    Nums[3] := 3;

@@ -23,7 +23,7 @@ use ruscal_runtime::prelude::*;
 const A: i16 = -1;
 const B: i32 = -2147483648;
 const C: i32 = 0xFFFF;
-const D: i16 = -1;
+const D: i16 = -0x1;
 
 /// The main program: the `begin ... end.` block of `HexConstants`.
 /// Its local variables are the Pascal program's global variables.

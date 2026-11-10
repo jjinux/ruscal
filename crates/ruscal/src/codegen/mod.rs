@@ -765,6 +765,18 @@ impl<'a> Codegen<'a> {
                 (crate::ast::ConstValue::Expr(e @ Expr { kind: ExprKind::Int(n), .. }), Type::Int(_)) => {
                     (self.int_literal(e, *n), None)
                 }
+                // `const Neg = -$10` too: `-0x10`.
+                (
+                    crate::ast::ConstValue::Expr(Expr {
+                        kind: ExprKind::Unary { op: crate::ast::UnaryOp::Neg, operand },
+                        ..
+                    }),
+                    Type::Int(_),
+                ) if let ExprKind::Int(n) = operand.kind
+                    && self.int_literal(operand, n).starts_with("0x") =>
+                {
+                    (format!("-{}", self.int_literal(operand, n)), None)
+                }
                 (crate::ast::ConstValue::Expr(e), _) if !self.names_constant(e) => (self.const_value(value, ty), None),
                 (crate::ast::ConstValue::Expr(e), Type::Int(kind)) if self.const_expr(e, *kind, true).is_some() => {
                     (self.const_expr(e, *kind, true).unwrap().0, None)

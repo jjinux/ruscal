@@ -1,0 +1,12 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/builtin_var_twice.pas
+---
+builtin_var_twice.pas:11:14: error: `I` is passed by `var` more than once in this call to `Val`; Rust doesn't allow two mutable references to the same variable; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+   Val(S, I, I);
+             ^
+
+builtin_var_twice.pas:12:17: error: `A` is passed by `var` more than once in this call to `Val`; Rust doesn't allow two mutable references to the same variable; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+   Val(S, A[1], A[2]);
+                ^^^^
