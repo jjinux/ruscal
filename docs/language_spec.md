@@ -119,6 +119,8 @@ Statements
   overlap an earlier one, and the first wins; a label the value can never
   equal (300 for a `Byte`, a range like `5..1`) is an error
 - Procedure calls; `Exit`; `Halt` / `Halt(n)`
+- A file parameter must be `var`, as in TP ("Files must be var
+  parameters"), in a routine, a method or a procedural type
 - Function results of an ordinal type, a real, a string or a pointer, as
   in TP 7; a record, array, set, object or file is an error there ("Invalid
   function result type"), and so it is here

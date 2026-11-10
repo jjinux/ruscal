@@ -336,6 +336,10 @@ pub struct Analysis {
     /// The `const` parameters passed by reference that are `&mut` in Rust:
     /// a method is called on one (see [`Passing`]).
     pub const_ref_mut: HashSet<SymId>,
+    /// Object types (by Rust name) that a method passes `Self` to a `var`
+    /// parameter of: in a virtual method's default body that needs the
+    /// trait's `as_..._dyn()` (see codegen's `object_traits`).
+    pub self_as_dyn: HashSet<String>,
     /// Typed constants (initialized variables), with their declarations so
     /// codegen can emit the initial value.
     pub typed_consts: HashMap<SymId, crate::ast::ConstDecl>,

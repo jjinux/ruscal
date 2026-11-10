@@ -5,10 +5,10 @@ program AnonymousInType;
 type
    TList = array[1..2] of record
       Z: Integer;
-      end;
-      var
-      L: TList;
-      begin
-      L[1].Z := 3;
-      WriteLn(L[1].Z);
-      end.
+   end;
+var
+   L: TList;
+begin
+   L[1].Z := 3;
+   WriteLn(L[1].Z);
+end.

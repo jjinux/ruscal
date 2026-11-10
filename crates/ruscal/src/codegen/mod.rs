@@ -1313,6 +1313,15 @@ impl<'a> Codegen<'a> {
         self.indent += 1;
         self.line(format!("/// The `{name}` part of the object, for its fields."));
         self.line(format!("fn {}(&mut self) -> &mut {name};", accessor(object)));
+        if self.a.self_as_dyn.contains(name) {
+            self.line(format!(
+                "/// The object as a `&mut dyn {}`, which a default method can't make",
+                trait_name(object)
+            ));
+            self.line("/// of `self` itself (it doesn't know the type is sized): for passing");
+            self.line(format!("/// `Self` to a `var` parameter of type `{name}`."));
+            self.line(format!("fn as_{}_dyn(&mut self) -> &mut dyn {};", accessor(object), trait_name(object)));
+        }
         if object.parent.is_none() && self.a.uses_type_of {
             self.line("/// The name of the object's real type, for Pascal's `TypeOf`.");
             self.line("fn type_name(&self) -> &'static str;");
@@ -1342,6 +1351,15 @@ impl<'a> Codegen<'a> {
             self.line(format!("fn {}(&mut self) -> &mut {} {{", accessor(&ancestor), ancestor.rust_name));
             self.line(format!("    {part}"));
             self.line("}");
+            if self.a.self_as_dyn.contains(&ancestor.rust_name) {
+                self.line(format!(
+                    "fn as_{}_dyn(&mut self) -> &mut dyn {} {{",
+                    accessor(&ancestor),
+                    trait_name(&ancestor)
+                ));
+                self.line("    self");
+                self.line("}");
+            }
             if ancestor.parent.is_none() && self.a.uses_type_of {
                 self.line("fn type_name(&self) -> &'static str {");
                 self.line(format!("    \"{name}\""));
@@ -1485,6 +1503,11 @@ impl<'a> Codegen<'a> {
         self.line(format!("fn {}(&mut self) -> &mut {} {{", accessor(root), root.rust_name));
         self.line(format!("    self.as_{}_mut()", accessor(root)));
         self.line("}");
+        if self.a.self_as_dyn.contains(&root.rust_name) {
+            self.line(format!("fn as_{}_dyn(&mut self) -> &mut dyn {} {{", accessor(root), trait_name(root)));
+            self.line("    self");
+            self.line("}");
+        }
         if self.a.uses_type_of {
             self.line("fn type_name(&self) -> &'static str {");
             self.line("    match self {");
@@ -1529,6 +1552,12 @@ impl<'a> Codegen<'a> {
             ));
             self.line("    }");
             self.line("}");
+            if self.a.self_as_dyn.contains(&target.rust_name) {
+                let trait_path = self.trait_path(target, *span);
+                self.line(format!("fn as_{}_dyn(&mut self) -> &mut dyn {trait_path} {{", accessor(target)));
+                self.line("    self");
+                self.line("}");
+            }
             let variants: Vec<String> = arms.into_iter().map(|(variant, _)| variant).collect();
             for slot in self.slots_introduced(target) {
                 self.enum_dispatch(&name, slot, &variants, members.len());

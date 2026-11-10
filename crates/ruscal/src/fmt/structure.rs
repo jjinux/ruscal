@@ -198,7 +198,9 @@ impl Structure {
                     self.advance();
                     return;
                 }
-                "record" | "object" if self.at(-1) != "of" => {
+                // (But not Delphi's `procedure ... of object`. `array[1..2]
+                // of record ... end` is a record like any other.)
+                "record" | "object" if !(self.peek() == "object" && self.at(-1) == "of") => {
                     self.advance();
                     self.fields(level);
                     continue;

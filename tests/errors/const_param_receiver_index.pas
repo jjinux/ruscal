@@ -7,6 +7,7 @@ type
       Count: Integer;
       procedure Bump;
    end;
+   PCounter = ^TCounter;
 
 procedure TCounter.Bump;
    begin
@@ -19,11 +20,18 @@ function Next(var N: Integer): Integer;
       Next := N;
    end;
 
+function GetP(var N: Integer): PCounter;
+   begin
+      Inc(N);
+      GetP := nil;
+   end;
+
 procedure Use(const N: Integer);
    var
       A: array[1..3] of TCounter;
    begin
       A[Next(N)].Bump;
+      GetP(N)^.Bump;
    end;
 
 begin

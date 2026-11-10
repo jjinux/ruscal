@@ -1203,6 +1203,9 @@ impl Checker {
                     Type::Error
                 }
             };
+            if matches!(ty, Type::Text | Type::File(_)) && group.mode != ParamMode::Var {
+                self.error(group.names[0].span, format!("a {ty} parameter must be a `var` parameter"));
+            }
             signature.extend(group.names.iter().map(|_| (group.mode, ty.clone())));
         }
         let ret = ret.map(|t| self.resolve_type(t));
@@ -1762,12 +1765,21 @@ impl Checker {
                         BinaryOp::Add => Int(a.checked_add(b)?),
                         BinaryOp::Sub => Int(a.checked_sub(b)?),
                         BinaryOp::Mul => Int(a.checked_mul(b)?),
+                        // In 32 bits, as TP: `MinLongInt div -1` wraps to
+                        // itself rather than overflowing.
+                        BinaryOp::Div if i32::try_from(a).is_ok() && i32::try_from(b).is_ok() => {
+                            Int(i64::from((a as i32).checked_div(b as i32).or_else(|| (b == -1).then_some(a as i32))?))
+                        }
                         BinaryOp::Div => Int(a.checked_div(b)?),
                         BinaryOp::Mod => Int(a.checked_rem(b)?),
                         BinaryOp::RealDiv if b != 0 => Real(a as f64 / b as f64),
                         BinaryOp::And => Int(a & b),
                         BinaryOp::Or => Int(a | b),
                         BinaryOp::Xor => Int(a ^ b),
+                        // A LongInt's bits: `1 shl 31` is MinLongInt, as in TP.
+                        BinaryOp::Shl if i32::try_from(a).is_ok() && (0..32).contains(&b) => {
+                            Int(i64::from((a as i32).wrapping_shl(b as u32)))
+                        }
                         BinaryOp::Shl => Int(a.checked_shl(b as u32)?),
                         BinaryOp::Shr => Int(a.checked_shr(b as u32)?),
                         BinaryOp::Eq => Bool(a == b),
@@ -2559,7 +2571,9 @@ impl Checker {
     /// (`i := 65535` for an Integer, `b := 300` for a Byte) is an error in
     /// TP ("Constant out of range"); at run time a value would just wrap.
     fn check_constant_range(&mut self, target: &Type, value: &Expr) {
+        // (Not one that overflowed, which has its error already.)
         if let Type::Int(kind) = target.concrete()
+            && self.a.types.get(&value.id) != Some(&Type::Error)
             && let Some(ConstVal::Int(n)) = self.eval_const(value)
             && !kind.contains(n)
         {
@@ -2611,6 +2625,16 @@ impl Checker {
 
     /// Check an expression used as a value and return its type.
     pub(super) fn expr(&mut self, e: &Expr) -> Type {
+        // A value read inside a method call's receiver (`GetP(N)^.Bump`)
+        // isn't the receiver: a `const` parameter passed by `var` there is
+        // still an error.
+        let outer = std::mem::replace(&mut self.in_receiver, false);
+        let ty = self.expr_checked(e);
+        self.in_receiver = outer;
+        ty
+    }
+
+    fn expr_checked(&mut self, e: &Expr) -> Type {
         let ty = match (&e.kind, self.expr_inner(e)) {
             // A parameterless function in a field or element (`R.Next`,
             // `Fs[1]`, or `Next` in a method of its object), in an
@@ -2633,6 +2657,7 @@ impl Checker {
         {
             if self.overflows_32_bits(e, &value) {
                 self.error(e.span, "overflow in a constant expression: the result doesn't fit in a LongInt");
+                self.a.types.insert(e.id, Type::Error);
                 return Type::Error;
             }
             self.a.consts.insert(e.id, value);
@@ -2652,6 +2677,16 @@ impl Checker {
         let fits = |operand: &Expr| matches!(self.a.consts.get(&operand.id), Some(ConstVal::Int(m)) if i32::try_from(*m).is_ok());
         match &e.kind {
             ExprKind::Unary { op: UnaryOp::Neg, operand } => fits(operand),
+            // `Abs(MinLongInt)`, `Succ(MaxLongInt)`, `Pred(MinLongInt)`.
+            ExprKind::Call { callee, args } if args.len() == 1 => {
+                matches!(&callee.kind, ExprKind::Name(id) if matches!(id.key().as_str(), "abs" | "succ" | "pred"))
+                    && self
+                        .a
+                        .refs
+                        .get(&callee.id)
+                        .is_some_and(|&s| matches!(self.a.symbols[s].kind, SymKind::Builtin(_)))
+                    && fits(&args[0])
+            }
             ExprKind::Binary { op: BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul, lhs, rhs } => fits(lhs) && fits(rhs),
             _ => false,
         }
@@ -3713,6 +3748,11 @@ impl Checker {
             }
             if role == VarRole::Param(ParamMode::Var) {
                 let arg_ty = self.place(arg, true);
+                if let (Type::Object(o), ExprKind::Name(_)) = (&ty, &arg.kind)
+                    && self.a.refs.get(&arg.id).is_some_and(|&s| self.a.symbols[s].rust_name == "self")
+                {
+                    self.a.self_as_dyn.insert(o.rust_name.clone());
+                }
                 // An object may be passed where an ancestor is expected.
                 let descendant = match (&arg_ty, &ty) {
                     (Type::Object(arg), Type::Object(param)) => arg.lineage().iter().any(|(o, _)| o == param),

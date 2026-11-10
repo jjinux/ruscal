@@ -1973,6 +1973,13 @@ impl<'a> Codegen<'a> {
                 && let ExprKind::Deref(pointer) = &arg.kind
             {
                 parts.push(format!("&mut *{}.get_mut()", self.selector_base(pointer)));
+            } else if is_var_arg
+                && dyn_param
+                && let Type::Object(o) = &ty
+                && self.dyn_object(arg).as_deref() == Some("self")
+            {
+                // `Paint(Self)` in a virtual method's default body.
+                parts.push(format!("self.as_{}_dyn()", super::accessor(o)));
             } else if is_var_arg && depth > 0 {
                 parts.push(format!("&mut {}{}", self.selector_base(arg), ".base".repeat(depth)));
             } else if is_var_arg && shared(key) {

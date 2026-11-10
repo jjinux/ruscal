@@ -278,3 +278,15 @@ fn files_share_spellings() {
     // Three spellings, one each: the first seen wins.
     assert!(String::from_utf8_lossy(&out[1]).contains("procedure DoIt;"));
 }
+
+#[test]
+fn record_after_of() {
+    // `array[...] of record ... end` is a record like any other: what
+    // follows it is back at the declaration's level.
+    assert_eq!(
+        fmt(
+            "type\nTList = array[1..2] of record\nZ: integer;\nend;\nTOne = record\nZ: integer;\nend;\nvar\nL: TList;\nbegin\nend.\n"
+        ),
+        "type\n   TList = array[1..2] of record\n      Z: integer;\n   end;\n   TOne = record\n      Z: integer;\n   end;\nvar\n   L: TList;\nbegin\nend.\n"
+    );
+}

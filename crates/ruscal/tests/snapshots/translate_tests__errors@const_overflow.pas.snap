@@ -11,6 +11,22 @@ const_overflow.pas:6:10: error: overflow in a constant expression: the result do
    Big = MaxLongInt + 1;
          ^^^^^^^^^^^^^^
 
-const_overflow.pas:9:12: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:8:13: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   AbsMin = Abs(-$7FFFFFFF - 1);
+            ^^^^^^^^^^^^^^^^^^^
+
+const_overflow.pas:9:15: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   AfterMax = Succ(MaxLongInt);
+              ^^^^^^^^^^^^^^^^
+
+const_overflow.pas:10:16: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   BeforeMin = Pred(-$7FFFFFFF - 1);
+               ^^^^^^^^^^^^^^^^^^^^
+
+const_overflow.pas:14:12: error: overflow in a constant expression: the result doesn't fit in a LongInt
    WriteLn(-$80000000, Fine);
            ^^^^^^^^^^
+
+const_overflow.pas:15:9: error: overflow in a constant expression: the result doesn't fit in a LongInt
+   L := MaxLongInt + 1;
+        ^^^^^^^^^^^^^^

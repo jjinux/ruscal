@@ -3,6 +3,10 @@ source: crates/ruscal/tests/translate_tests.rs
 expression: error
 input_file: tests/errors/const_param_receiver_index.pas
 ---
-const_param_receiver_index.pas:26:14: error: `N` is a `const` parameter, so it can't be changed
+const_param_receiver_index.pas:33:14: error: `N` is a `const` parameter, so it can't be changed
       A[Next(N)].Bump;
              ^
+
+const_param_receiver_index.pas:34:12: error: `N` is a `const` parameter, so it can't be changed
+      GetP(N)^.Bump;
+           ^
