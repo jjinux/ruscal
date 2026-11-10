@@ -29,11 +29,11 @@ var
    flags: set of Boolean;
    charSets: array[1..2] of CharSet;
 
-{ Reads a global, which Rust passes in: `s[i] := s[i] + Second` can't
-  borrow it twice. }
-function Second: CharSet;
+{ Reads a global, which Rust passes in. (A function can't return a set
+  in Turbo Pascal, so the result is a `var` parameter.) }
+procedure GetSecond(var s: CharSet);
    begin
-      Second := charSets[2];
+      s := charSets[2];
    end;
 
 procedure Show(s: CharSet);
@@ -116,7 +116,8 @@ begin
    i := 2;
    charSets[i] := charSets[i] + charSets[1];
    Show(charSets[2]);
-   charSets[1] := charSets[1] + Second;
+   GetSecond(letters);
+   charSets[1] := charSets[1] + letters;
    Show(charSets[1]);
    { builtins and casts in the literal aren't calls that could reach it }
    letters := [];

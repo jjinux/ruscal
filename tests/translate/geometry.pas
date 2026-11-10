@@ -14,20 +14,17 @@ interface
    var
       created: integer;   { a unit global, counted by MakePoint }
 
-   function MakePoint(x, y: integer): Point;
+   procedure MakePoint(x, y: integer; var p: Point);
    procedure Describe(p: Point);
    function Name: string;
 
 implementation
 
-   function MakePoint(x, y: integer): Point;
-      var
-         p: Point;
+   procedure MakePoint(x, y: integer; var p: Point);
       begin
          p.x := x;
          p.y := y;
          created := created + 1;
-         MakePoint := p;
       end;
 
    procedure Describe(p: Point);

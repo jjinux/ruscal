@@ -79,12 +79,10 @@ fn set_some(data: &mut dyn ByteView, count: u16) {
     }
 }
 
-/// Pascal: `function First(var Data): Rec;`
-fn first(data: &mut dyn ByteView) -> Rec {
+/// Pascal: `procedure First(var Data; var r: Rec);`
+fn first(data: &mut dyn ByteView, r: &mut Rec) {
     let data = Bytes::of(data);
-    let mut result: Rec = Rec::default();
-    result = data.read::<Rec>();
-    result
+    *r = data.read::<Rec>();
 }
 
 /// The main program: the `begin ... end.` block of `UntypedParams`.
@@ -111,7 +109,7 @@ fn pascal_main() {
     dump(&mut buf, 8);
     r = Rec::default();
     pwriteln!(r.n, " ", r.name.length());
-    r2 = first(&mut buf);
+    first(&mut buf, &mut r2);
     pwriteln!(r2.name, " ", r2.n);
     set_some(&mut buf, 3);
     dump(&mut buf, 8);

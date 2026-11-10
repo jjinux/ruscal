@@ -950,6 +950,9 @@ impl Checker {
         };
         let rust_name = Self::unique_in(&mut self.used_fn_names, base);
         let ret = d.ret.as_ref().map(|t| self.resolve_type(t));
+        if let (Some(ty), Some(t)) = (&ret, &d.ret) {
+            self.check_result_type(ty, t.span());
+        }
         if d.kind == ProcKind::Function && ret.is_none() {
             self.error(d.name.span, "a function needs a result type");
         }
@@ -1203,6 +1206,9 @@ impl Checker {
             signature.extend(group.names.iter().map(|_| (group.mode, ty.clone())));
         }
         let ret = ret.map(|t| self.resolve_type(t));
+        if let Some(ty) = &ret {
+            self.check_result_type(ty, span);
+        }
         if let Some(Type::Proc(_)) = &ret {
             self.error(span, "Turbo Pascal doesn't allow a function to return a procedural type");
         }
@@ -1270,6 +1276,24 @@ impl Checker {
             (Some(name), _) | (None, Some(name)) => format!("anonymous_{name}"),
             (None, None) => kind.to_string(),
         }
+    }
+
+    /// A function's result type: TP 7 allows an ordinal type, a real, a
+    /// string or a pointer, but not a record, array, set, object or file
+    /// ("Invalid function result type"; checked in TP 7).
+    fn check_result_type(&mut self, ty: &Type, span: Span) {
+        let what = match ty {
+            Type::Record(_) => "a record",
+            Type::Array(_) => "an array",
+            Type::Set(..) => "a set",
+            Type::Object(_) => "an object",
+            Type::Text | Type::File(_) => "a file",
+            _ => return,
+        };
+        self.error(
+            span,
+            format!("a function can't return {what} in Turbo Pascal; pass a `var` parameter for the result instead"),
+        );
     }
 
     /// A record's fields, added to `resolved` (where a name may not repeat:

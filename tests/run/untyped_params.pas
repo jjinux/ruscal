@@ -48,9 +48,9 @@ procedure SetSome(var Data; Count: Word);
       end;
    end;
 
-function First(var Data): Rec;
+procedure First(var Data; var r: Rec);
    begin
-      First := Rec(Data);
+      r := Rec(Data);
    end;
 
 begin
@@ -68,7 +68,7 @@ begin
    Dump(buf, 8);
    FillChar(r, SizeOf(r), 0);
    WriteLn(r.n, ' ', Length(r.name));
-   r2 := First(buf);
+   First(buf, r2);
    WriteLn(r2.name, ' ', r2.n);
    SetSome(buf, 3);
    Dump(buf, 8);

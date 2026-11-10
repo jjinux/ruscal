@@ -1,0 +1,24 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/function_result_types.pas
+---
+function_result_types.pas:14:12: error: a function can't return a record in Turbo Pascal; pass a `var` parameter for the result instead
+   TMake = function: TRec;
+           ^^^^^^^^^^^^^^
+
+function_result_types.pas:16:19: error: a function can't return a record in Turbo Pascal; pass a `var` parameter for the result instead
+function MakeRec: TRec;
+                  ^^^^
+
+function_result_types.pas:20:19: error: a function can't return an array in Turbo Pascal; pass a `var` parameter for the result instead
+function MakeArr: TArr;
+                  ^^^^
+
+function_result_types.pas:24:19: error: a function can't return a set in Turbo Pascal; pass a `var` parameter for the result instead
+function MakeSet: TSet;
+                  ^^^^
+
+function_result_types.pas:28:19: error: a function can't return an object in Turbo Pascal; pass a `var` parameter for the result instead
+function MakeObj: TObj;
+                  ^^^^

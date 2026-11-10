@@ -51,16 +51,14 @@ struct Palette {
     colors: PSet<Color>,
 }
 
-// Reads a global, which Rust passes in: `s[i] := s[i] + Second` can't
-// borrow it twice.
-/// Pascal: `function Second: CharSet;`
+// Reads a global, which Rust passes in. (A function can't return a set
+// in Turbo Pascal, so the result is a `var` parameter.)
+/// Pascal: `procedure GetSecond(var s: CharSet);`
 ///
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
-fn second(char_sets: PArray<PSet<u8>, 1, 2>) -> PSet<u8> {
-    let mut result: PSet<u8> = PSet::new();
-    result = char_sets[2];
-    result
+fn get_second(char_sets: PArray<PSet<u8>, 1, 2>, s: &mut PSet<u8>) {
+    *s = char_sets[2];
 }
 
 /// Pascal: `procedure Show(s: CharSet);`
@@ -196,7 +194,8 @@ fn pascal_main() {
     i = 2;
     char_sets[i] = char_sets[i] | char_sets[1];
     show(char_sets[2]);
-    char_sets[1] = char_sets[1] | second(char_sets);
+    get_second(char_sets, &mut letters);
+    char_sets[1] |= letters;
     show(char_sets[1]);
     // builtins and casts in the literal aren't calls that could reach it
     letters = PSet::new();

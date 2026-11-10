@@ -119,6 +119,9 @@ Statements
   overlap an earlier one, and the first wins; a label the value can never
   equal (300 for a `Byte`, a range like `5..1`) is an error
 - Procedure calls; `Exit`; `Halt` / `Halt(n)`
+- Function results of an ordinal type, a real, a string or a pointer, as
+  in TP 7; a record, array, set, object or file is an error there ("Invalid
+  function result type"), and so it is here
 - Value, `var` and `const` parameters (TP 7); passing arrays, records and strings both ways.
   A `const` parameter can't be changed (assigned, passed by `var`, read
   into, changed through `with`), as in TP; a method may be called on one,

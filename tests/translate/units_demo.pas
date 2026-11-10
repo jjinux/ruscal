@@ -1,10 +1,11 @@
 program UnitsDemo;
 uses Geometry, Labels;
 var
-   p: Point;
+   p, q: Point;
 begin
-   p := MakePoint(3, 4);
+   MakePoint(3, 4, p);
    Tag(p, 'home');
-   Tag(MakePoint(1, 2), 'work');
+   MakePoint(1, 2, q);
+   Tag(q, 'work');
    writeln(Name, ' ', Sides, ' ', created);
 end.

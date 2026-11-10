@@ -31,13 +31,15 @@ use ruscal_runtime::prelude::*;
 fn pascal_main() {
     let mut created: i16 = 0; // a unit global, counted by MakePoint
     let mut p: Point = Point::default();
+    let mut q: Point = Point::default();
     // The initialization part of unit `Geometry`.
     geometry_init(&mut created);
     // The initialization part of unit `Labels`.
     labels_init();
-    p = make_point(&mut created, 3, 4);
+    make_point(&mut created, 3, 4, &mut p);
     tag(p, pstr("home"));
-    tag(make_point(&mut created, 1, 2), pstr("work"));
+    make_point(&mut created, 1, 2, &mut q);
+    tag(q, pstr("work"));
     pwriteln!(labels_name(), " ", SIDES, " ", created);
 }
 
@@ -68,18 +70,14 @@ pub struct Point {
     pub y: i16,
 }
 
-/// Pascal: `function MakePoint(x, y: integer): Point;`
+/// Pascal: `procedure MakePoint(x, y: integer; var p: Point);`
 ///
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
-pub fn make_point(created: &mut i16, x: i16, y: i16) -> Point {
-    let mut result: Point = Point::default();
-    let mut p: Point = Point::default();
+pub fn make_point(created: &mut i16, x: i16, y: i16, p: &mut Point) {
     p.x = x;
     p.y = y;
     *created += 1;
-    result = p;
-    result
 }
 
 /// Pascal: `procedure Describe(p: Point);`
