@@ -155,11 +155,11 @@ fn pascal_main() {
     check(&mut checks, &mut failures, top_of(3) == 9, pstr("High of a subrange parameter"));
     check(&mut checks, &mut failures, 30 == 30, pstr("High(string[30])"));
     check(&mut checks, &mut failures, 0 == 0, pstr("Low(string)"));
-    w_ = 4660;
-    check(&mut checks, &mut failures, w_.swap_bytes() == 13330, pstr("Swap(Word)"));
-    i = 258;
-    check(&mut checks, &mut failures, i.swap_bytes() == 513, pstr("Swap(Integer)"));
-    check(&mut checks, &mut failures, 52651_u16 == 52651, pstr("Swap of a Word literal"));
+    w_ = 0x1234;
+    check(&mut checks, &mut failures, w_.swap_bytes() == 0x3412, pstr("Swap(Word)"));
+    i = 0x0102;
+    check(&mut checks, &mut failures, i.swap_bytes() == 0x0201, pstr("Swap(Integer)"));
+    check(&mut checks, &mut failures, 52651_u16 == 0xCDAB, pstr("Swap of a Word literal"));
     p = Ptr::nil();
     check(&mut checks, &mut failures, p.is_nil(), pstr("Assigned(nil)"));
     p = Ptr::alloc();

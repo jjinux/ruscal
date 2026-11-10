@@ -201,7 +201,10 @@ fn pascal_main() {
     check(
         &mut checks,
         &mut failures,
-        i16::from(FS_PATH_NAME) == 79 && FM_IN_OUT == 55219 && i16::from(FA_ANY_FILE) == 63 && i16::from(F_CARRY) == 1,
+        i16::from(FS_PATH_NAME) == 79
+            && FM_IN_OUT == 0xD7B3
+            && i16::from(FA_ANY_FILE) == 0x3F
+            && i16::from(F_CARRY) == 1,
         pstr("constants"),
     );
     pwriteln!(checks - failures, " of ", checks, " checks passed");

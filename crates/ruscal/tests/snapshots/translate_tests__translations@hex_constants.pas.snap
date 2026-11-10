@@ -22,7 +22,7 @@ use ruscal_runtime::prelude::*;
 
 const A: i16 = -1;
 const B: i32 = -2147483648;
-const C: i32 = 65535;
+const C: i32 = 0xFFFF;
 const D: i16 = -1;
 
 /// The main program: the `begin ... end.` block of `HexConstants`.
@@ -30,9 +30,9 @@ const D: i16 = -1;
 fn pascal_main() {
     let mut l: i32 = 0;
     let mut w_: u16 = 0;
-    pwriteln!(A, " ", B, " ", C, " ", 2147483647, " ", D);
+    pwriteln!(A, " ", B, " ", C, " ", 0x7FFFFFFF, " ", D);
     l = -1;
-    w_ = 65535;
+    w_ = 0xFFFF;
     pwriteln!(l, " ", w_, " ", -1 + 1, " ", A / 2, " ", -1 == -1);
     l = -1412623820;
     pwriteln!(l);

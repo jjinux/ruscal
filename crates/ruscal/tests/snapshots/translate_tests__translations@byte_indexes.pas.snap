@@ -59,7 +59,7 @@ impl Pun {
 fn pascal_main() {
     let mut p: Pun = Pun::default();
     let mut q: Pun = Pun::default();
-    p.set_l(16909060);
+    p.set_l(0x01020304);
     q.set_l(2);
     let index = i16::from(p.b()[0]) % 4;
     p.b_mut()[index] = 7;

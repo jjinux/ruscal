@@ -136,7 +136,7 @@ fn pascal_main() {
     check(
         &mut checks,
         &mut failures,
-        i16::from(bytes[36]) == 150 && i16::from(bytes[41]) == 50,
+        i16::from(bytes[36]) == 150 && i16::from(bytes[41]) == 0x32,
         pstr("the Real in TP's 6-byte format"),
     );
     f.reset();

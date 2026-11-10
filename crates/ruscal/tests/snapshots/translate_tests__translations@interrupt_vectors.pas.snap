@@ -56,15 +56,15 @@ fn pascal_main() {
     let mut other: AnyPtr = AnyPtr::nil();
     let mut ticks: i16 = 0;
     ticks = 0;
-    get_int_vec(28, &mut old);
-    get_int_vec(9, &mut other);
+    get_int_vec(0x1C, &mut old);
+    get_int_vec(0x09, &mut other);
     pwriteln!(!old.is_nil(), " ", old != other);
-    set_int_vec(28, AnyPtr::code("Tick"));
-    set_int_vec(9, AnyPtr::code("KeyHandler"));
-    get_int_vec(28, &mut cur);
+    set_int_vec(0x1C, AnyPtr::code("Tick"));
+    set_int_vec(0x09, AnyPtr::code("KeyHandler"));
+    get_int_vec(0x1C, &mut cur);
     pwriteln!(cur == AnyPtr::code("Tick"), " ", cur != old, " ", cur != AnyPtr::code("KeyHandler"));
-    set_int_vec(28, old.clone());
-    get_int_vec(28, &mut cur);
+    set_int_vec(0x1C, old.clone());
+    get_int_vec(0x1C, &mut cur);
     pwriteln!(cur == old, " ", ticks);
 }
 

@@ -761,6 +761,10 @@ impl<'a> Codegen<'a> {
             };
             let (value, from) = match (&c.value, ty) {
                 _ if let Some(code) = limit => (code, None),
+                // `const Mask = $FF00` keeps its hex: `0xFF00`.
+                (crate::ast::ConstValue::Expr(e @ Expr { kind: ExprKind::Int(n), .. }), Type::Int(_)) => {
+                    (self.int_literal(e, *n), None)
+                }
                 (crate::ast::ConstValue::Expr(e), _) if !self.names_constant(e) => (self.const_value(value, ty), None),
                 (crate::ast::ConstValue::Expr(e), Type::Int(kind)) if self.const_expr(e, *kind, true).is_some() => {
                     (self.const_expr(e, *kind, true).unwrap().0, None)
@@ -3434,5 +3438,7 @@ pub(super) fn enum_name(root: &ObjectType) -> String {
 
 /// Is this Rust code just a number or a byte literal (`4`, `-1`, `b'a'`)?
 fn is_literal(code: &str) -> bool {
-    code.parse::<i64>().is_ok() || code.starts_with("b'") && code.ends_with('\'')
+    code.parse::<i64>().is_ok()
+        || code.strip_prefix("0x").is_some_and(|hex| i64::from_str_radix(hex, 16).is_ok())
+        || code.starts_with("b'") && code.ends_with('\'')
 }

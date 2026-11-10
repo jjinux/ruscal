@@ -128,13 +128,13 @@ fn pascal_main() {
         arcs.x_start == 250 && arcs.y_start == 200 && arcs.x_end == 200 && arcs.y_end == 150,
         pstr("and the ends"),
     );
-    set_line_style(USER_BIT_LN, 61680, THICK_WIDTH);
+    set_line_style(USER_BIT_LN, 0xF0F0, THICK_WIDTH);
     get_line_settings(&mut lines);
     check(
         &mut checks,
         &mut failures,
         lines.line_style == u16::from(USER_BIT_LN)
-            && lines.pattern == 61680
+            && lines.pattern == 0xF0F0
             && lines.thickness == u16::from(THICK_WIDTH),
         pstr("GetLineSettings"),
     );

@@ -80,11 +80,11 @@ fn pascal_main() {
     let mut r: Rec = Rec::default();
     let mut w_: u16 = 0;
     let mut buf: PArray<u8, 1, 4> = PArray::default();
-    r.a = 258;
-    r.b = 772;
+    r.a = 0x0102;
+    r.b = 0x0304;
     tail(&mut buf, &mut r, 4);
     outer(&mut r, 4);
-    w_ = 43707;
+    w_ = 0xAABB;
     outer(&mut w_, 2);
     pwriteln!(r.a, " ", w_);
 }

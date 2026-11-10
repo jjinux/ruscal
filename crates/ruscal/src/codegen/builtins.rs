@@ -640,20 +640,7 @@ impl<'a> Codegen<'a> {
             }
             // A `const` string parameter, held as `&PString`, prints as it
             // is: `pwriteln!(s)`, not `pwriteln!(*s)`.
-            Type::Str { .. }
-                if width.is_none()
-                    && matches!(value.kind, ExprKind::Name(_))
-                    && self.a.refs.get(&value.id).is_some_and(|&sym| {
-                        matches!(self.a.sym(sym).kind, SymKind::Var(_))
-                            && self.a.passing(sym) == crate::sema::Passing::Ref
-                    }) =>
-            {
-                let code = self.expr(value).0;
-                match code.strip_prefix('*') {
-                    Some(name) if name.chars().all(|c| c.is_alphanumeric() || c == '_') => name.to_string(),
-                    _ => code,
-                }
-            }
+            _ if let Some(name) = self.string_ref(value) => name,
             _ => self.expr(value).0,
         };
         match (width, decimals) {
@@ -669,6 +656,9 @@ impl<'a> Codegen<'a> {
         if let ExprKind::Str(bytes) = &e.kind {
             return super::expr::str_literal(bytes);
         }
+        if let Some(name) = self.string_ref(e) {
+            return name;
+        }
         // TP 7 takes a C-style string too (`Val`, `Assign`, `Rename`): the
         // characters up to the `#0`.
         match self.a.type_of(e.id).clone() {
@@ -676,6 +666,17 @@ impl<'a> Codegen<'a> {
             t if t.is_char_array0() => format!("chars_str({}.as_slice())", paren(self.expr(e), prec::POSTFIX)),
             _ => self.expr(e).0,
         }
+    }
+
+    /// A `const` string parameter, which we hold as `&PString`, where the
+    /// reference does as well as a copy (`pwriteln!(s)`, `pos("l", s)`,
+    /// `s == "hello"`): its name, rather than `*s`.
+    pub(super) fn string_ref(&self, e: &Expr) -> Option<String> {
+        let ExprKind::Name(_) = &e.kind else { return None };
+        let sym = *self.a.refs.get(&e.id)?;
+        let SymKind::Var(v) = &self.a.sym(sym).kind else { return None };
+        let held = v.owner == self.proc && self.a.passing(sym) == crate::sema::Passing::Ref;
+        (held && matches!(v.ty, Type::Str { .. })).then(|| self.a.var_name(self.proc, sym).to_string())
     }
 
     /// A variable used as the receiver of a mutating method (`s.delete(..)`).

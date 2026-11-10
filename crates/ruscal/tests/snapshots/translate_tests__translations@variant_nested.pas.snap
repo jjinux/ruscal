@@ -175,7 +175,7 @@ fn pascal_main() {
     pwriteln!(t.kind, " ", t.radius, " ", f.file_size());
     f.close();
     f.erase();
-    p.set_l(448515293);
+    p.set_l(0x1ABBCCDD);
     pwriteln!(Pun::SERIALIZED_SIZE, " ", p.lo(), " ", p.hi(), " ", i16::from(p.b3()), " ", i16::from(p.b4()));
     p.set_b4(0);
     pwriteln!(p.l(), " ", p.pair().a, " ", p.pair().b);

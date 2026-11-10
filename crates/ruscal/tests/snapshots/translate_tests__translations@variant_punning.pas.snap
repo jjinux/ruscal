@@ -138,7 +138,7 @@ fn pascal_main() {
     let mut n: i32 = 0;
     let mut f: PFile<Pun> = PFile::default();
     p.tag = b'x';
-    p.set_l(305419896);
+    p.set_l(0x12345678);
     pwriteln!(p.lo(), " ", p.hi(), " ", i16::from(p.b()[1]), " ", i16::from(p.b()[4]), " ", Pun::SERIALIZED_SIZE);
     *p.hi_mut() += 1;
     pwriteln!(p.l());

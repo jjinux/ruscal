@@ -135,14 +135,14 @@ fn pascal_main() {
     check(
         &mut checks,
         &mut failures,
-        i16::from(buf[5]) == 128 && i16::from(buf[7]) == 0 && i16::from(buf[9]) == 0 && i16::from(buf[11]) == 128,
+        i16::from(buf[5]) == 0x80 && i16::from(buf[7]) == 0 && i16::from(buf[9]) == 0 && i16::from(buf[11]) == 0x80,
         pstr("row 0: planes 3 down to 0"),
     );
     // Brown is 0110: the last row, planes 2 and 1, pixel 9 is bit 6 of byte 2.
     check(
         &mut checks,
         &mut failures,
-        i16::from(buf[77]) == 0 && i16::from(buf[80]) == 64 && i16::from(buf[82]) == 64 && i16::from(buf[84]) == 0,
+        i16::from(buf[77]) == 0 && i16::from(buf[80]) == 0x40 && i16::from(buf[82]) == 0x40 && i16::from(buf[84]) == 0,
         pstr("the last row"),
     );
     // A sprite saved to a file and drawn from it.

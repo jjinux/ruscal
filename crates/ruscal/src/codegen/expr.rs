@@ -131,7 +131,7 @@ impl<'a> Codegen<'a> {
             return (self.const_value(value, &ty), prec::ATOM);
         }
         match &e.kind {
-            ExprKind::Int(n) => (n.to_string(), prec::ATOM),
+            ExprKind::Int(n) => (self.int_literal(e, *n), prec::ATOM),
             ExprKind::Real(x) => (real_literal(*x), prec::ATOM),
             ExprKind::Str(bytes) => (str_literal(bytes), prec::ATOM),
             ExprKind::Nil => ("Ptr::nil()".to_string(), prec::POSTFIX),
@@ -404,11 +404,24 @@ impl<'a> Codegen<'a> {
         }
     }
 
+    /// An integer literal as the Pascal spells it: a hex one (`$FF00`)
+    /// stays hex in Rust (`0xFF00`), as a reader expects a mask to look. (Not
+    /// one past `$7FFFFFFF`, which is a negative LongInt: `-1`.)
+    pub(super) fn int_literal(&self, e: &Expr, n: i64) -> String {
+        let text = self.map.slice(e.span);
+        match text.strip_prefix(b"$") {
+            Some(digits) if n >= 0 && !digits.is_empty() => {
+                format!("0x{}", String::from_utf8_lossy(digits).to_ascii_uppercase())
+            }
+            _ => n.to_string(),
+        }
+    }
+
     /// [`Self::const_expr`] in `kind`, where everything fits.
     fn const_expr_in(&mut self, e: &Expr, kind: IntKind, in_const: bool) -> Option<Code> {
         use BinaryOp::*;
         match &e.kind {
-            ExprKind::Int(n) => Some((n.to_string(), if *n < 0 { prec::UNARY } else { prec::ATOM })),
+            ExprKind::Int(n) => Some((self.int_literal(e, *n), if *n < 0 { prec::UNARY } else { prec::ATOM })),
             ExprKind::Name(_) => {
                 let sym = *self.a.refs.get(&e.id)?;
                 let SymKind::Const { ty: Type::Int(own), .. } = self.a.sym(sym).kind else { return None };
@@ -956,7 +969,13 @@ impl<'a> Codegen<'a> {
             let (l, r) = (self.pointer_operand(lhs, &operand_ty), self.pointer_operand(rhs, &operand_ty));
             return (format!("{l} {rust_op} {r}"), p);
         }
-        let left = if compare_pointers { self.expr(lhs) } else { self.coerce(lhs, &operand_ty) };
+        let left = match self.string_ref(lhs) {
+            // `s == "hello"` with `s: &PString`: Rust compares what the
+            // reference points to.
+            Some(name) if matches!(op, Eq | NotEq) && matches!(rt, Type::StrLit(_)) => (name, prec::ATOM),
+            _ if compare_pointers => self.expr(lhs),
+            _ => self.coerce(lhs, &operand_ty),
+        };
         // The right side of `and`/`or` only runs if it has to: in
         // `(p <> nil) and (Show(p^.value) > 0)`, `p^.value` mustn't be read
         // when `p` is nil. So the `let`s it needs go inside it, in a block,
@@ -1358,7 +1377,10 @@ impl<'a> Codegen<'a> {
             };
         }
         let all = match self.a.type_of(root.id).clone() {
-            Type::Str { cap } => format!("string_view_bytes(&{}, {cap})", paren(self.expr(root), prec::UNARY)),
+            Type::Str { cap } => match self.string_ref(root) {
+                Some(name) => format!("string_view_bytes({name}, {cap})"),
+                None => format!("string_view_bytes(&{}, {cap})", paren(self.expr(root), prec::UNARY)),
+            },
             Type::OpenArray(elem) => match super::size_hint(&elem) {
                 Some((size, first)) => format!("open_sized_view_bytes({}, {size}, {first})", self.selector_base(root)),
                 None => format!("open_view_bytes({})", self.selector_base(root)),
@@ -2303,6 +2325,14 @@ pub(super) fn cast(code: Code, from: &Type, to: &Type) -> Code {
     }
     if lossless {
         (format!("{rust}::from({})", code.0), prec::POSTFIX)
+    } else if let Some(inner) = code.0.strip_suffix(&format!(" as {}", from.rust()))
+        && code.1 == prec::AS
+        && !inner.contains(' ')
+    {
+        // `a.high() as i16 as u8` is `a.high() as u8`: narrowing twice keeps
+        // the same low bits as narrowing once (this cast narrows, or it'd
+        // have been `From`).
+        (format!("{inner} as {rust}"), prec::AS)
     } else {
         (format!("{} as {rust}", paren(code, prec::AS)), prec::AS)
     }

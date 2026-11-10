@@ -74,7 +74,7 @@ fn pascal_main() {
     f.read(&mut n);
     f.close();
     check(&mut checks, &mut failures, n == 7, pstr("Reset with FileMode 0 reads"));
-    set_file_mode(64);
+    set_file_mode(0x40);
     f.reset();
     // `{$I-}`: an I/O error in `io_unchecked` sets `IOResult` instead of
     // stopping the program.

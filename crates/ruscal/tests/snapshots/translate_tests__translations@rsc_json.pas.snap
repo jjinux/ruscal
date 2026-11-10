@@ -1177,7 +1177,7 @@ pub fn json_load(
     file_name: &PString,
 ) -> PJsonValue {
     let mut result: PJsonValue = Ptr::nil();
-    input2.assign(*file_name);
+    input2.assign(file_name);
     // `{$I-}`: an I/O error in `io_unchecked` sets `IOResult` instead of
     // stopping the program.
     io_unchecked(|| input2.reset());
@@ -1371,7 +1371,7 @@ pub fn json_save(
     indent: i16,
 ) {
     let mut f: PText = PText::default();
-    f.assign(*file_name);
+    f.assign(file_name);
     f.rewrite();
     json_write(to_string, output2, hex, &mut f, v.clone(), indent);
     fwriteln!(f);

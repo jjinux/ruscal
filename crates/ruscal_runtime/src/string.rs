@@ -164,6 +164,14 @@ impl From<&str> for PString {
     }
 }
 
+/// A string we hold by reference (a `const` string parameter, `&PString`)
+/// where any string will do: `pos("l", s)`. (A copy: `PString` is `Copy`.)
+impl From<&PString> for PString {
+    fn from(s: &PString) -> PString {
+        *s
+    }
+}
+
 impl From<&[u8]> for PString {
     fn from(s: &[u8]) -> PString {
         PString::from_bytes(s)
@@ -228,6 +236,14 @@ impl Eq for PString {}
 
 impl PartialEq<&str> for PString {
     fn eq(&self, other: &&str) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
+}
+
+/// So `s == "hello"` works on a `&PString` too (Rust compares two
+/// references by what they point to: `PString` with `str`).
+impl PartialEq<str> for PString {
+    fn eq(&self, other: &str) -> bool {
         self.as_bytes() == other.as_bytes()
     }
 }

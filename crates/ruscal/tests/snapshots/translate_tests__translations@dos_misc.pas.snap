@@ -99,8 +99,8 @@ fn pascal_main() {
     set_date(1997, 3, 11);
     set_time(7, 0, 0, 0);
     swap_vectors();
-    r.ax = 4660;
-    check(&mut checks, &mut failures, r.ax == 4660, pstr("a Registers record can be declared and used"));
+    r.ax = 0x1234;
+    check(&mut checks, &mut failures, r.ax == 0x1234, pstr("a Registers record can be declared and used"));
     set_dos_error(5);
     check(&mut checks, &mut failures, dos_error() == 5, pstr("DosError is a variable"));
     pwriteln!(checks - failures, " of ", checks, " checks passed");

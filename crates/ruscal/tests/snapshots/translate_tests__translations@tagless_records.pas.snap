@@ -149,7 +149,7 @@ impl Pun {
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
     let mut p: Pun = Pun::default();
-    p.set_l(16909060);
+    p.set_l(0x01020304);
     pwriteln!(p.i1().w(), " ", i16::from(p.i2().hi()));
     let value = (i16::from(p.i2().hi()) + 1) as u8;
     p.i2_mut().set_hi(value);

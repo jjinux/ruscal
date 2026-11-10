@@ -96,7 +96,7 @@ fn pascal_main() {
     r.name = pstr("abc");
     r.n = 258;
     dump(&mut r, Rec::SERIALIZED_SIZE as u16);
-    w_ = 4660;
+    w_ = 0x1234;
     pass(&mut w_, 2);
     s = pstr("hello");
     dump(&mut bytes_from(&mut string_bytes(&mut s, 10), 1), 3);

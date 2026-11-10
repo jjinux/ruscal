@@ -43,7 +43,7 @@ file_record!(TRec { w, b, l });
 fn pascal_main() {
     let mut p: PRec = Ptr::nil();
     p = Ptr::alloc();
-    p.get_mut().w = 258;
+    p.get_mut().w = 0x0102;
     if p.get().w > 0 {
         // The source's bytes are copied out first: reading the heap record
         // while `move_bytes` changes it would borrow it twice.

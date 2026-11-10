@@ -74,9 +74,9 @@ fn pascal_main() {
     }
     i = 3;
     dump(&mut bytes_from(&mut buf, i as i64 - 1), 2);
-    words[1] = 258;
-    words[2] = 772;
-    words[3] = 1286;
+    words[1] = 0x0102;
+    words[2] = 0x0304;
+    words[3] = 0x0506;
     i = 2;
     dump(&mut bytes_from(&mut words, (i as i64 - 1) * 2), 2);
     f.x = 1;

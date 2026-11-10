@@ -78,14 +78,14 @@ impl Pun {
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
     let mut p: Pun = Pun::default();
-    p.set_l(1145258561);
+    p.set_l(0x44434241);
     p.set_s(PString::new());
     pwriteln!(p.l(), " ", p.c()[1], p.c()[2], p.c()[3]);
-    p.set_l(1145258561);
+    p.set_l(0x44434241);
     p.s_mut()[0] = b'\x00';
     p.s_mut()[0] = b'\x03';
     pwriteln!(p.s());
-    p.set_l(1145258561);
+    p.set_l(0x44434241);
     p.s_mut()[0] += 1;
     pwriteln!(p.l());
     p.set_len(2);

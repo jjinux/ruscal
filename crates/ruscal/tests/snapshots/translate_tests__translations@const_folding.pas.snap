@@ -26,7 +26,7 @@ const LO_NEG: i16 = 255;
 const LEN: i16 = 4;
 const ODD_NEG: bool = true;
 const SWAP_TWICE: i32 = 65280;
-const HIGH_WORD: i32 = 65280;
+const HIGH_WORD: i32 = 0xFF00;
 const SWAP_NAMED: i16 = 255; // Swap(HighWord)
 
 // TP 7's constant functions, worked out when the program is translated,
@@ -112,8 +112,8 @@ fn pascal_main() {
         u16::from(b).swap_bytes() == 256 && i16::from(sh).swap_bytes() == -1,
         pstr("a Byte swaps as a Word, a ShortInt as an Integer"),
     );
-    l = 305419896;
-    check(&mut checks, &mut failures, l.rotate_left(16) == 1450709556, pstr("Swap of a LongInt trades its halves"));
+    l = 0x12345678;
+    check(&mut checks, &mut failures, l.rotate_left(16) == 0x56781234, pstr("Swap of a LongInt trades its halves"));
     check(&mut checks, &mut failures, SWAP_WORD == 255, pstr("Swap($FF00) is a Word"));
     check(&mut checks, &mut failures, SWAP_TWICE == 65280 && 65280_u16 == 65280, pstr("Swap of a Word stays a Word"));
     check(&mut checks, &mut failures, SWAP_NAMED == 255 && 255_u16 == 255, pstr("Swap of a named Word constant"));

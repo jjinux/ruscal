@@ -469,7 +469,7 @@ pub fn set_position(turtle: &mut TTurtleContext, x: i16, y: i16) {
 /// Uses globals, which are passed in as parameters.
 pub fn xcor(turtle: TTurtleContext) -> i16 {
     let mut result: i16 = 0;
-    result = turtle.pos_x.round() as i32 as i16;
+    result = turtle.pos_x.round() as i16;
     result
 }
 
@@ -478,7 +478,7 @@ pub fn xcor(turtle: TTurtleContext) -> i16 {
 /// Uses globals, which are passed in as parameters.
 pub fn ycor(turtle: TTurtleContext) -> i16 {
     let mut result: i16 = 0;
-    result = turtle.pos_y.round() as i32 as i16;
+    result = turtle.pos_y.round() as i16;
     result
 }
 
