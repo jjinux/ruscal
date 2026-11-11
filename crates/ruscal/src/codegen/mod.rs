@@ -773,6 +773,7 @@ impl<'a> Codegen<'a> {
                     }),
                     Type::Int(_),
                 ) if let ExprKind::Int(n) = operand.kind
+                    && n != 0
                     && self.int_literal(operand, n).starts_with("0x") =>
                 {
                     (format!("-{}", self.int_literal(operand, n)), None)
@@ -2604,10 +2605,18 @@ impl<'a> Codegen<'a> {
         {
             return Some(code);
         }
-        // `case b of $20..$2F:` keeps its hex: `0x20..=0x2F =>`.
+        // `case b of $20..$2F:` keeps its hex: `0x20..=0x2F =>`, and
+        // `-$10` is `-0x10`.
         if let ExprKind::Int(n) = e.kind {
             let code = self.int_literal(e, n);
             return code.starts_with("0x").then_some(code);
+        }
+        if let ExprKind::Unary { op: crate::ast::UnaryOp::Neg, operand } = &e.kind
+            && let ExprKind::Int(n) = operand.kind
+            && n != 0
+        {
+            let code = self.int_literal(operand, n);
+            return code.starts_with("0x").then(|| format!("-{code}"));
         }
         let ExprKind::Name(_) = e.kind else { return None };
         let sym = self.a.sym(*self.a.refs.get(&e.id)?);

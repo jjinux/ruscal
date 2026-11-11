@@ -26,7 +26,10 @@ reach one element, so `a[i]` and `a[j]` count as the same place even when
 part's bytes, and for two `var` arguments in one heap record (`p^.a` and
 `p^.a`). An untyped `var` parameter (`var Buf`) borrows even more: its
 bytes run on to the end of the whole variable, so `Both(a[1], a[2], 2)`
-with two untyped parameters is refused too.
+with two untyped parameters is refused too. So is a standard routine's
+call: `Val(s, n, n)`, or `GetDate(d[1], d[2], d[3], d[4])` with `d` an
+array (pass separate variables; `ReadLn(x, x)` is fine, it reads into
+each in turn).
 
 Refused:
 

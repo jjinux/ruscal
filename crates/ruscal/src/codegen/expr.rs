@@ -1642,6 +1642,22 @@ impl<'a> Codegen<'a> {
     /// `Word(i)`, `Char(n)`: a conversion between ordinal (or other value)
     /// types, if `callee` names a type and the argument isn't an untyped
     /// parameter or a pointer (`call` handles those).
+    /// Is `e` made only of integer literals, operators and typecasts
+    /// (`Integer(-1) shr 1`)? Then its value says as much as it does; a name
+    /// in it (`Ord(Blue)`, `High(Byte)`, `K`) is worth keeping.
+    fn literals_only(&self, e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Int(_) => true,
+            ExprKind::Unary { operand, .. } => self.literals_only(operand),
+            ExprKind::Binary { lhs, rhs, .. } => self.literals_only(lhs) && self.literals_only(rhs),
+            ExprKind::Call { callee, args } if args.len() == 1 => {
+                matches!(self.a.refs.get(&callee.id).map(|&s| &self.a.sym(s).kind), Some(SymKind::TypeName(_)))
+                    && self.literals_only(&args[0])
+            }
+            _ => false,
+        }
+    }
+
     fn value_cast(&mut self, callee: &Expr, args: &[Expr]) -> Option<Code> {
         let sym = *self.a.refs.get(&callee.id)?;
         let SymKind::TypeName(ty) = &self.a.sym(sym).kind else { return None };
@@ -1667,7 +1683,7 @@ impl<'a> Codegen<'a> {
             },
             // A constant expression of literals (`Word(Integer(-1) shr 1)`):
             // its value, worked out in 32 bits as TP does.
-            ExprKind::Binary { .. } | ExprKind::Call { .. } if !self.names_constant(&args[0]) => {
+            ExprKind::Binary { .. } | ExprKind::Call { .. } if self.literals_only(&args[0]) => {
                 match self.a.consts.get(&args[0].id) {
                     Some(crate::sema::ConstVal::Int(n)) => Some(*n),
                     _ => None,

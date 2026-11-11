@@ -38,6 +38,10 @@ pub(super) struct ForLoop {
     pub proc: ProcId,
 }
 
+/// A standard routine's `var` argument: its variable, the fields to it,
+/// whether there's an array index after them, and where it is.
+type VarPlace = (SymId, Vec<String>, bool, Span);
+
 pub(super) struct Checker {
     a: Analysis,
     /// The scope stack. Each scope maps a lowercase name to a symbol. The
@@ -70,7 +74,7 @@ pub(super) struct Checker {
     /// `var` parameters get (root, fields, where), so `Val(S, I, I)` can be
     /// refused as a user routine's call would be. And how deep `place` is,
     /// so only an argument itself counts, not a place inside it.
-    builtin_var_places: Option<Vec<(SymId, Vec<String>, Span)>>,
+    builtin_var_places: Option<Vec<VarPlace>>,
     place_depth: usize,
     /// For each method body we're inside: the index of its scope in
     /// `scopes` and the method's procedure.
@@ -646,6 +650,14 @@ impl Checker {
                 (None, Some((span, message))) => self.error(span, message),
                 (None, None) => self.error(e.span, "expected a constant expression"),
             }
+            // Declared anyway, with no type, so its uses don't each say it's
+            // an unknown identifier.
+            let sym = self.add_symbol(
+                &c.name.name,
+                "_".to_string(),
+                SymKind::Const { value: ConstVal::Int(0), ty: Type::Error },
+            );
+            self.bind(&c.name, sym);
             return;
         };
         // `High(Letter)` of a Char subrange is worked out as its ordinal; as
@@ -1794,10 +1806,10 @@ impl Checker {
                         // TP takes a constant shift's count mod 32 (`1 shl 32`
                         // is 1), and `shr` is a LongInt's logical shift (`-1
                         // shr 1` is MaxLongInt), as at run time.
-                        BinaryOp::Shl if i32::try_from(a).is_ok() && b >= 0 => {
+                        BinaryOp::Shl if i32::try_from(a).is_ok() => {
                             Int(i64::from((a as i32).wrapping_shl((b & 31) as u32)))
                         }
-                        BinaryOp::Shr if i32::try_from(a).is_ok() && b >= 0 => {
+                        BinaryOp::Shr if i32::try_from(a).is_ok() => {
                             Int(i64::from(((a as i32 as u32) >> (b & 31)) as i32))
                         }
                         BinaryOp::Shl => Int(a.checked_shl(b as u32)?),
@@ -2979,7 +2991,8 @@ impl Checker {
             && let Some(root) = self.place_root(e)
             && let Some(places) = &mut self.builtin_var_places
         {
-            places.push((root, Self::place_fields(e).0, e.span));
+            let (fields, no_index) = Self::place_fields(e);
+            places.push((root, fields, !no_index, e.span));
         }
         ty
     }
@@ -3465,6 +3478,16 @@ impl Checker {
 
     /// `name` is the routine's name as the program spells it, for messages.
     fn unit_call(&mut self, e: &Expr, r: &'static super::units::UnitRoutine, name: &str, args: &[Expr]) -> Type {
+        self.checking_var_args(name, true, |this| this.unit_call_checked(e, r, name, args))
+    }
+
+    fn unit_call_checked(
+        &mut self,
+        e: &Expr,
+        r: &'static super::units::UnitRoutine,
+        name: &str,
+        args: &[Expr],
+    ) -> Type {
         use super::units::Param;
         if let Some(why) = r.refused {
             self.error(e.span, format!("Ruscal can't run `{name}`: {why}"));
@@ -3953,24 +3976,39 @@ impl Checker {
     fn builtin_call(&mut self, e: &Expr, b: Builtin, args: &[Expr]) -> Type {
         // (`ReadLn(X, X)` reads into each in turn, so it's fine.)
         let collect = !matches!(b, Builtin::Read | Builtin::Readln);
+        self.checking_var_args(&format!("{b:?}"), collect, |this| this.builtin_call_checked(e, b, args))
+    }
+
+    /// Check a standard routine's call (`check`), refusing one variable
+    /// passed to two of its `var` parameters (`Val(S, I, I)`,
+    /// `GetDate(D[1], D[2], ...)`), as a user routine's call would be.
+    fn checking_var_args<T>(&mut self, name: &str, collect: bool, check: impl FnOnce(&mut Self) -> T) -> T {
         let outer = std::mem::replace(&mut self.builtin_var_places, collect.then(Vec::new));
         let depth = std::mem::replace(&mut self.place_depth, 0);
-        let ty = self.builtin_call_checked(e, b, args);
+        let result = check(self);
         self.place_depth = depth;
         let places = std::mem::replace(&mut self.builtin_var_places, outer).unwrap_or_default();
-        for (i, (root, fields, span)) in places.iter().enumerate() {
-            if places[..i].iter().any(|(r, f, _)| r == root && super::fields_overlap(f, fields)) {
-                let name = self.a.symbols[*root].name.clone();
-                self.error(
-                    *span,
-                    format!(
-                        "`{name}` is passed by `var` more than once in this call to `{b:?}`; Rust doesn't allow two mutable references to the same variable{}",
-                        super::rewrite_link("two-var-arguments")
-                    ),
-                );
-            }
+        for (i, (root, fields, indexed, span)) in places.iter().enumerate() {
+            let Some((_, earlier_fields, earlier_indexed, _)) =
+                places[..i].iter().find(|(r, f, _, _)| r == root && super::fields_overlap(f, fields))
+            else {
+                continue;
+            };
+            let why = if *indexed && *earlier_indexed && earlier_fields == fields {
+                " (Rust can't tell that two elements of one array are different)"
+            } else {
+                ""
+            };
+            let var = self.a.symbols[*root].name.clone();
+            self.error(
+                *span,
+                format!(
+                    "`{var}` is passed by `var` more than once in this call to `{name}`; Rust doesn't allow two mutable references to the same variable{why}{}",
+                    super::rewrite_link("two-var-arguments")
+                ),
+            );
         }
-        ty
+        result
     }
 
     fn builtin_call_checked(&mut self, e: &Expr, b: Builtin, args: &[Expr]) -> Type {

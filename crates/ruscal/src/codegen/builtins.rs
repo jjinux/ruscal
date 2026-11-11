@@ -327,6 +327,12 @@ impl<'a> Codegen<'a> {
                 // otherwise as written (`K` stays `K`, `2 + 3` too).
                 let amount = match (args.get(1), number) {
                     _ if let Some(operand) = negated => self.coerce(operand, &target_ty).0,
+                    // (`Dec(i, -$10)` keeps its hex: `i += 0x10`.)
+                    (Some(Expr { kind: ExprKind::Unary { op: crate::ast::UnaryOp::Neg, operand }, .. }), Some(n))
+                        if flip && matches!(operand.kind, ExprKind::Int(m) if m == -n) =>
+                    {
+                        self.int_literal(operand, -n)
+                    }
                     (Some(_), Some(n)) if flip => (-n).to_string(),
                     (Some(_), Some(n)) if wraps => n.to_string(),
                     // (A literal needs no conversion, even into a `Char`.)

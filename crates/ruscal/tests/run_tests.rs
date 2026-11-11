@@ -27,8 +27,10 @@ fn run_tests() {
         .collect();
     programs.sort();
     // `RUSCAL_TEST=name` runs just one test, which is handy while debugging.
-    if let Ok(only) = std::env::var("RUSCAL_TEST") {
-        programs.retain(|p| p.file_stem().unwrap().to_string_lossy() == only);
+    let only = std::env::var("RUSCAL_TEST").ok();
+    if let Some(only) = &only {
+        programs.retain(|p| p.file_stem().unwrap().to_string_lossy() == *only);
+        assert!(!programs.is_empty(), "there's no test program tests/run/{only}.pas");
     }
 
     // `CARGO_TARGET_TMPDIR` is a scratch directory Cargo provides to
@@ -39,7 +41,9 @@ fn run_tests() {
 
     let mut failures = Vec::new();
     let mut built = Vec::new();
-    let mut features = vec!["crt".to_string(), "dos".to_string()];
+    // Every unit's feature, whatever the programs use, so that this
+    // package's description (and so the runtime's build) never changes.
+    let features: Vec<String> = ["crt", "dos", "graph"].map(String::from).to_vec();
     // Transpiling is independent for each program, so it's done in
     // parallel; the results come back in order.
     let transpiled = parallel_map(&programs, |path| ruscal::driver::transpile_file(path));
@@ -61,7 +65,6 @@ fn run_tests() {
                         std::fs::remove_file(file).unwrap();
                     }
                 }
-                features.extend(generated.features);
                 built.push((path.clone(), generated.name));
             }
             // Units are compiled as part of the programs that use them.
@@ -69,18 +72,16 @@ fn run_tests() {
             Err(message) => failures.push(format!("{}: transpile failed:\n{message}", path.display())),
         }
     }
-    // A program that's gone (or was only run on its own, `RUSCAL_TEST`)
-    // isn't built: its directory goes. The rest keep their files, and
-    // their modification times, so Cargo rebuilds only what changed.
-    for entry in std::fs::read_dir(&bin_dir).unwrap() {
+    // A program that's gone isn't built: its directory goes. The rest keep
+    // their files, and their modification times, so Cargo rebuilds only
+    // what changed. (Not when running one test: the others stay.)
+    for entry in std::fs::read_dir(&bin_dir).unwrap().filter(|_| only.is_none()) {
         let dir = entry.unwrap().path();
         let name = dir.file_name().unwrap().to_string_lossy().to_string();
         if !built.iter().any(|(_, built_name)| *built_name == name) {
             std::fs::remove_dir_all(dir).unwrap();
         }
     }
-    features.sort();
-    features.dedup();
     let mut toml = ruscal::driver::cargo_toml("ruscal_run_tests", &features);
     // `cargo_toml` writes a binary package; we only need its dependency and
     // profile sections, with autodiscovered `src/bin/*.rs` binaries.
@@ -93,6 +94,8 @@ fn run_tests() {
     // dependencies from crates.io, so only our code is affected.)
     let build = Command::new("cargo")
         .args(["build", "--quiet"])
+        // (Just the one program, with `RUSCAL_TEST`.)
+        .args(built.iter().filter(|_| only.is_some()).flat_map(|(_, name)| ["--bin", name.as_str()]))
         .env("RUSTFLAGS", "-D warnings")
         .current_dir(&scratch)
         .output()
