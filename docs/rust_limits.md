@@ -331,3 +331,37 @@ Rewrite: say with conditions what the jump skipped.
 For crossing jumps, move one label so that the statements each `goto`
 skips or repeats are inside the other's, or split the statements into a
 routine of their own.
+
+<a id="enum-out-of-range"></a>
+
+## An enumerated value that isn't one of the type's values
+
+```text
+error: Color has no value 5 (its values are 0 to 2): Turbo Pascal keeps
+it anyway, but a Rust enum can't hold a value it doesn't have
+```
+
+Turbo Pascal stores an enumerated value as its number, so `Color(5)` of
+`(Red, Green, Blue)` is accepted and just holds 5. In Rust each enum
+value is one of its variants, and there's no variant for 5. (At run
+time, a cast past the last value is runtime error 201; see
+[the language spec](language_spec.md).)
+
+Refused:
+
+```pascal
+type
+  Color = (Red, Green, Blue);
+const
+  Unset = Color(5);  { "no colour" }
+```
+
+Rewrite: give the enum the value it needs, or keep the number in an
+integer.
+
+```pascal
+type
+  Color = (Red, Green, Blue, NoColor);
+const
+  Unset = NoColor;
+```

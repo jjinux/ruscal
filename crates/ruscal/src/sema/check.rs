@@ -1710,7 +1710,22 @@ impl Checker {
                 if !target.is_ordinal() {
                     return None;
                 }
-                let (what, hint) = match self.eval_const(&args[0])? {
+                let value = self.eval_const(&args[0])?;
+                // `Color(5)` of a three-value enum: TP keeps the 5, but a Rust
+                // enum can't hold a value it doesn't have.
+                if let (Type::Enum(en), ConstVal::Int(n)) = (&target, &value)
+                    && !(0..en.variants.len() as i64).contains(n)
+                {
+                    return Some((
+                        e.span,
+                        format!(
+                            "{target} has no value {n} (its values are 0 to {}): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have{}",
+                            en.variants.len() - 1,
+                            super::rewrite_link("enum-out-of-range")
+                        ),
+                    ));
+                }
+                let (what, hint) = match value {
                     ConstVal::Real(_) if target.is_integer() => ("a Real", "; use `Trunc` or `Round`"),
                     ConstVal::Real(_) => ("a Real", ""),
                     ConstVal::Str(s) if s.len() != 1 => ("a string", ""),

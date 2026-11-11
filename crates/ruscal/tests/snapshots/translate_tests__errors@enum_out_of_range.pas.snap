@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/enum_out_of_range.pas
+---
+enum_out_of_range.pas:7:12: error: Color has no value 5 (its values are 0 to 2): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#enum-out-of-range
+   Unset = Color(5);
+           ^^^^^^^^
