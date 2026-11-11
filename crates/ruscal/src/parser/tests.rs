@@ -92,3 +92,36 @@ fn error_messages_point_at_the_problem() {
     let err = parse_err("program X;\nbegin\n  writeln('hi')\n  writeln('there')\nend.\n");
     assert_eq!(err, "test.pas:4:3: error: expected `end`, found identifier `writeln`\n  writeln('there')\n  ^^^^^^^");
 }
+
+fn parse_unit_err(src: &str) -> Option<String> {
+    parse_file(src.as_bytes(), 0).err().map(|d| d.render("test.pas", src.as_bytes()))
+}
+
+#[test]
+fn global_switch_goes_before_uses_and_declarations() {
+    // Where Turbo Pascal 7 takes `{$N+}` (checked in DOSBox).
+    parse("{$N+} program P; var R: Real; begin end.");
+    parse("program P; {$N+} uses Crt; begin end.");
+    parse("program P; {$N-} begin end.");
+    parse("program P; var R: Real; begin end. {$N+}");
+    parse("program P; {$I-} var R: Real; begin {$R+,I+} end.");
+    // And where it says "Invalid compiler directive".
+    for src in [
+        "program P; uses Crt; {$N+} begin end.",
+        "program P; label 1; {$N+} begin 1: end.",
+        "program P; const K = 1; {$R+,N-} begin end.",
+        "program P; var R: Real; begin {$N+} end.",
+    ] {
+        assert!(parse_err(src).contains("is a global switch"), "{src}");
+    }
+    assert_eq!(
+        parse_unit_err("unit U; {$N+} interface {$N-} procedure P; implementation procedure P; begin end; end."),
+        None
+    );
+    for src in [
+        "unit U; interface uses Crt; {$N+} implementation end.",
+        "unit U; interface procedure P; implementation {$N+} procedure P; begin end; end.",
+    ] {
+        assert!(parse_unit_err(src).is_some_and(|e| e.contains("is a global switch")), "{src}");
+    }
+}

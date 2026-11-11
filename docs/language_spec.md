@@ -383,7 +383,9 @@ More language
 - `{$N+}` types `Single`, `Double`, `Extended`, `Comp` as `f32`/`f64`/`f64`/`i64`;
   under `{$N+}`, `Round` at run time rounds half to even, as TP 7's 8087
   does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
-  round half away from zero (3)
+  round half away from zero (3). `{$N+}` and `{$N-}` hold for the whole
+  file, so, as in TP 7, they go before the `uses` clause and the
+  declarations (elsewhere they're an error)
 
 Crt unit (the whole examples set uses it)
 

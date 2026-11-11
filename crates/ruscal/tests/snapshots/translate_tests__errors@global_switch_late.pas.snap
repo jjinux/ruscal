@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/global_switch_late.pas
+---
+global_switch_late.pas:6:1: error: `{$N+}` is a global switch, for the whole file: put it before the `uses` clause and the declarations, as Turbo Pascal 7 requires
+{$N+}
+^^^^^

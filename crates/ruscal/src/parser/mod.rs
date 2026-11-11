@@ -72,6 +72,7 @@ pub fn parse_file(source: &[u8], base: usize) -> PResult<(SourceFile, Vec<Direct
     } else {
         SourceFile::Program(parser.program()?)
     };
+    parser.check_global_switches()?;
     Ok((file, parser.directives, comments))
 }
 
@@ -80,6 +81,11 @@ pub(crate) struct Parser {
     pos: usize,
     next_id: NodeId,
     directives: Vec<Directive>,
+    /// Where a global switch (`{$N+}`) may be: from the start of the file
+    /// to the `uses` clause or the first declaration, and after the final
+    /// `end.` (where it does nothing). Set by `program` and `unit`.
+    globals_until: usize,
+    code_end: usize,
 }
 
 impl Parser {
@@ -95,7 +101,7 @@ impl Parser {
                 _ => tokens.push(token),
             }
         }
-        Parser { tokens, pos: 0, next_id: 0, directives }
+        Parser { tokens, pos: 0, next_id: 0, directives, globals_until: 0, code_end: 0 }
     }
 
     // ----- Token helpers -------------------------------------------------
@@ -195,6 +201,30 @@ impl Parser {
 
     // ----- Programs and blocks -------------------------------------------
 
+    /// `{$N+}` is a global switch: it holds for the whole program or unit,
+    /// so Turbo Pascal 7 takes it only before the `uses` clause and the
+    /// declarations ("Invalid compiler directive" elsewhere). Ruscal does
+    /// the same, so a file never mixes the two ways `Round` rounds.
+    fn check_global_switches(&self) -> PResult<()> {
+        for d in &self.directives {
+            if d.span.start < self.globals_until || d.span.start >= self.code_end {
+                continue;
+            }
+            for switch in d.text.split(',') {
+                let switch = switch.trim().to_ascii_uppercase();
+                if switch == "N+" || switch == "N-" {
+                    return Err(Diagnostic::new(
+                        d.span,
+                        format!(
+                            "`{{${switch}}}` is a global switch, for the whole file: put it before the `uses` clause and the declarations, as Turbo Pascal 7 requires"
+                        ),
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn program(&mut self) -> PResult<Program> {
         // The `program Name;` header is optional in Turbo Pascal.
         let name = if self.eat_keyword(Keyword::Program) {
@@ -209,9 +239,11 @@ impl Parser {
         } else {
             Ident { name: "Main".to_string(), span: Span::default() }
         };
+        self.globals_until = self.span().start;
         let uses = self.uses_clause()?;
         let block = self.block()?;
         self.expect(&TokenKind::Dot)?;
+        self.code_end = self.prev_span().end;
         Ok(Program { name, uses, block })
     }
 
@@ -220,6 +252,7 @@ impl Parser {
         let name = self.expect_ident()?;
         self.expect(&TokenKind::Semi)?;
         let interface_keyword = self.expect_keyword(Keyword::Interface)?;
+        self.globals_until = self.span().start;
         let interface_uses = self.uses_clause()?;
         let interface = self.declarations(true)?;
         self.expect_keyword(Keyword::Implementation)?;
@@ -228,6 +261,7 @@ impl Parser {
         let init = if self.eat_keyword(Keyword::Begin) { self.statement_list()? } else { Vec::new() };
         let end = self.expect_keyword(Keyword::End)?;
         self.expect(&TokenKind::Dot)?;
+        self.code_end = self.prev_span().end;
         Ok(Unit {
             name,
             interface_keyword,
