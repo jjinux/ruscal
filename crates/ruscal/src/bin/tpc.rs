@@ -155,7 +155,9 @@ fn compile(args: &Args) -> Result<(), String> {
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.is_empty() {
+    // (TP showed its usage for no arguments; `--help` and `-h` too, as a
+    // Unix user would try, and `-H`, since TP's options ignore case.)
+    if args.is_empty() || args.iter().any(|a| matches!(a.as_str(), "--help" | "-h" | "-H")) {
         println!("{USAGE}");
         return ExitCode::SUCCESS;
     }

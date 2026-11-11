@@ -19,9 +19,13 @@ struct Cli {
 #[derive(Subcommand)]
 enum Cmd {
     /// Print the generated Rust code.
-    Emit { file: PathBuf },
+    Emit {
+        /// The Pascal program (its units are found next to it).
+        file: PathBuf,
+    },
     /// Transpile into a Cargo project and build it.
     Build {
+        /// The Pascal program (its units are found next to it).
         file: PathBuf,
         /// Where to write the Cargo project (default: out/<name>).
         #[arg(short, long)]
@@ -45,7 +49,9 @@ enum Cmd {
     },
     /// Transpile, build and run.
     Run {
+        /// The Pascal program (its units are found next to it).
         file: PathBuf,
+        /// Where to write the Cargo project (default: out/<name>).
         #[arg(short, long)]
         out: Option<PathBuf>,
         /// Arguments for the Pascal program (after `--`).
@@ -105,12 +111,24 @@ fn run(command: Cmd) -> Result<ExitCode, String> {
             Ok(ExitCode::SUCCESS)
         }
         Cmd::Build { file, out, lib } => {
-            let dir = if lib { library(&file, out)? } else { project(&file, out)? };
-            cargo(&dir, &["build", "--quiet"], &[])
+            let (dir, built) = if lib {
+                let dir = library(&file, out)?;
+                (dir.clone(), format!("the library project: {}", dir.display()))
+            } else {
+                let (dir, name) = project(&file, out)?;
+                let exe = dir.join("target/debug").join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+                (dir, format!("the executable: {}", exe.display()))
+            };
+            let code = cargo(&dir, &["build", "--quiet"], &[])?;
+            // Say where it went (cargo's `--quiet` says nothing).
+            if code == ExitCode::SUCCESS {
+                println!("built {built}");
+            }
+            Ok(code)
         }
         Cmd::Fmt { files, check, crlf } => fmt(&files, check, crlf),
         Cmd::Run { file, out, args } => {
-            let dir = project(&file, out)?;
+            let (dir, _) = project(&file, out)?;
             cargo(&dir, &["run", "--quiet", "--"], &args)
         }
         Cmd::ToJson { source, data, type_name, out } => {
@@ -161,13 +179,14 @@ fn warn(generated: &ruscal::driver::Generated) {
     }
 }
 
-/// Transpile `file` and write the Cargo project; return its directory.
-fn project(file: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
+/// Transpile `file` and write the Cargo project; return its directory and
+/// the program's name (its executable's).
+fn project(file: &Path, out: Option<PathBuf>) -> Result<(PathBuf, String), String> {
     let generated = ruscal::driver::transpile_file(file)?;
     warn(&generated);
     let dir = out.unwrap_or_else(|| Path::new("out").join(&generated.name));
     ruscal::driver::write_project(&dir, &generated).map_err(|e| format!("cannot write {}: {e}", dir.display()))?;
-    Ok(dir)
+    Ok((dir, generated.name))
 }
 
 /// Transpile the unit `file` as a library and write the Cargo project.

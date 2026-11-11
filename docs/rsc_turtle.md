@@ -1,10 +1,11 @@
 # RscTurtle: turtle graphics on top of Graph
 
 `RscTurtle` is one of Ruscal's own units (their names start with `Rsc`).
-It gives a program turtle graphics, with the routines Turbo Pascal 3.0's
-turtle had (in TP 4.0 to 7.0, the `Graph3` unit), drawn with the `Graph`
-unit. So a Graph3 turtle program ports by changing its `uses` line and
-starting graphics with `InitGraph`; a new program can use it too.
+It comes with Ruscal: `uses RscTurtle` needs nothing installed. It gives a
+program turtle graphics, with the routines Turbo Pascal 3.0's turtle had
+(in TP 4.0 to 7.0, the `Graph3` unit), drawn with the `Graph` unit. So a
+Graph3 turtle program ports by changing its `uses` line and starting
+graphics with `InitGraph`; a new program can use it too.
 
 ```pascal
 program Square;

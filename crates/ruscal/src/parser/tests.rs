@@ -125,3 +125,23 @@ fn global_switch_goes_before_uses_and_declarations() {
         assert!(parse_unit_err(src).is_some_and(|e| e.contains("is a global switch")), "{src}");
     }
 }
+
+#[test]
+fn machine_code_routines_say_they_need_dos() {
+    for (src, what) in [
+        ("procedure P; assembler; asm mov ax, 1 end; begin end.", "an `assembler` routine"),
+        ("procedure P; var X: Integer; asm mov ax, 1 end; begin end.", "an `asm` block"),
+        ("procedure Nop; inline($90); begin end.", "`inline(...)`"),
+    ] {
+        let e = parse_err(src);
+        assert!(e.contains(&format!("{what} holds 8086 machine code")), "{src}: {e}");
+    }
+}
+
+#[test]
+fn only_mem_takes_a_segment_and_offset() {
+    assert!(parse_err("begin MemW[$40:$13] := 0 end.").contains("DOS PC's memory"));
+    // A colon in another array's index is an ordinary typo.
+    let e = parse_err("var A: array[1..2] of Integer; begin A[1:2] := 3 end.");
+    assert!(e.contains("expected `]`"), "{e}");
+}

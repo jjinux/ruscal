@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/dos_port.pas
+---
+dos_port.pas:8:4: error: `Mem`, `MemW`, `MemL`, `Port` and `PortW` reach a DOS PC's memory and I/O ports, which a modern computer doesn't have, so Ruscal can't translate them; see "Never supported" in the README
+   Port[$60] := 1;
+   ^^^^

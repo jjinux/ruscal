@@ -23,6 +23,19 @@ use crate::diag::{Diagnostic, Span};
 use crate::lexer;
 use crate::token::{Keyword, Token, TokenKind};
 
+/// Why `Mem[Seg:Ofs]` (and `Port[...]`) can't be translated.
+pub(crate) const DOS_ONLY_MEM: &str = "`Mem`, `MemW`, `MemL`, `Port` and `PortW` reach a DOS PC's memory and I/O ports, which a modern computer doesn't have, so Ruscal can't translate them";
+
+/// The error for 8086 machine code (`what` is "an `asm` block", ...).
+fn machine_code(span: Span, what: &str) -> Diagnostic {
+    Diagnostic::new(
+        span,
+        format!(
+            "{what} holds 8086 machine code, which needs a real DOS PC, so Ruscal can't translate it; see \"Never supported\" in the README"
+        ),
+    )
+}
+
 /// Result type for parser functions. A type alias saves writing the error
 /// type in every signature.
 type PResult<T> = Result<T, Diagnostic>;
@@ -286,6 +299,10 @@ impl Parser {
 
     fn block(&mut self) -> PResult<Block> {
         let decls = self.declarations(false)?;
+        // `procedure P; asm ... end;`: a routine written in assembler.
+        if self.at_keyword(Keyword::Asm) {
+            return Err(machine_code(self.span(), "an `asm` block"));
+        }
         let start = self.expect_keyword(Keyword::Begin)?;
         let body = self.statement_list()?;
         let end = self.expect_keyword(Keyword::End)?;
@@ -468,6 +485,14 @@ impl Parser {
         let mut body = None;
         let mut is_virtual = false;
         loop {
+            // `assembler;` (an `asm` body follows) and TP 5.5's
+            // `inline($90);` directive are machine code.
+            if self.peek().is_ident("assembler") {
+                return Err(machine_code(self.span(), "an `assembler` routine"));
+            }
+            if self.at_keyword(Keyword::Inline) {
+                return Err(machine_code(self.span(), "`inline(...)`"));
+            }
             if self.peek().is_ident("forward") {
                 self.bump();
                 body = Some(ProcBody::Forward);

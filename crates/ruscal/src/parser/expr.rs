@@ -192,6 +192,14 @@ impl Parser {
                 TokenKind::LBracket => {
                     self.bump();
                     let mut indexes = vec![self.expression()?];
+                    // `Mem[$40:$17]`: memory at a DOS segment and offset.
+                    let is_mem = matches!(&expr.kind, ExprKind::Name(n) if ["mem", "memw", "meml"].contains(&n.name.to_ascii_lowercase().as_str()));
+                    if is_mem && self.at(&TokenKind::Colon) {
+                        return Err(crate::diag::Diagnostic::new(
+                            expr.span.to(self.span()),
+                            format!("{}; see \"Never supported\" in the README", super::DOS_ONLY_MEM),
+                        ));
+                    }
                     while self.eat(&TokenKind::Comma) {
                         indexes.push(self.expression()?);
                     }

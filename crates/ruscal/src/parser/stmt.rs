@@ -30,6 +30,11 @@ impl Parser {
             return Ok(Stmt { kind: StmtKind::Labeled { label, body }, span: start.to(self.prev_span()) });
         }
         let kind = match self.peek() {
+            // Machine code for the 8086, which there's nothing to run on.
+            TokenKind::Keyword(keyword @ (Keyword::Asm | Keyword::Inline)) => {
+                let what = if *keyword == Keyword::Asm { "an `asm` block" } else { "`inline(...)`" };
+                return Err(super::machine_code(start, what));
+            }
             TokenKind::Keyword(Keyword::Begin) => {
                 self.bump();
                 let body = self.statement_list()?;

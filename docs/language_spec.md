@@ -1,9 +1,16 @@
 # Ruscal language specification
 
+Which Turbo Pascal constructs Ruscal supports, and how closely. For a quick
+answer to "will my program work?", the README's
+[What's supported](../README.md#whats-supported) is the summary; this page
+has the details. Tiers 1 and 2 are supported (everything the programs in
+`examples/` use, and more), Tier 3 lists what isn't yet, or never will be,
+and why.
+
 ## Decision: Turbo Pascal, not ISO Pascal
 
-Ruscal translates **Turbo Pascal** (Borland's dialect), accepting Turbo
-Pascal 7.0 syntax and implementing the Turbo Pascal 5.5 feature level first.
+Ruscal translates **Turbo Pascal** (Borland's dialect): it reads Turbo
+Pascal 7.0 syntax and covers most of Turbo Pascal 5.5 to 7.0.
 ISO 7185 "Standard Pascal" is not a target.
 
 Why:
@@ -28,8 +35,8 @@ evaluation, `{$R-}` no range checks on subranges (we always check array
 indexes anyway), `{$I+}` I/O errors abort, `{$N-}` software reals (`Real` is
 mapped to `f64`), 16-bit `Integer`.
 
-What "supported" means: sema accepts it, codegen produces Rust that compiles
-and behaves like TP, and there is a test for it.
+What "supported" means: Ruscal accepts it, produces Rust that compiles and
+behaves like TP, and there is a test for it.
 
 ## Tier 1: MVP (hello world, then everything in a textbook chapter 1-8)
 
@@ -380,7 +387,9 @@ More language
   on arrays of scalars (checked, no raw memory); `ParamCount`, `ParamStr`
 - `Break`, `Continue` (TP 7; `Continue` in `repeat` still runs the `until`
   test)
-- `{$N+}` types `Single`, `Double`, `Extended`, `Comp` as `f32`/`f64`/`f64`/`i64`;
+- `{$N+}` types `Single`, `Double` and `Extended` are accepted and kept as
+  a `Real` (an `f64` in Rust, 6 bytes in `SizeOf` and typed files) for now;
+  `Comp` isn't supported;
   under `{$N+}`, `Round` at run time rounds half to even, as TP 7's 8087
   does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
   round half away from zero (3). `{$N+}` and `{$N-}` hold for the whole
