@@ -226,7 +226,8 @@ Not supported yet:
 
 Never supported, since they need a real DOS PC:
 
-- `asm` and `inline`, `Mem` and `Port`, `Intr` and `MsDos`.
+- `asm` and `inline`, `Mem` (with `MemW` and `MemL`) and `Port` (with
+  `PortW`), `Intr` and `MsDos`. Each gives an error saying why.
 - Interrupts: `SetIntVec` keeps a handler, with a warning, but never
   calls it. [Timer interrupts](docs/timer_interrupts.md) shows how to
   rewrite a program that uses one.

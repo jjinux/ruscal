@@ -2469,7 +2469,7 @@ impl Checker {
         let Some(sym) = self.lookup(&var.key()) else {
             // A `with` field already has its own error (`check_with_for_loops`).
             if self.with_member(&var.key()).is_none() {
-                self.error(var.span, format!("unknown identifier `{}`", var.name));
+                self.error(var.span, unknown_identifier(&var.name));
             }
             self.active_for_vars.push(usize::MAX);
             return Type::Error;
@@ -2763,7 +2763,7 @@ impl Checker {
             ExprKind::Name(ident) => {
                 let sym = match self.resolve(&ident.key()) {
                     None => {
-                        self.error(ident.span, format!("unknown identifier `{}`", ident.name));
+                        self.error(ident.span, unknown_identifier(&ident.name));
                         return Type::Error;
                     }
                     Some(Resolved::SelfField { self_sym, path, ty }) => {
@@ -3016,7 +3016,7 @@ impl Checker {
         let ty = match &e.kind {
             ExprKind::Name(ident) => match self.resolve(&ident.key()) {
                 None => {
-                    self.error(ident.span, format!("unknown identifier `{}`", ident.name));
+                    self.error(ident.span, unknown_identifier(&ident.name));
                     Type::Error
                 }
                 Some(Resolved::SelfField { self_sym, path, ty }) => {
@@ -3350,7 +3350,7 @@ impl Checker {
         };
         let sym = match self.resolve(&ident.key()) {
             None => {
-                self.error(ident.span, format!("unknown identifier `{}`", ident.name));
+                self.error(ident.span, unknown_identifier(&ident.name));
                 return Type::Error;
             }
             // A sibling method called from inside a method: `self.method()`.
@@ -5034,4 +5034,15 @@ fn a(ty: &Type) -> String {
     let text = ty.to_string();
     let article = if text.starts_with(['A', 'E', 'I', 'O', 'U', 'a', 'e', 'i', 'o', 'u']) { "an" } else { "a" };
     format!("{article} {text}")
+}
+
+/// "unknown identifier `X`", or, for DOS's `Port` and `Mem` arrays, why
+/// they aren't there.
+fn unknown_identifier(name: &str) -> String {
+    match name.to_ascii_lowercase().as_str() {
+        "port" | "portw" | "mem" | "memw" | "meml" => {
+            format!("{}; see \"Never supported\" in the README", crate::parser::DOS_ONLY_MEM)
+        }
+        _ => format!("unknown identifier `{name}`"),
+    }
 }

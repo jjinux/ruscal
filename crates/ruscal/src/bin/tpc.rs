@@ -155,7 +155,9 @@ fn compile(args: &Args) -> Result<(), String> {
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.is_empty() {
+    // (`--help` and `-h` too, as a Unix user would try; TP showed its usage
+    // for no arguments.)
+    if args.is_empty() || args.iter().any(|a| matches!(a.as_str(), "--help" | "-h")) {
         println!("{USAGE}");
         return ExitCode::SUCCESS;
     }

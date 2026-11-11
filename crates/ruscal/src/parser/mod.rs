@@ -23,6 +23,9 @@ use crate::diag::{Diagnostic, Span};
 use crate::lexer;
 use crate::token::{Keyword, Token, TokenKind};
 
+/// Why `Mem[Seg:Ofs]` (and `Port[...]`) can't be translated.
+pub(crate) const DOS_ONLY_MEM: &str = "`Mem`, `MemW`, `MemL`, `Port` and `PortW` reach a DOS PC's memory and I/O ports, which a modern computer doesn't have, so Ruscal can't translate them";
+
 /// Result type for parser functions. A type alias saves writing the error
 /// type in every signature.
 type PResult<T> = Result<T, Diagnostic>;
