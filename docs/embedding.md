@@ -19,8 +19,9 @@ It needs three things:
 ruscal_runtime = { git = "https://github.com/jjinux/ruscal", rev = "..." }
 
 [build-dependencies]
-# The same `rev` as the runtime. Without the default features, it's just
-# the translator, without the command-line tools.
+# The same `rev` as the runtime: replace `...` with the commit you want
+# (`git rev-parse HEAD` in a clone). Without the default features, it's
+# just the translator, without the command-line tools.
 ruscal = { git = "https://github.com/jjinux/ruscal", rev = "...", default-features = false }
 
 # Turbo Pascal's integer arithmetic wraps around (32767 + 1 is -32768);
