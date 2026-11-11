@@ -3085,7 +3085,15 @@ impl Checker {
                 if self.place(&args[0], write) == Type::Untyped {
                     self.view_cast(e, &target)
                 } else {
-                    self.error(e.span, "only an untyped parameter can be typecast and assigned to");
+                    // (TP allows a same-size variable's bytes to be seen as
+                    // another type here; the user, 2026-11-10: refuse it.)
+                    let ty = &id.name;
+                    self.error(
+                        e.span,
+                        format!(
+                            "`{ty}(...)` here would treat a variable's bytes as a {ty}: Turbo Pascal allows that, but Ruscal doesn't; use a {ty} variable instead, and assign between the two (only an untyped parameter can be seen as another type)"
+                        ),
+                    );
                     Type::Error
                 }
             }

@@ -90,7 +90,10 @@ Expressions
   boolean literals; `nil`. A hex integer (`$FF`) is a 32-bit pattern, as
   in TP: up to `$FFFFFFFF`, and past `$7FFFFFFF` it's a negative LongInt
   (`$FFFFFFFF` is -1).
-- Typecasts between ordinal types `Integer(c)`, `Char(65)`, `Ord`, `Chr`
+- Typecasts between ordinal types `Integer(c)`, `Char(65)`, `Ord`, `Chr`.
+  A typecast as a place (`Word(I) := 5`, `Val(S, Word(I), N)`), which
+  treats a variable's bytes as another type, is refused (TP allows it for
+  the same size); only an untyped parameter can be seen that way
 - Constant expressions in `const` sections, array bounds and `case` labels,
   worked out in 32 bits as in TP (`C + 1` with `C = 32767` is 32768;
   one that doesn't fit, `MaxLongInt + 1` or `-$80000000`, is an error), and

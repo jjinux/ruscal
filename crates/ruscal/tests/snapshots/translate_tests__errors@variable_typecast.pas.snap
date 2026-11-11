@@ -1,0 +1,12 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/variable_typecast.pas
+---
+variable_typecast.pas:10:11: error: `Word(...)` here would treat a variable's bytes as a Word: Turbo Pascal allows that, but Ruscal doesn't; use a Word variable instead, and assign between the two (only an untyped parameter can be seen as another type)
+   Val(S, Word(I), N);
+          ^^^^^^^
+
+variable_typecast.pas:11:4: error: `Word(...)` here would treat a variable's bytes as a Word: Turbo Pascal allows that, but Ruscal doesn't; use a Word variable instead, and assign between the two (only an untyped parameter can be seen as another type)
+   Word(I) := 5;
+   ^^^^^^^
