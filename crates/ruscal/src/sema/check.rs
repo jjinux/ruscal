@@ -3106,7 +3106,7 @@ impl Checker {
                     self.error(
                         e.span,
                         format!(
-                            "`{ty}(...)` here would treat a variable's bytes as a {ty}: Turbo Pascal allows that, but Ruscal doesn't; use a {ty} variable instead, and assign between the two (only an untyped parameter can be seen as another type)"
+                            "`{ty}(...)` here would treat a variable's bytes as `{ty}`: Turbo Pascal allows that for a variable of the same size, but Ruscal doesn't; use a `{ty}` variable instead, and assign between the two (only an untyped parameter can be seen as another type)"
                         ),
                     );
                     Type::Error
@@ -3962,7 +3962,7 @@ impl Checker {
                 let why = if *untyped || *earlier_untyped {
                     " (an untyped parameter's bytes run on to the end of the whole record, which Rust borrows)"
                 } else if *indexed && *earlier_indexed && earlier_fields == fields {
-                    " (Rust can't tell that two elements of one array are different)"
+                    " (Rust can't tell that two elements of one array, or two fields of one element, are different)"
                 } else {
                     ""
                 };
@@ -4018,7 +4018,7 @@ impl Checker {
                 continue;
             };
             let why = if *indexed && *earlier_indexed && earlier_fields == fields {
-                " (Rust can't tell that two elements of one array are different)"
+                " (Rust can't tell that two elements of one array, or two fields of one element, are different)"
             } else {
                 ""
             };

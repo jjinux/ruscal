@@ -174,6 +174,10 @@ impl<'a> Codegen<'a> {
                     let operand = self.coerce(operand, &ty);
                     return self.checked_op(operand, "checked_neg", "");
                 }
+                // `-$0` (or `-0`) is just 0.
+                if *op == UnaryOp::Neg && matches!(operand.kind, ExprKind::Int(0)) {
+                    return ("0".to_string(), prec::ATOM);
+                }
                 let inner = paren(self.coerce(operand, &ty), prec::UNARY);
                 match op {
                     // `--x` reads like C's decrement, and rustc warns about it.
@@ -440,6 +444,9 @@ impl<'a> Codegen<'a> {
                 Some((format!("{} as {}", paren(code, prec::AS), kind.rust()), prec::AS))
             }
             ExprKind::Unary { op: UnaryOp::Plus, operand } => self.const_expr_in(operand, kind, in_const),
+            ExprKind::Unary { op: UnaryOp::Neg, operand } if matches!(operand.kind, ExprKind::Int(0)) => {
+                Some(("0".to_string(), prec::ATOM))
+            }
             ExprKind::Unary { op: UnaryOp::Neg, operand } => {
                 let inner = self.const_expr_in(operand, kind, in_const)?;
                 Some((format!("-{}", paren(inner, prec::UNARY)), prec::UNARY))
@@ -800,6 +807,15 @@ impl<'a> Codegen<'a> {
                 ExprKind::Real(x) => Some(format!("-{}_f64", real_literal(x))),
                 _ => None,
             },
+            // A real sum of literals (`Round(2.5 + 0.0)`): its value, which
+            // Rust can call a method on, where `(2.5 + 0.0).round()` has no
+            // type it knows.
+            (_, Type::Real(_), ExprKind::Binary { .. } | ExprKind::Unary { .. }) if self.literals_only(e) => {
+                match self.a.consts.get(&e.id) {
+                    Some(crate::sema::ConstVal::Real(x)) => Some(format!("{}_f64", real_literal(*x))),
+                    _ => None,
+                }
+            }
             _ => None,
         };
         match literal {
@@ -1642,17 +1658,29 @@ impl<'a> Codegen<'a> {
     /// `Word(i)`, `Char(n)`: a conversion between ordinal (or other value)
     /// types, if `callee` names a type and the argument isn't an untyped
     /// parameter or a pointer (`call` handles those).
-    /// Is `e` made only of integer literals, operators and typecasts
-    /// (`Integer(-1) shr 1`)? Then its value says as much as it does; a name
-    /// in it (`Ord(Blue)`, `High(Byte)`, `K`) is worth keeping.
+    /// Is `e` made only of literals, operators, typecasts and standard
+    /// routines and types (`Integer(-1) shr 1`, `Ord('A')`, `SizeOf(LongInt)`)?
+    /// Then its value says as much as it does; a name of the program's
+    /// (`Ord(Blue)`, `High(TIndex)`, `K`) is worth keeping.
     fn literals_only(&self, e: &Expr) -> bool {
+        let standard_type = |name: &str| {
+            matches!(
+                name.to_ascii_lowercase().as_str(),
+                "integer" | "longint" | "shortint" | "byte" | "word" | "char" | "boolean" | "real"
+            )
+        };
         match &e.kind {
-            ExprKind::Int(_) => true,
+            ExprKind::Int(_) | ExprKind::Real(_) | ExprKind::Str(_) => true,
+            ExprKind::Name(id) => {
+                matches!(self.a.refs.get(&e.id).map(|&s| &self.a.sym(s).kind), Some(SymKind::TypeName(_)))
+                    && standard_type(&id.name)
+            }
             ExprKind::Unary { operand, .. } => self.literals_only(operand),
             ExprKind::Binary { lhs, rhs, .. } => self.literals_only(lhs) && self.literals_only(rhs),
-            ExprKind::Call { callee, args } if args.len() == 1 => {
-                matches!(self.a.refs.get(&callee.id).map(|&s| &self.a.sym(s).kind), Some(SymKind::TypeName(_)))
-                    && self.literals_only(&args[0])
+            ExprKind::Call { callee, args } => {
+                let kind = self.a.refs.get(&callee.id).map(|&s| &self.a.sym(s).kind);
+                let typecast = matches!(kind, Some(SymKind::TypeName(_))) && args.len() == 1;
+                (typecast || matches!(kind, Some(SymKind::Builtin(_)))) && args.iter().all(|a| self.literals_only(a))
             }
             _ => false,
         }

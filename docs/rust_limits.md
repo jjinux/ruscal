@@ -16,7 +16,8 @@ still compiles in TP.
 ```text
 error: `a` is passed by `var` more than once in this call to `Swap`; Rust
 doesn't allow two mutable references to the same variable (Rust can't tell
-that two elements of one array are different)
+that two elements of one array, or two fields of one element, are
+different)
 ```
 
 A `var` parameter is a mutable reference in Rust, and Rust refuses two

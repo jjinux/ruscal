@@ -84,6 +84,8 @@ fn pascal_main() {
     // A cast keeps the names in what it casts; a hex step or label stays
     // hex, a negative one too.
     b = TColor::Blue as u8;
+    // A cast of standard routines on literals is its value.
+    pwrite!(i16::from(65_u8), " ", 3_u16, " ", 0, " ");
     n = 3;
     n += 0x10;
     match n {

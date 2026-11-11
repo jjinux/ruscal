@@ -43,6 +43,8 @@ begin
    { A cast keeps the names in what it casts; a hex step or label stays
      hex, a negative one too. }
    B := Byte(Ord(Blue));
+   { A cast of standard routines on literals is its value. }
+   Write(Byte(Ord('A')), ' ', Word(Length('abc')), ' ', -$0, ' ');
    N := 3;
    Dec(N, -$10);
    case N of

@@ -3,22 +3,22 @@ source: crates/ruscal/tests/translate_tests.rs
 expression: error
 input_file: tests/errors/unit_var_twice.pas
 ---
-unit_var_twice.pas:10:18: error: `D` is passed by `var` more than once in this call to `GetDate`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+unit_var_twice.pas:10:18: error: `D` is passed by `var` more than once in this call to `GetDate`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array, or two fields of one element, are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
    GetDate(D[1], D[2], D[3], D[4]);
                  ^^^^
 
-unit_var_twice.pas:10:24: error: `D` is passed by `var` more than once in this call to `GetDate`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+unit_var_twice.pas:10:24: error: `D` is passed by `var` more than once in this call to `GetDate`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array, or two fields of one element, are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
    GetDate(D[1], D[2], D[3], D[4]);
                        ^^^^
 
-unit_var_twice.pas:10:30: error: `D` is passed by `var` more than once in this call to `GetDate`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+unit_var_twice.pas:10:30: error: `D` is passed by `var` more than once in this call to `GetDate`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array, or two fields of one element, are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
    GetDate(D[1], D[2], D[3], D[4]);
                              ^^^^
 
-unit_var_twice.pas:11:35: error: `Parts` is passed by `var` more than once in this call to `FSplit`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+unit_var_twice.pas:11:35: error: `Parts` is passed by `var` more than once in this call to `FSplit`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array, or two fields of one element, are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
    FSplit('C:\A\B.PAS', Parts[1], Parts[2], Parts[3]);
                                   ^^^^^^^^
 
-unit_var_twice.pas:11:45: error: `Parts` is passed by `var` more than once in this call to `FSplit`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
+unit_var_twice.pas:11:45: error: `Parts` is passed by `var` more than once in this call to `FSplit`; Rust doesn't allow two mutable references to the same variable (Rust can't tell that two elements of one array, or two fields of one element, are different); how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#two-var-arguments
    FSplit('C:\A\B.PAS', Parts[1], Parts[2], Parts[3]);
                                             ^^^^^^^^

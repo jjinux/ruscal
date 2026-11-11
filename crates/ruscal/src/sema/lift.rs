@@ -403,7 +403,7 @@ pub(super) fn check_aliasing(a: &Analysis, sites: &[CallSite]) -> Vec<Diagnostic
                 } else if earlier.variant_bytes && arg.variant_bytes {
                     " (fields of a variant part without a tag field share its bytes, which Rust borrows as a whole; copy one into a local first)"
                 } else if earlier.indexed && arg.indexed && earlier.fields == arg.fields {
-                    " (Rust can't tell that two elements of one array are different)"
+                    " (Rust can't tell that two elements of one array, or two fields of one element, are different)"
                 } else {
                     ""
                 };
