@@ -131,7 +131,7 @@ Decision: target **Turbo Pascal** (the Borland dialect), not ISO 7185.
 Specifically, accept TP 7.0 syntax (the superset) and implement the features
 the examples need, which are the TP 5.5 feature set. ISO-only constructs that
 TP lacks (conformant arrays, `pack`/`unpack`, procedural parameters in ISO
-form) are out of scope. `language_spec.md` has the tiers.
+form) are out of scope. `language_spec.md` says what is supported, by topic.
 
 Rationale: every example starts with `uses Crt` and relies on Borland strings,
 units, objects and typed files. ISO Pascal has none of those. The TP 7.0

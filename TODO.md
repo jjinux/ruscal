@@ -1,7 +1,7 @@
 # Ruscal TODO
 
 Plan written by Fable (the architect pass). Opus takes over from here. The
-core decisions live in `docs/architecture.md`; the language tiers in
+core decisions live in `docs/architecture.md`; what the language supports in
 `docs/language_spec.md`; prior-art research in `notes/p2c.md`; questions for the
 user in `notes/open_questions.md`. Check items off as they land. Every phase
 ends with something runnable, and the examples in `examples/` are the
@@ -24,7 +24,7 @@ Turbo Pascal. These need you; tell Claude what you find, and it fixes it.
 - [x] Findings of the review of the `docs-newcomer` branch: Rust 1.88, not 1.85 (`let` chains; `rust-version` set); `RUSCAL_RUNTIME` needs the runtime inside a whole checkout; the README's `fmt --check` line leaves out `examples/ruscal`; `assembler;` routines, an `asm` body and the `inline(...)` directive say they need DOS too; `A[1:2]` is an ordinary syntax error, not the `Mem` one; `emit`/`build --help` describe the file; `tpc -H`.
 - [ ] `ruscal fmt` doesn't know `asm ... end` is a block: the `end` goes to column 1 and what follows is indented one level too far (from the `docs-newcomer` review; `tests/errors/dos_asm.pas` is formatted that way).
 - [ ] `Registers` has only its `Word` fields, so interrupt code setting `AH` gets "`Registers` has no field `AH`" before the helpful error about `Intr` (from the `docs-newcomer` review). Add the byte halves (`AL`, `AH`, ...)?
-  - [ ] For the user: restructure docs/language_spec.md by topic (Types, Statements, Units, Crt, Dos, Graph, Not supported) instead of the tiers and "Decision" log, folding in the "(Done, now in tier 2)" items, and gloss its jargon on first use (typed constant, open array, VMT, `PString`, procedural value).
+  - [x] For the user: restructure docs/language_spec.md by topic (Types, Statements, Units, Crt, Dos, Graph, Not supported) instead of the tiers and "Decision" log, folding in the "(Done, now in tier 2)" items, and gloss its jargon on first use (typed constant, open array, VMT, `PString`, procedural value). Done (2026-11-11): by topic, with a contents list; the done "later" items folded in, the remaining ones renumbered under "Not supported yet" (with `Single`/`Double`/`Extended`/`Comp` added, and comment preservation and the `Overlay` unit dropped as done); duplicates merged.
 - [x] `SizeOf` names where its number comes from (the user, 2026-11-07: "do the SizeOf work", on a branch, reviewed by Fable before merging). A type's size in TP's layout isn't its size in Rust's memory, so it's the *serialized* size (the user's name): sema's `tp_size` and the runtime's `record_size()` became `serialized_size` (an untyped file's `record_size`, set by `Reset(f, n)`, keeps TP's name). `SizeOf(Rec)` is `Rec::SERIALIZED_SIZE`, an inherent constant built from the fields (`2 + serialized_string_size(10) + 3 * Point::SERIALIZED_SIZE`), cast where an integer type is wanted and kept through constants (`const K: i16 = Rec::SERIALIZED_SIZE as i16 * 2`). See docs/architecture.md.
   - [ ] `SizeOf` in an array bound (`array[1..SizeOf(Point)]`) is still a number: sema writes bounds' Rust (`bounds_rust`) before codegen knows which types get a constant.
   - [ ] `serialized_string_size(10)` for a `string[NameLen]` could be `serialized_string_size(NAME_LEN as usize)`; the type keeps only the number (as `file_record!`'s `string 10` does).

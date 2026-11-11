@@ -10,7 +10,7 @@ implementation. The opening prompt is in `README.md` before it was removed
 - `TODO.md`: the phased plan. Check items off as they land, and add new ones.
 - `docs/architecture.md`: core design decisions and their rationale. If you
   deviate from it, update it in the same commit (and say why).
-- `docs/language_spec.md`: which Pascal constructs are supported, by tier.
+- `docs/language_spec.md`: which Pascal constructs are supported, by topic (and what isn't yet).
 - `notes/`: research (p2c, Free Pascal) and answered questions for the user.
 - `README.md`: what a user needs: what Ruscal is, how to run it (`ruscal`,
   `tpc`, `fmt`), the environment variables, what's supported, the examples.

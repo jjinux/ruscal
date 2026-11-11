@@ -3,11 +3,24 @@
 Which Turbo Pascal constructs Ruscal supports, and how closely. For a quick
 answer to "will my program work?", the README's
 [What's supported](../README.md#whats-supported) is the summary; this page
-has the details. Tiers 1 and 2 are supported (everything the programs in
-`examples/` use, and more), Tier 3 lists what isn't yet, or never will be,
-and why.
+has the details, by topic: the language, then the standard units, then
+what isn't supported yet, or never will be, and why.
 
-## Decision: Turbo Pascal, not ISO Pascal
+- [Turbo Pascal, not ISO Pascal](#turbo-pascal-not-iso-pascal)
+- The language: [programs and units](#programs-and-units),
+  [compiler directives](#compiler-directives), [types](#types),
+  [expressions](#expressions), [statements](#statements),
+  [routines and parameters](#routines-and-parameters),
+  [objects](#objects), [pointers and memory](#pointers-and-memory),
+  [strings](#strings), [input, output and files](#input-output-and-files),
+  [other System routines and variables](#other-system-routines-and-variables)
+- The standard units: [Crt](#crt), [Printer](#printer),
+  [Overlay](#overlay), [Dos](#dos), [WinDos](#windos), [Graph](#graph),
+  [Ruscal's own units](#ruscals-own-units)
+- [Not supported yet](#not-supported-yet), [never supported](#never-supported),
+  [references](#references)
+
+## Turbo Pascal, not ISO Pascal
 
 Ruscal translates **Turbo Pascal** (Borland's dialect): it reads Turbo
 Pascal 7.0 syntax and covers most of Turbo Pascal 5.5 to 7.0.
@@ -38,37 +51,60 @@ mapped to `f64`), 16-bit `Integer`.
 What "supported" means: Ruscal accepts it, produces Rust that compiles and
 behaves like TP, and there is a test for it.
 
-## Tier 1: MVP (hello world, then everything in a textbook chapter 1-8)
+## The language
 
-Program structure
+### Programs and units
 
-- `program Name;` (parameters after the name are ignored, as in TP)
+- `program Name;` (parameters after the name are ignored, as in TP), and
+  the main block `begin ... end.`
 - `const`, `type`, `var` and `label` sections, repeated and in any order
-- `procedure` / `function` declarations, nested to any depth, recursive
-- `forward` declarations
+- `procedure` / `function` declarations, nested to any depth, recursive;
+  `forward` declarations
+- `unit` with `interface` / `implementation` / initialization block; `uses`
+  in programs and in both unit sections; name resolution across units
+- Whole-program compilation from a program file that pulls in its units
 - `external` routines written in Rust: `{$L sound.rs}` names the Rust
   file, as TP's `{$L sound.obj}` named an object file; see
   [Calling Rust](calling_rust.md). An `.OBJ` file can't be linked
-- Compiler directives `{$...}`: `{$I-}`/`{$I+}` switch I/O checking (see
-  Files). `{$Q+}`/`{$Q-}` switch overflow checking: in `{$Q+}` code,
+- Comments `{ }` and `(* *)`, including the examples' `{t ... }` headers
+- Shadowing of built-in names by user declarations (`procedure Exit(var
+  leave: boolean)` and `type ShortString = string[20]` both appear in the
+  examples)
+
+### Compiler directives
+
+- `{$I-}`/`{$I+}` switch I/O checking (see
+  [Input, output and files](#input-output-and-files))
+- `{$Q+}`/`{$Q-}` switch overflow checking: in `{$Q+}` code,
   integer `+`, `-`, `*`, negation, `Abs`, `Sqr`, `Succ` and `Pred` stop
   with runtime error 215 when the result doesn't fit its type
   (`i.checked_add(1).unwrap_or_else(overflow)`); elsewhere they wrap, as in
   TP's default `{$Q-}`. `Inc` and `Dec` are never checked: they wrap even
   under `{$Q+}`, as Turbo Pascal 7 does (checked in DOSBox: `Inc(i)` at
-  32767 is -32768, while `i := i + 1` is error 215). A constant expression (`2 + 3`, `C * 2`) is never
-  checked: TP works it out when it compiles. (`div` or `mod` by a
-  constant 0 is a compile error, as in TP.) The others are parsed and ignored, with a warning
-  for ones that change semantics (`{$B+}`, `{$R+}`); `{$M}`, `{$N+}` and the
-  overlay ones (`{$O+}`, `{$O UnitName}`, `{$F+}`) are ignored silently;
-  include files (`{$I name}`) are an error
-- Comments `{ }` and `(* *)`, including the examples' `{t ... }` headers
-- Main block `begin ... end.`
+  32767 is -32768, while `i := i + 1` is error 215). A constant expression
+  (`2 + 3`, `C * 2`) is never checked: TP works it out when it compiles.
+  (`div` or `mod` by a constant 0 is a compile error, as in TP.)
+- `{$N+}`/`{$N-}`: see the `{$N+}` types under [Types](#types). They hold
+  for the whole file, so, as in TP 7, they go before the `uses` clause and
+  the declarations (elsewhere they're an error)
+- `{$X+}`, TP 7's extended syntax, is always on, as in TP 7 (see `PChar`
+  under [Strings](#strings))
+- The others are parsed and ignored, with a warning for ones that change
+  semantics (`{$B+}`, `{$R+}`); `{$M}` and the overlay ones (`{$O+}`,
+  `{$O UnitName}`, `{$F+}`) are ignored silently; include files
+  (`{$I name}`) are an error
 
-Types
+### Types
+
+Numbers, characters and enumerations
 
 - `Integer`, `LongInt`, `ShortInt`, `Word`, `Byte`, `Real`, `Boolean`, `Char`
-- `String`, `String[n]`
+- `{$N+}` types `Single`, `Double` and `Extended` are accepted and kept as
+  a `Real` (an `f64` in Rust, 6 bytes in `SizeOf` and typed files) for now;
+  `Comp` isn't supported;
+  under `{$N+}`, `Round` at run time rounds half to even, as TP 7's 8087
+  does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
+  round half away from zero (3)
 - Enumerated types `(Red, Green, Blue)`; subranges `1..10`, `'A'..'Z'`,
   `Red..Blue`, an integer subrange stored in the smallest type that holds
   its bounds, as in TP (`1..12` is a byte, in `SizeOf` and in files).
@@ -77,17 +113,58 @@ Types
   `Succ`, `Pred`, `Inc` and `Dec` past the ends of an enum (or of
   `Boolean`) are runtime error 201, as if `{$R+}` were on: TP with `{$R-}`
   stored the ordinal anyway, but a Rust enum can't hold a value outside it
-- `array[lo..hi] of T`, multi-dimensional `array[a..b, c..d]`, nested arrays,
-  any ordinal index type (integer, char, enum, subrange); `packed` accepted and
-  ignored
-- `record ... end`, nested records
 - Named types and type aliases
 
-Expressions
+Arrays and records
+
+- `array[lo..hi] of T`, multi-dimensional `array[a..b, c..d]`, nested arrays,
+  any ordinal index type (integer, char, enum, subrange); `packed` accepted and
+  ignored. Char-indexed and enum-indexed arrays; `for` over chars and enums
+- `record ... end`, nested records
+- Anonymous record types in `var` declarations (`EndPoint: record x, y:
+  integer; end`) and in record fields. One (or an anonymous enum) becomes
+  a Rust type named after its variable or field, `AnonymousEndPoint`, so
+  it isn't taken for a type the program named.
+- Variant records with a tag field (`case Kind: Shape of Circle: (R:
+  Integer); Rect: (W, H: Integer)`): every variant's fields can be set and
+  read, through `with` and as `var` arguments; labels are checked like
+  `case` labels; a typed constant gives the tag and the fields of the variant it selects.
+  `SizeOf` and `file of` use TP's layout, where the variants share the
+  bytes after the fixed fields: a file stores the variant the tag selects.
+  Reading another variant's field gives its own last value, not the bytes
+  of the variant in use (TP overlaid them)
+- Variant records without a tag field (`case Integer of 0: (L: LongInt);
+  1: (Lo, Hi: Word)`): the variants share TP's bytes, so writing one and
+  reading another works as in TP (type punning), in place (`Inc(p.Hi)`,
+  `p.B[4] := 0`), as `var` arguments (but not two of one record in one
+  call), in files, `Move`, untyped parameters and typed constants. A
+  tagless part holding a pointer or a file keeps its variants separately
+  and can't be stored as bytes
+- A variant part nested at the end of a variant, and records inside a
+  variant: in a tagged part, flattened, and a file keeps the variants each
+  tag selects; in a tagless part, all of it TP's bytes
+
+Sets and typed constants
+
+- Sets: `set of T` (`T` with ordinals 0 to 255: `Char`, `Byte`, `Boolean`,
+  an enumeration, a subrange like `0..9`), literals with ranges
+  (`['a'..'z', '_']`), `in`, `+ - *`, `= <> <= >=`, `Include`/`Exclude`,
+  set constants and typed constants, sets in records (also in `file of`
+  records, as 32 bytes) and parameters. A value outside the element range
+  is never in a set (`300 in s` is False for a `set of Byte`, for a
+  constant or a variable; Free Pascal cuts a variable down to a byte)
+- Typed constants (`const Days: array[0..6] of String[9] = (...)`;
+  `const x: integer = 5`), which are initialized variables in TP
+
+Strings, pointers, objects and procedural types have sections of their
+own below.
+
+### Expressions
 
 - Integer and real arithmetic with TP's promotion rules; `/` is always real;
   `div`, `mod`; unary minus. Dividing by zero, with `/` as with `div` and
-  `mod`, stops with runtime error 200, as in TP
+  `mod`, stops with runtime error 200, as in TP; so do `div` and `mod` of
+  the most negative Integer by -1, as TP's divide trap gave
 - `and`, `or`, `not`, `xor` on booleans (short-circuit) and on integers;
   `shl`, `shr` (TP's: `shr` is a logical shift, and shifting by the type's
   width or more gives 0)
@@ -119,7 +196,7 @@ Expressions
 - Operator precedence exactly as TP (`not` > `* / div mod and shl shr` > `+ -
   or xor` > relational)
 
-Statements
+### Statements
 
 - Assignment; compound `begin ... end`; `if`/`then`/`else` (dangling else
   binds to the nearest `if`)
@@ -128,71 +205,118 @@ Statements
   chars, enums and Booleans) and `else`. As in TP, a label may repeat or
   overlap an earlier one, and the first wins; a label the value can never
   equal (300 for a `Byte`, a range like `5..1`) is an error
+- `Break`, `Continue` (TP 7; `Continue` in `repeat` still runs the `until`
+  test)
 - Procedure calls; `Exit`; `Halt` / `Halt(n)`
-- A file parameter must be `var`, as in TP ("Files must be var
-  parameters"), in a routine, a method or a procedural type
-- Function results of an ordinal type, a real, a string or a pointer, as
-  in TP 7; a record, array, set, object or file is an error there ("Invalid
-  function result type"), and so it is here
+- `with` statements (single and multiple record expressions, records and
+  objects, through pointers). A body may not change an array index that
+  chooses the record (`with a[i] do ... i := 2` is an error), and a field
+  can't be a `for` loop's variable
+- `label` and `goto` (names or numbers, `10:`): some uses, not all.
+  Ruscal supports the ones Rust can say directly, with a labeled block
+  or loop: a jump forward, to a label later in the same statement list
+  or one around it (out of nested loops, past the rest of a routine), and
+  a jump back, to a label earlier in such a list. Rust has no `goto`: it
+  keeps control flow structured so that it can check every variable is
+  set before it's read and every borrow is still valid, so jumping into
+  the middle of a loop has no direct translation. (It could be emulated,
+  with a loop around a `match` on a "where to go next" variable, but the
+  code would no longer read like the Pascal.) Refused, with a link to
+  a rewrite: a jump into a statement the `goto` isn't in, and two jumps
+  whose blocks would cross. `Break` and `Continue` inside the statements
+  a `goto` skips or repeats work too (the loop gets a Rust label).
+  Statements that can never run (after a `goto` or `Exit`, before the
+  next label) are kept in the Rust, commented out
+
+### Routines and parameters
+
 - Value, `var` and `const` parameters (TP 7); passing arrays, records and strings both ways.
   A `const` parameter can't be changed (assigned, passed by `var`, read
   into, changed through `with`), as in TP; a method may be called on one,
   and `p^ := x` writes through one. As in TP 7, a `const` string, or a
   record, array or object that isn't exactly 1, 2 or 4 bytes, is passed
-  by reference (`&PString` in Rust): a method called on one changes the
+  by reference (`&PString` in Rust; `PString` is the runtime's Pascal
+  string): a method called on one changes the
   caller's object, and a routine that changes the global it was given
   sees the change through the parameter. A scalar, a set and a small
   record are copied. (One exception: an argument through a pointer,
   `Show(P^)`, that the routine writes through is copied, so the change
   doesn't show; see `docs/architecture.md` §15.)
-- Open array parameters (TP 7): `a: array of T`, `var` or `const` too. The
+- A parameter's or result's type is a type's name, as in TP: `p: ^Node`
+  is an error that says to declare `PNode = ^Node` and use that
+- Different fields of one record may be passed as two `var` arguments
+  (`Init(p.x, p.y)`, also through a pointer: `q^.x, q^.y`,
+  `arr[i]^.x, arr[i]^.y`, `q^.a[1], q^.y`); the same place
+  twice, a record and its field, a pointer and a field behind it
+  (`F(q, q^.x)`), or two elements of one array may not
+- Open array parameters (TP 7), which take an array of any size:
+  `a: array of T`, `var` or `const` too. The
   argument is an array of `T` of any size and bounds, one `T`, another
   open array, or (`array of Char`) a string constant. Inside, `a[0]` to
   `a[High(a)]`; `Low(a)` is 0 and `SizeOf(a)` the elements' bytes. A value
   one is a copy, as in TP. Not allowed, as in TP: assigning one as a
   whole, passing one where a fixed-size array is wanted, a `string`
-  variable for `array of Char`, `array of T` anywhere but a parameter.
-  A parameter's or result's type is a type's name, as in TP: `p: ^Node`
-  is an error that says to declare `PNode = ^Node` and use that.
-  Different fields of one record may be passed as two `var` arguments
-  (`Init(p.x, p.y)`, also through a pointer: `q^.x, q^.y`,
-  `arr[i]^.x, arr[i]^.y`, `q^.a[1], q^.y`); the same place
-  twice, a record and its field, a pointer and a field behind it
-  (`F(q, q^.x)`), or two elements of one array may not
+  variable for `array of Char`, `array of T` anywhere but a parameter
+- Untyped `var` parameters (`procedure Dump(var Data; Size: Word)`): the
+  routine sees the caller's variable as TP's bytes, through a typecast
+  (`TBytes(Data)[i]`, read or written; `TRec(Data)` read, or assigned as a
+  whole), and can pass it on. An argument can start inside a variable
+  (`Dump(s[1], 3)`, `Dump(buf[10], 5)`). The bytes are copied in and
+  written back when the routine returns; nothing else can see the
+  variable in between, so a program can't tell
+- A file parameter must be `var`, as in TP ("Files must be var
+  parameters"), in a routine, a method or a procedural type
+- Function results of an ordinal type, a real, a string or a pointer, as
+  in TP 7; a record, array, set, object or file is an error there ("Invalid
+  function result type"), and so it is here
+- Procedural types (`type Func = function(X: Real): Real`; anonymous in a
+  `var`, too), whose values are routines, like Rust's function pointers:
+  variables, parameters, record fields, array elements and typed
+  constants of them; a routine of the program as a value (`F :=
+  Square`, `Plot(Square)`); calls through them (`F(x)`, `R.F(x)`,
+  `Ops[i](x)`, `H.S;`, `Arr[1];`, `PS^;`, with `var` parameters too); a parameterless function value
+  (in a variable, field or element) called in an expression (`N := F`,
+  `N := R.Next`) and copied where a procedural value is wanted (`G := F`,
+  `Run(F)`); `nil`, `Assigned(F)`, `@F` as a
+  `Pointer`, and `@F = @Square`, `@F = nil`. A routine that uses globals
+  works too: every routine of the type takes the globals any of them
+  uses, even a global of the type itself (a state machine whose states
+  set `Current`, or recursion through a global `Fact`). Refused, with TP's reasons: a nested routine, a method or a
+  standard routine as a value, a function returning a procedural type,
+  and `F = G` (which calls them in TP; write `@F = @G`). `{$F+}` and `far`
+  aren't required. A procedural value is 4 bytes (`SizeOf`), stored in a
+  file or seen as bytes as 4 zeros, and reads back as nil. Calling a nil
+  one is runtime error 216, as in protected-mode TP 7.
 
-Built-ins (System unit)
+### Objects
 
-- `Write`, `Writeln`, `Read`, `Readln` on the console, with `:width` and
-  `:width:decimals` formatting, TP's default real format, `TRUE`/`FALSE`
-- `Ord`, `Chr`, `Succ`, `Pred`, `Inc`, `Dec`, `Odd`, `Abs`, `Sqr`, `Sqrt`,
-  `Sin`, `Cos`, `ArcTan`, `Ln`, `Exp`, `Trunc`, `Round`, `Int`, `Frac`, `Pi`,
-  `Random`, `Random(n)`, `Randomize` (the same sequence as TP; see
-  References), `MaxInt`, `MaxLongInt`
-- `SizeOf` (TP's sizes: `Real` is 6 bytes, `string[n]` n+1, records
-  unpadded, objects with TP's 2-byte VMT field when they have a
-  constructor, destructor or virtual method; in the Rust, `SizeOf(Rec)`
-  is `Rec::SERIALIZED_SIZE`, a constant built from the fields' sizes, and
-  `SizeOf` of a `string[n]` is `serialized_string_size(n)`), `High`/`Low` (arrays, strings, ordinal types), all three
-  constants; `Swap` (TP 7 documents "X is an expression of type Integer
-  or Word; result type same as parameter". As TP's compiler and Free
-  Pascal do, a Byte swaps as a Word and a ShortInt as an Integer; a
-  constant folds to the Word made of its low 16 bits swapped, so
-  `Swap(255)` is 65280 and `Swap(-1)` 65535; a LongInt trades its 16-bit
-  halves, as Free Pascal allows), `Assigned`, `RunError`
-- `FillChar` and `Move` on any variables, as TP's bytes: between
-  different types, part of a record or array, with any value. A count past
-  the end of a variable is runtime error 201 (TP overwrote whatever came
-  next), and an error at compile time when it's a constant
-- Untyped files (`file`): `Reset(f, RecSize)`/`Rewrite(f, RecSize)` (128
-  bytes if not given), `BlockRead(f, Buf, Count [, Result])` and
-  `BlockWrite` into and from any variable's bytes (also from inside one:
-  `BlockWrite(f, s[1], Length(s))`), `Seek`/`FilePos`/`FileSize`/`Eof`/
-  `Truncate` in records. Without `Result`, reading fewer than `Count`
-  records is runtime error 100; with it, only the bytes read change. A
-  `Count` whose records don't fit the buffer is runtime error 201 before
-  anything is read, even if the file has less left (the user's call; TP
-  would have overwritten what followed the buffer had the file been
-  longer)
+TP 5.5's object-oriented programming.
+
+- `object` types with fields and methods, implicit `Self` field access,
+  method implementations `procedure T.M(...)`, nested procedures inside
+  methods that use `Self` fields
+- Single inheritance `object(Parent)`, inherited field and method access,
+  passing a descendant where an ancestor is expected (by `var`, or by value
+  and in assignments, which copy the ancestor part: unlike TP, the copy
+  then acts as the ancestor, since TP also copied the virtual method table)
+- `private` keyword accepted and ignored
+- `virtual` methods: dispatch through `Self`, through `var` parameters of an
+  ancestor type, and through pointers (a pointer to an object may point to a
+  descendant); `constructor`/`destructor` (`New(p, Init)` must name a
+  constructor and `Dispose(p, Done)` a destructor), `inherited Method`,
+  `Ancestor.Method(...)`, `New(p, Init(...))`, `New(PType, Init(...))` as a
+  function, `Dispose(p, Done)`, `TypeOf` (compared with `=`/`<>`). Not yet:
+  a descendant hiding a static method that calls virtual ones; a procedure
+  nested in a method that calls a virtual method of the method's object,
+  or passes its `Self` to a `var` parameter of a type with virtual methods
+  (both errors)
+
+### Pointers and memory
+
+- `^T` types, `New`, `Dispose`, `nil`, `p^`, `p^.field`, pointer equality,
+  pointers inside records (linked lists, trees; a field's type may be
+  written in place, `Next: ^Node`, and becomes `Ptr<Node>`), `var` parameters of pointer
+  type, passing `p^` and `p^.field` as `var` arguments
 - The untyped `Pointer`: it holds any typed pointer (`p := node`), is cast
   back with `PNode(p)^.x` (a cast to the wrong type is runtime error 204),
   gets a new record from `New(PNode(p))` (and frees it with
@@ -203,6 +327,34 @@ Built-ins (System unit)
   whole type, which covers the dynamic-array idiom (`GetMem(a, n *
   SizeOf(Integer))` with `a: ^array[0..999] of Integer`). `FreeMem(p,
   Size)` frees either
+- `FillChar` and `Move` on any variables, as TP's bytes: between
+  different types, part of a record or array, with any value. A count past
+  the end of a variable is runtime error 201 (TP overwrote whatever came
+  next), and an error at compile time when it's a constant
+- `SizeOf` (TP's sizes: `Real` is 6 bytes, `string[n]` n+1, records
+  unpadded, objects with TP's 2-byte VMT field (a pointer to the type's
+  table of virtual methods) when they have a
+  constructor, destructor or virtual method; in the Rust, `SizeOf(Rec)`
+  is `Rec::SERIALIZED_SIZE`, a constant built from the fields' sizes, and
+  `SizeOf` of a `string[n]` is `serialized_string_size(n)`); `High`/`Low`
+  (arrays, strings, ordinal types); all three are constants
+- Faked, so old programs run: `MemAvail`/`MaxAvail` (512,000 bytes),
+  `Mark`/`Release` (records are freed when nothing points to them, so they
+  do nothing)
+
+### Strings
+
+- `String`, `String[n]`; indexing `s[i]`, `s[0]`
+- `Length`, `Copy`, `Pos`, `Delete`, `Insert`, `Concat`, `UpCase`, `Str`,
+  `Val` (as Free Pascal: a number too big for the variable wraps with code
+  0, a minus sign is an error for a Byte or Word, and after an error the
+  variable is 0)
+- Packed strings, `array[M..N] of Char`: a string constant can be assigned
+  to one (exactly N characters, as TP's Language Guide says; a zero-based
+  array also takes a shorter one, padded with `#0`, as Free Pascal does),
+  also as a typed constant; and one can be used as a string: assigned to a
+  string, compared, joined with `+`, passed as a string parameter (a
+  zero-based one up to its `#0`, any other whole)
 - `PChar` and the `Strings` unit (TP 7's extended syntax, `{$X+}`, on as in
   TP 7): string literals and zero-based `array[0..N] of Char` where a
   `PChar` is wanted; `P^`, `P[i]` (read and written); `P + I`, `I + P`,
@@ -224,125 +376,16 @@ Built-ins (System unit)
   wrote through the `PChar`; a routine of the program it calls before the
   lend that may change the array runs first, as its own statement; one
   called after the lend is an error at compile time
-  The standard routines take C-style strings too (TP 7, chapter 16):
+- The standard routines take C-style strings too (TP 7, chapter 16):
   `Write` prints a zero-based `Char` array up to its `#0` (any other
   `Char` array whole), `Read` fills one with the rest of the line (cut to
   fit) and a `#0`, `Str` puts its digits in one, and `Val`, `Assign` and
   `Rename` take one or a `PChar`
-- Packed strings, `array[M..N] of Char`: a string constant can be assigned
-  to one (exactly N characters, as TP's Language Guide says; a zero-based
-  array also takes a shorter one, padded with `#0`, as Free Pascal does),
-  also as a typed constant; and one can be used as a string: assigned to a
-  string, compared, joined with `+`, passed as a string parameter (a
-  zero-based one up to its `#0`, any other whole)
-- Variant records with a tag field (`case Kind: Shape of Circle: (R:
-  Integer); Rect: (W, H: Integer)`): every variant's fields can be set and
-  read, through `with` and as `var` arguments; labels are checked like
-  `case` labels; a typed constant gives the tag and the fields of the variant it selects.
-  `SizeOf` and `file of` use TP's layout, where the variants share the
-  bytes after the fixed fields: a file stores the variant the tag selects.
-  Reading another variant's field gives its own last value, not the bytes
-  of the variant in use (TP overlaid them)
-- Variant records without a tag field (`case Integer of 0: (L: LongInt);
-  1: (Lo, Hi: Word)`): the variants share TP's bytes, so writing one and
-  reading another works as in TP (type punning), in place (`Inc(p.Hi)`,
-  `p.B[4] := 0`), as `var` arguments (but not two of one record in one
-  call), in files, `Move`, untyped parameters and typed constants. A
-  tagless part holding a pointer or a file keeps its variants separately
-  and can't be stored as bytes
-- A variant part nested at the end of a variant, and records inside a
-  variant: in a tagged part, flattened, and a file keeps the variants each
-  tag selects; in a tagless part, all of it TP's bytes
-- Procedural types (`type Func = function(X: Real): Real`; anonymous in a
-  `var`, too): variables, parameters, record fields, array elements and
-  typed constants of them; a routine of the program as a value (`F :=
-  Square`, `Plot(Square)`); calls through them (`F(x)`, `R.F(x)`,
-  `Ops[i](x)`, `H.S;`, `Arr[1];`, `PS^;`, with `var` parameters too); a parameterless function value
-  (in a variable, field or element) called in an expression (`N := F`,
-  `N := R.Next`) and copied where a procedural value is wanted (`G := F`,
-  `Run(F)`); `nil`, `Assigned(F)`, `@F` as a
-  `Pointer`, and `@F = @Square`, `@F = nil`. A routine that uses globals
-  works too: every routine of the type takes the globals any of them
-  uses, even a global of the type itself (a state machine whose states
-  set `Current`, or recursion through a global `Fact`). Refused, with TP's reasons: a nested routine, a method or a
-  standard routine as a value, a function returning a procedural type,
-  and `F = G` (which calls them in TP; write `@F = @G`). `{$F+}` and `far`
-  aren't required. A procedural value is 4 bytes (`SizeOf`), stored in a
-  file or seen as bytes as 4 zeros, and reads back as nil. Calling a nil
-  one is runtime error 216, as in protected-mode TP 7.
-- Untyped `var` parameters (`procedure Dump(var Data; Size: Word)`): the
-  routine sees the caller's variable as TP's bytes, through a typecast
-  (`TBytes(Data)[i]`, read or written; `TRec(Data)` read, or assigned as a
-  whole), and can pass it on. An argument can start inside a variable
-  (`Dump(s[1], 3)`, `Dump(buf[10], 5)`). The bytes are copied in and
-  written back when the routine returns; nothing else can see the
-  variable in between, so a program can't tell
-- System variables (and the units' `TextAttr`, `DosError`, ...; these can be
-  read and set with `:=`, but not passed as `var` arguments or to `Inc`):
-  `ExitCode` (the exit code when the program ends),
-  `RandSeed`, `FileMode` (how `Reset` opens typed files), and `Input` and
-  `Output` as file arguments (`Writeln(Output, x)`), also passed to a
-  `var f: Text` parameter (`Report(Output)`); they're always the console,
-  so `Assign`/`Reset`/`Rewrite` on them is an error
-- `GetDir`. Drive C: is the file system's root (`/`) unless
-  `RUSCAL_DRIVE_C` says otherwise, so `GetDir` and `FExpand` give the
-  real path (`C:\USERS\JJ\GAMES`); other drives exist only when mapped
-  (`RUSCAL_DRIVE_A`), and a name on an unmapped drive isn't found.
-  File names with a drive letter go to that drive's directory; `A:X` is relative to the current directory when
-  it's on drive A (Ruscal keeps one current directory, not one per
-  drive), and `..` stops at the drive's root. `GetDir` and `FExpand`
-  agree: after `ChDir('A:\SUB')`, `GetDir(1)` is `A:\SUB` and
-  `FExpand('A:X')` is `A:\SUB\X`. `Assign(f, '')` is standard input and
-  output, as in TP
-- Faked, so old programs run: `MemAvail`/`MaxAvail` (512,000 bytes),
-  `Mark`/`Release` (records are freed when nothing points to them, so they
-  do nothing), `SetTextBuf` (files are buffered already), `Test8087` (3)
-- `Length`, `Copy`, `Pos`, `Delete`, `Insert`, `Concat`, `UpCase`, `Str`,
-  `Val` (as Free Pascal: a number too big for the variable wraps with code
-  0, a minus sign is an error for a Byte or Word, and after an error the
-  variable is 0)
-- `div` and `mod` of the most negative Integer by -1: runtime error 200,
-  as TP's divide trap gave
-- `High`, `Low`, `SizeOf` (of types with a defined Rust size)
 
-## Tier 2: needed to run every program in `examples/`
+### Input, output and files
 
-Modules
-
-- `unit` with `interface` / `implementation` / initialization block; `uses`
-  in programs and in both unit sections; name resolution across units
-- Whole-program compilation from a program file that pulls in its units
-
-Objects (TP 5.5 OOP)
-
-- `object` types with fields and methods, implicit `Self` field access,
-  method implementations `procedure T.M(...)`, nested procedures inside
-  methods that use `Self` fields
-- Single inheritance `object(Parent)`, inherited field and method access,
-  passing a descendant where an ancestor is expected (by `var`, or by value
-  and in assignments, which copy the ancestor part: unlike TP, the copy
-  then acts as the ancestor, since TP also copied the virtual method table)
-- `private` keyword accepted and ignored
-- `virtual` methods: dispatch through `Self`, through `var` parameters of an
-  ancestor type, and through pointers (a pointer to an object may point to a
-  descendant); `constructor`/`destructor` (`New(p, Init)` must name a
-  constructor and `Dispose(p, Done)` a destructor), `inherited Method`,
-  `Ancestor.Method(...)`, `New(p, Init(...))`, `New(PType, Init(...))` as a
-  function, `Dispose(p, Done)`, `TypeOf` (compared with `=`/`<>`). Not yet:
-  a descendant hiding a static method that calls virtual ones; a procedure
-  nested in a method that calls a virtual method of the method's object,
-  or passes its `Self` to a `var` parameter of a type with virtual methods
-  (both errors)
-
-Pointers
-
-- `^T` types, `New`, `Dispose`, `nil`, `p^`, `p^.field`, pointer equality,
-  pointers inside records (linked lists, trees; a field's type may be
-  written in place, `Next: ^Node`, and becomes `Ptr<Node>`), `var` parameters of pointer
-  type, passing `p^` and `p^.field` as `var` arguments
-
-Files
-
+- `Write`, `Writeln`, `Read`, `Readln` on the console, with `:width` and
+  `:width:decimals` formatting, TP's default real format, `TRUE`/`FALSE`
 - `Text` files: `Assign`, `Reset`, `Rewrite`, `Append`, `Close`, `Read`,
   `Readln`, `Write`, `Writeln`, `Eof`, `Eoln`, `SeekEof`, `SeekEoln`,
   `Erase`, `Rename`, `Flush`.
@@ -357,46 +400,60 @@ Files
   constructor, destructor or virtual method TP's 2-byte VMT field after
   the fields of the type that adds it (read past, written as zeros), so files written by TP
   programs (`examples/database/mark.dat`) can be read
+- Untyped files (`file`): `Reset(f, RecSize)`/`Rewrite(f, RecSize)` (128
+  bytes if not given), `BlockRead(f, Buf, Count [, Result])` and
+  `BlockWrite` into and from any variable's bytes (also from inside one:
+  `BlockWrite(f, s[1], Length(s))`), `Seek`/`FilePos`/`FileSize`/`Eof`/
+  `Truncate` in records. Without `Result`, reading fewer than `Count`
+  records is runtime error 100; with it, only the bytes read change. A
+  `Count` whose records don't fit the buffer is runtime error 201 before
+  anything is read, even if the file has less left (the user's call; TP
+  would have overwritten what followed the buffer had the file been
+  longer)
 - File variables inside records and objects; `var` file parameters
-- `Input` / `Output` as explicit file arguments
+- `Input` and `Output` as file arguments (`Writeln(Output, x)`), also
+  passed to a `var f: Text` parameter (`Report(Output)`); they're always
+  the console, so `Assign`/`Reset`/`Rewrite` on them is an error.
+  `Assign(f, '')` is standard input and output, as in TP
+- `Erase` of a read-only file fails with access denied (5), as in DOS
+- `GetDir` (and `ChDir`, `MkDir`, `RmDir`). Drive C: is the file system's
+  root (`/`) unless `RUSCAL_DRIVE_C` says otherwise, so `GetDir` and
+  `FExpand` give the real path (`C:\USERS\JJ\GAMES`); other drives exist
+  only when mapped (`RUSCAL_DRIVE_A`), and a name on an unmapped drive
+  isn't found. File names with a drive letter go to that drive's
+  directory (DOS path translation: `a:\tictac` → a configured directory);
+  `A:X` is relative to the current directory when it's on drive A
+  (Ruscal keeps one current directory, not one per drive), and `..` stops
+  at the drive's root. `GetDir` and `FExpand` agree: after
+  `ChDir('A:\SUB')`, `GetDir(1)` is `A:\SUB` and `FExpand('A:X')` is
+  `A:\SUB\X`
+- Faked: `SetTextBuf` (files are buffered already)
 
-More language
+### Other System routines and variables
 
-- Sets: `set of T` (`T` with ordinals 0 to 255: `Char`, `Byte`, `Boolean`,
-  an enumeration, a subrange like `0..9`), literals with ranges
-  (`['a'..'z', '_']`), `in`, `+ - *`, `= <> <= >=`, `Include`/`Exclude`,
-  set constants and typed constants, sets in records (also in `file of`
-  records, as 32 bytes) and parameters. A value outside the element range
-  is never in a set (`300 in s` is False for a `set of Byte`, for a
-  constant or a variable; Free Pascal cuts a variable down to a byte)
-- `with` statements (single and multiple record expressions, records and
-  objects, through pointers). A body may not change an array index that
-  chooses the record (`with a[i] do ... i := 2` is an error), and a field
-  can't be a `for` loop's variable
-- Typed constants (`const Days: array[0..6] of String[9] = (...)`;
-  `const x: integer = 5`), which are initialized variables in TP
-- Anonymous record types in `var` declarations (`EndPoint: record x, y:
-  integer; end`) and in record fields. One (or an anonymous enum) becomes
-  a Rust type named after its variable or field, `AnonymousEndPoint`, so
-  it isn't taken for a type the program named.
-- Char-indexed and enum-indexed arrays; `for` over chars and enums
-- Shadowing of built-in names by user declarations (`procedure Exit(var
-  leave: boolean)` and `type ShortString = string[20]` both appear in the
-  examples)
-- String indexing `s[i]`, `s[0]`; `Hi`, `Lo`, `Swap`; `FillChar` and `Move`
-  on arrays of scalars (checked, no raw memory); `ParamCount`, `ParamStr`
-- `Break`, `Continue` (TP 7; `Continue` in `repeat` still runs the `until`
-  test)
-- `{$N+}` types `Single`, `Double` and `Extended` are accepted and kept as
-  a `Real` (an `f64` in Rust, 6 bytes in `SizeOf` and typed files) for now;
-  `Comp` isn't supported;
-  under `{$N+}`, `Round` at run time rounds half to even, as TP 7's 8087
-  does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
-  round half away from zero (3). `{$N+}` and `{$N-}` hold for the whole
-  file, so, as in TP 7, they go before the `uses` clause and the
-  declarations (elsewhere they're an error)
+- `Ord`, `Chr`, `Succ`, `Pred`, `Inc`, `Dec`, `Odd`, `Abs`, `Sqr`, `Sqrt`,
+  `Sin`, `Cos`, `ArcTan`, `Ln`, `Exp`, `Trunc`, `Round`, `Int`, `Frac`, `Pi`,
+  `Random`, `Random(n)`, `Randomize` (the same sequence as TP; see
+  [References](#references)), `MaxInt`, `MaxLongInt`
+- `Hi`, `Lo`; `Swap` (TP 7 documents "X is an expression of type Integer
+  or Word; result type same as parameter". As TP's compiler and Free
+  Pascal do, a Byte swaps as a Word and a ShortInt as an Integer; a
+  constant folds to the Word made of its low 16 bits swapped, so
+  `Swap(255)` is 65280 and `Swap(-1)` 65535; a LongInt trades its 16-bit
+  halves, as Free Pascal allows); `Assigned`, `RunError`
+- `ParamCount`, `ParamStr`
+- System variables (and the units' `TextAttr`, `DosError`, ...; these can be
+  read and set with `:=`, but not passed as `var` arguments or to `Inc`):
+  `ExitCode` (the exit code when the program ends),
+  `RandSeed`, `FileMode` (how `Reset` opens typed files), and `Input` and
+  `Output` (see [Input, output and files](#input-output-and-files))
+- Faked, so old programs run: `Test8087` (3)
 
-Crt unit (the whole examples set uses it)
+## The standard units
+
+### Crt
+
+The whole examples set uses it.
 
 - `ClrScr`, `ClrEol`, `GotoXY`, `WhereX`, `WhereY`, `TextColor`,
   `TextBackground`, `Window`, `WindMin`, `WindMax`, `HighVideo`,
@@ -411,7 +468,7 @@ Crt unit (the whole examples set uses it)
   `CheckEOF`
 - A non-TTY "plain" mode so scripted tests can drive these programs
 
-Printer unit
+### Printer
 
 - `Lst`, a text file always open on the printer: `Write(Lst, ...)`,
   `Writeln(Lst, ...)`, `Flush(Lst)`, and passed to a `var f: Text`
@@ -419,7 +476,9 @@ Printer unit
   another file, or a command such as `lp`, as `RUSCAL_PRINTER` says (see
   the README). Reading from `Lst`, or reopening it, is an error
 
-Overlay unit (faked: a Rust program has all its code in memory)
+### Overlay
+
+Faked: a Rust program has all its code in memory.
 
 - `OvrInit`, `OvrInitEMS` (both succeed; no `.OVR` file is needed),
   `OvrSetBuf`/`OvrGetBuf`, `OvrSetRetry`/`OvrGetRetry` (remembered),
@@ -428,7 +487,7 @@ Overlay unit (faked: a Rust program has all its code in memory)
   `ovrOk`...`ovrNoEMSMemory` constants. `{$O+}`, `{$O UnitName}` and
   `{$F+}` are ignored silently
 
-Dos unit
+### Dos
 
 - `GetDate`, `GetTime`, `FExpand`, `FSearch`, `FSplit` (parts cut to
   `DirStr`/`NameStr`/`ExtStr`; a shorter string variable is an error, as
@@ -447,37 +506,6 @@ Dos unit
   was `string[12]`), so long names fit. Nothing tells Ruscal when a
   program is done with a search, so it keeps up to 10,000 (of which up
   to 100 that have run out), forgetting those used longest ago
-- Faked: `DosVersion` (DOS 6.22), `DiskFree`/`DiskSize` (512 MB free of a
-  1 GB disk on every drive there is: real disks are too big for a
-  `LongInt`; -1 for a drive `RUSCAL_DRIVE_x` doesn't map, as TP's
-  invalid drive),
-  `SetDate`/`SetTime` (don't change the computer's clock),
-  `GetCBreak`/`SetCBreak` and `GetVerify`/`SetVerify` (remembered),
-  `SwapVectors` (does nothing)
-- `GetIntVec`/`SetIntVec` (faked): the 256 vectors hold what a program
-  puts in them, and start as stand-ins for DOS's handlers, so saving a
-  vector and restoring it works. `interrupt` procedures compile as ordinary
-  procedures and `@Handler` gives their address, but there are no
-  interrupts, so a handler is never called: `SetIntVec(..., @Handler)`
-  gives a warning saying so, and for the timer's vectors (`$08`, `$1C`)
-  points to the main-loop replacement in docs/timer_interrupts.md
-- `WinDos` (TP 7): the `Dos` unit with `PChar` strings. The routines
-  without strings are `Dos`'s (`GetTime`, `GetFTime`, `GetFAttr`,
-  `PackTime`, `DiskFree`, `GetIntVec`, ...). With strings: `FileExpand`,
-  `FileSearch`, `FileSplit` (with its `fcXXXX` flags; a nil part isn't
-  stored), `GetCurDir`, `SetCurDir`, `CreateDir`, `RemoveDir` (these four
-  set `DosError`, 3 for a missing directory and 5 otherwise, rather than
-  stopping with a runtime error), `GetArgCount`, `GetArgStr`, `GetEnvVar`
-  (nil if the variable isn't set), and `FindFirst`/`FindNext` with
-  `TSearchRec` (its `Name` an `array[0..255] of Char`, not TP's
-  `[0..12]`, so a long modern file name isn't cut; only
-  `SizeOf(TSearchRec)` shows it). `TDateTime` and
-  `TRegisters` are `Dos`'s `DateTime` and `Registers`; the `faXXXX`,
-  `fmXXXX`, `fsXXXX`, `fcXXXX` and flag constants and `DosError` are
-  there. Not there: `TFileRec`/`TTextRec`
-- Refused with a clear error, since they need real DOS: `Intr`, `MsDos`,
-  `Keep` (`Registers` is declared, with its `Word` registers, so a program
-  using it gets that error)
 - `GetFTime`/`SetFTime` (the file's real modification time, packed as DOS
   did), `PackTime`/`UnpackTime` with `DateTime` (seconds kept to 2; as in
   TP, an out-of-range field spills into the next, within the date or
@@ -493,10 +521,45 @@ Dos unit
   when clocks go forward, day 0) moves to the nearest one that does.
   `DosError` is 2 for a missing file and 3 for a missing directory.
   TP's untyped `var F` took any variable; Ruscal wants a file
-- `Erase` of a read-only file fails with access denied (5), as in DOS
-- DOS path translation (`a:\tictac` → a configured directory)
+- Faked: `DosVersion` (DOS 6.22), `DiskFree`/`DiskSize` (512 MB free of a
+  1 GB disk on every drive there is: real disks are too big for a
+  `LongInt`; -1 for a drive `RUSCAL_DRIVE_x` doesn't map, as TP's
+  invalid drive),
+  `SetDate`/`SetTime` (don't change the computer's clock),
+  `GetCBreak`/`SetCBreak` and `GetVerify`/`SetVerify` (remembered),
+  `SwapVectors` (does nothing)
+- `GetIntVec`/`SetIntVec` (faked): the 256 vectors hold what a program
+  puts in them, and start as stand-ins for DOS's handlers, so saving a
+  vector and restoring it works. `interrupt` procedures compile as ordinary
+  procedures and `@Handler` gives their address, but there are no
+  interrupts, so a handler is never called: `SetIntVec(..., @Handler)`
+  gives a warning saying so, and for the timer's vectors (`$08`, `$1C`)
+  points to the main-loop replacement in docs/timer_interrupts.md
+- Refused with a clear error, since they need real DOS: `Intr`, `MsDos`,
+  `Keep` (`Registers` is declared, with its `Word` registers, so a program
+  using it gets that error)
 
-Graph unit (BGI, as used in the examples)
+### WinDos
+
+TP 7's `Dos` unit with `PChar` strings.
+
+- The routines without strings are `Dos`'s (`GetTime`, `GetFTime`,
+  `GetFAttr`, `PackTime`, `DiskFree`, `GetIntVec`, ...). With strings:
+  `FileExpand`, `FileSearch`, `FileSplit` (with its `fcXXXX` flags; a nil
+  part isn't stored), `GetCurDir`, `SetCurDir`, `CreateDir`, `RemoveDir`
+  (these four set `DosError`, 3 for a missing directory and 5 otherwise,
+  rather than stopping with a runtime error), `GetArgCount`, `GetArgStr`,
+  `GetEnvVar` (nil if the variable isn't set), and `FindFirst`/`FindNext`
+  with `TSearchRec` (its `Name` an `array[0..255] of Char`, not TP's
+  `[0..12]`, so a long modern file name isn't cut; only
+  `SizeOf(TSearchRec)` shows it)
+- `TDateTime` and `TRegisters` are `Dos`'s `DateTime` and `Registers`;
+  the `faXXXX`, `fmXXXX`, `fsXXXX`, `fcXXXX` and flag constants and
+  `DosError` are there. Not there: `TFileRec`/`TTextRec`
+
+### Graph
+
+Borland's BGI, as the examples use it.
 
 - `InitGraph`/`Detect`/`CloseGraph`/`GraphResult`/`GraphErrorMsg`/
   `SetGraphMode`/`RestoreCrtMode`, `GetMaxX`/`GetMaxY`/`GetMaxColor`
@@ -548,64 +611,51 @@ Graph unit (BGI, as used in the examples)
   the original programs still draw. `ImageSize` of 64K or more is 0 with
   `GraphResult` `grError`. A buffer too small is runtime error 201.
   `PutImage` is clipped to the viewport (with `ClipOn`)
-- `RscJson`, Ruscal's own unit for reading and writing JSON (JSON
-  strings up to 255 characters); see [RscJson](rsc_json.md)
-- `RscTurtle`, Ruscal's own unit of turtle graphics on top of `Graph`,
-  with Graph3's turtle routines (`Forwd`, `TurnRight`, `PenUp`, `Wrap`,
-  `TurtleWindow`, ...); see [RscTurtle](rsc_turtle.md)
-- `label` and `goto` (names or numbers, `10:`): some uses, not all.
-  Ruscal supports the ones Rust can say directly, with a labeled block
-  or loop: a jump forward, to a label later in the same statement list
-  or one around it (out of nested loops, past the rest of a routine), and
-  a jump back, to a label earlier in such a list. Rust has no `goto`: it
-  keeps control flow structured so that it can check every variable is
-  set before it's read and every borrow is still valid, so jumping into
-  the middle of a loop has no direct translation. (It could be emulated,
-  with a loop around a `match` on a "where to go next" variable, but the
-  code would no longer read like the Pascal.) Refused, with a link to
-  a rewrite: a jump into a statement the `goto` isn't in, and two jumps
-  whose blocks would cross. `Break` and `Continue` inside the statements
-  a `goto` skips or repeats work too (the loop gets a Rust label).
-  Statements that can never run (after a `goto` or `Exit`, before the
-  next label) are kept in the Rust, commented out
 
-## Tier 3: later, or never
+### Ruscal's own units
 
-Later (real TP features, not in the examples, worth doing in order)
+- `RscJson`, for reading and writing JSON (JSON strings up to 255
+  characters); see [RscJson](rsc_json.md)
+- `RscTurtle`, turtle graphics on top of `Graph`, with Graph3's turtle
+  routines (`Forwd`, `TurnRight`, `PenUp`, `Wrap`, `TurtleWindow`, ...);
+  see [RscTurtle](rsc_turtle.md)
 
-1. (Done, now in tier 2: sets.)
-2. (Variant records are done, in tier 2.) A variant part without a tag
-   field nested inside one with a tag; a set in a variant part without a
-   tag field
-3. (Done, now in tier 2: `virtual` methods, constructors and destructors,
-   polymorphic pointers to objects.)
-4. (Procedural types are done, in tier 2.) A `Pointer` cast back to a
-   routine (`Func(P)`, `@F := P`)
-5. (`goto` forward or back within a statement list is done, in tier 2.) A
-   `goto` into a statement it isn't in, and jumps whose blocks would cross
-6. (Untyped `var` parameters, `GetMem`/`FreeMem` and the untyped `Pointer`
-   are done, in tier 2.) Pointer arithmetic, `Addr`/`@` on variables (would need
-   the place-descriptor representation from `architecture.md` §15)
-7. (Untyped files are done, in tier 2.) `TextRec`/`FileRec`
-8. (Done, now in tier 2: TP-exact binary layout for `file of Rec`.)
-9. (Open array parameters, `const` parameters, `Include`/`Exclude`,
-   `PChar`, `Assigned` and `WinDos` are done.) A `PChar` kept into a
-   `Char` array (`P := A`)
-10. Vector (stroked) BGI fonts, `RegisterBGIfont`, custom drivers
-11. `Overlay` unit: parse and ignore
-12. `absolute` variables when both are scalars of the same size
-13. The bundled-globals and place-descriptor options for pathological
-    aliasing (see `architecture.md` §15)
-14. Preserving Pascal comments in the generated Rust
+## What isn't supported
 
-Never (DOS/x86 machinery with no sensible Rust translation)
+### Not supported yet
+
+Real TP features, not in the examples, worth doing in this order:
+
+1. A variant part without a tag field nested inside one with a tag; a set
+   in a variant part without a tag field
+2. A `Pointer` cast back to a routine (`Func(P)`, `@F := P`)
+3. A `goto` into a statement it isn't in, and jumps whose blocks would
+   cross
+4. Pointer arithmetic, `Addr`/`@` on variables (would need the
+   place-descriptor representation from `architecture.md` §15)
+5. `TextRec`/`FileRec`
+6. A `PChar` kept into a `Char` array (`P := A`)
+7. Vector (stroked) BGI fonts, `RegisterBGIfont`, custom drivers
+8. `absolute` variables when both are scalars of the same size
+9. The bundled-globals and place-descriptor options for pathological
+   aliasing (see `architecture.md` §15)
+10. `Single`, `Double` and `Extended` as types of their own (`f32`,
+    `f64`, `f64`), and `Comp` (`i64`)
+
+Also not yet: `{$B+}` and `{$R+}` (see
+[Compiler directives](#compiler-directives)), and the two object cases
+under [Objects](#objects).
+
+### Never supported
+
+DOS and x86 machinery with no sensible Rust translation:
 
 - `asm ... end`, `inline(...)`, `Intr`, `MsDos`, `Keep`, and calling an
   `interrupt` procedure as an interrupt (it compiles, and `SetIntVec`
   keeps it, but it never runs)
 - `Mem`, `MemW`, `MemL`, `Port`, `PortW`, `Seg`, `Ofs`, `Ptr`, `CSeg`,
   `DSeg`, `SPtr`, `Addr` arithmetic, `absolute` at fixed addresses
-- `Overlay` behaviour, `OvrInit` and friends (parse, ignore)
+- Real overlays (the [Overlay](#overlay) unit's routines are faked)
 - `Exec` of real DOS executables (it runs the path through
   `std::process::Command`, so a DOS program like `turbo.exe` isn't found; `Exec('GAME.EXE')`
   runs `game`, a program built with `tpc`, if there's no `GAME.EXE`; as in
