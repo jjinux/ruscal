@@ -476,7 +476,26 @@ impl<'a> Codegen<'a> {
                 format!("{}.{method}()", self.postfix(&args[0], &Type::REAL))
             }
             Trunc | Round => {
-                let method = if b == Trunc { "trunc" } else { "round" };
+                // Under `{$N+}`, the 8087 rounds half to even, as Rust's
+                // `round_ties_even` does (`Round(2.5)` is 2); without it
+                // (TP's default), TP rounds half away from zero, as
+                // `round` does (3). (Checked in TP 7.)
+                // (Not a constant, `Round(2.5)`, which TP's compiler works
+                // out, half away from zero.)
+                let even = b == Round
+                    && !self.a.consts.contains_key(&args[0].id)
+                    && self.rounds_to_even.iter().any(|r| r.start <= span.start && span.start < r.end);
+                if even && self.first_time("round_even") {
+                    self.pending.push(
+                        "// `{$N+}`: the 8087 rounds half to even (`Round(2.5)` is 2), as `round_ties_even` does."
+                            .to_string(),
+                    );
+                }
+                let method = match b {
+                    Trunc => "trunc",
+                    _ if even => "round_ties_even",
+                    _ => "round",
+                };
                 format!("{}.{method}() as i32", self.postfix(&args[0], &Type::REAL))
             }
             // `::std`: a program's unit named `Std` becomes a module `std`.

@@ -39,6 +39,9 @@ pub struct Input<'a> {
     pub io_unchecked: &'a [Span],
     /// The parts of the source compiled with `{$Q+}`.
     pub overflow_checked: &'a [Span],
+    /// The parts of the source compiled with `{$N+}`, where `Round` rounds
+    /// half to even.
+    pub rounds_to_even: &'a [Span],
     /// The source's comments, carried into the Rust.
     pub comments: &'a [crate::lexer::Comment],
     /// The Rust files `{$L file.rs}` links, as (module, file name).
@@ -61,6 +64,7 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         map,
         io_unchecked,
         overflow_checked,
+        rounds_to_even,
         comments,
         rust_modules,
         features,
@@ -92,6 +96,7 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         loops: Vec::new(),
         io_unchecked,
         overflow_checked,
+        rounds_to_even,
         rust_modules,
         features,
         self_expr: None,
@@ -191,6 +196,7 @@ struct Codegen<'a> {
     /// to `IOResult` instead of stopping the program.
     io_unchecked: &'a [Span],
     overflow_checked: &'a [Span],
+    rounds_to_even: &'a [Span],
     /// The Rust files `{$L sound.rs}` names, as (module, file name):
     /// where the `external` routines are.
     rust_modules: &'a [(String, String)],

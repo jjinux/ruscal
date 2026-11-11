@@ -377,7 +377,10 @@ More language
   on arrays of scalars (checked, no raw memory); `ParamCount`, `ParamStr`
 - `Break`, `Continue` (TP 7; `Continue` in `repeat` still runs the `until`
   test)
-- `{$N+}` types `Single`, `Double`, `Extended`, `Comp` as `f32`/`f64`/`f64`/`i64`
+- `{$N+}` types `Single`, `Double`, `Extended`, `Comp` as `f32`/`f64`/`f64`/`i64`;
+  under `{$N+}`, `Round` at run time rounds half to even, as TP 7's 8087
+  does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
+  round half away from zero (3)
 
 Crt unit (the whole examples set uses it)
 
