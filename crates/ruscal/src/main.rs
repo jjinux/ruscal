@@ -19,9 +19,13 @@ struct Cli {
 #[derive(Subcommand)]
 enum Cmd {
     /// Print the generated Rust code.
-    Emit { file: PathBuf },
+    Emit {
+        /// The Pascal program (its units are found next to it).
+        file: PathBuf,
+    },
     /// Transpile into a Cargo project and build it.
     Build {
+        /// The Pascal program (its units are found next to it).
         file: PathBuf,
         /// Where to write the Cargo project (default: out/<name>).
         #[arg(short, long)]

@@ -4,6 +4,7 @@ members = ["crates/ruscal", "crates/ruscal_runtime"]
 
 [workspace.package]
 edition = "2024"
+rust-version = "1.88"
 license = "MIT"
 authors = ["JJ Behrens"]
 version = "0.1.0"

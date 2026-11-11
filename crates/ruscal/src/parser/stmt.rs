@@ -33,12 +33,7 @@ impl Parser {
             // Machine code for the 8086, which there's nothing to run on.
             TokenKind::Keyword(keyword @ (Keyword::Asm | Keyword::Inline)) => {
                 let what = if *keyword == Keyword::Asm { "an `asm` block" } else { "`inline(...)`" };
-                return Err(Diagnostic::new(
-                    start,
-                    format!(
-                        "{what} holds 8086 machine code, which needs a real DOS PC, so Ruscal can't translate it; see \"Never supported\" in the README"
-                    ),
-                ));
+                return Err(super::machine_code(start, what));
             }
             TokenKind::Keyword(Keyword::Begin) => {
                 self.bump();

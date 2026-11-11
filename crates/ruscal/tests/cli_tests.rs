@@ -21,13 +21,22 @@ fn build_says_where_the_executable_is() {
     assert!(exe.exists());
 }
 
-/// `tpc --help` (and `-h`) prints the usage, as no arguments does, rather
+/// `tpc --help` (and `-h`, `-H`) prints the usage, as no arguments does, rather
 /// than calling it an invalid option.
 #[test]
 fn tpc_help() {
-    for flag in ["--help", "-h"] {
+    for flag in ["--help", "-h", "-H"] {
         let output = Command::new(env!("CARGO_BIN_EXE_tpc")).arg(flag).output().unwrap();
         assert!(output.status.success(), "{flag}: {}", String::from_utf8_lossy(&output.stderr));
         assert!(String::from_utf8_lossy(&output.stdout).contains("Syntax: tpc"));
+    }
+}
+
+/// Each command's `--help` says what its file argument is.
+#[test]
+fn file_argument_help() {
+    for cmd in ["emit", "build", "run"] {
+        let output = Command::new(env!("CARGO_BIN_EXE_ruscal")).args([cmd, "--help"]).output().unwrap();
+        assert!(String::from_utf8_lossy(&output.stdout).contains("The Pascal program"), "{cmd}");
     }
 }

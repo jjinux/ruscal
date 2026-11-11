@@ -56,11 +56,12 @@ lying around, give it a try!
 
 ### Requirements
 
-- Rust 1.85 or later (the crates use the 2024 edition), from
+- Rust 1.88 or later (the crates use the 2024 edition and its `let`
+  chains), from
   [rustup](https://rustup.rs/), with `rustfmt` (`rustup component add
   rustfmt`), which tidies the generated Rust; without it the Rust still
   works, unformatted.
-- macOS or Linux (both are tested). On Linux, `Graph` programs need the
+- macOS or Linux (developed on macOS; CI runs on Linux). On Linux, `Graph` programs need the
   X11 and Wayland development packages for their window:
   `libx11-dev libxcursor-dev libxkbcommon-dev libwayland-dev` on Debian or
   Ubuntu.
@@ -99,8 +100,9 @@ Or install the tools once with `cargo install --path crates/ruscal`, which
 puts `ruscal` and `tpc` (below) on your `PATH`, and use
 `ruscal run foo.pas`. The installed `ruscal` still needs this checkout:
 each generated project depends on `crates/ruscal_runtime` by path, so keep
-the clone where it is, or point `RUSCAL_RUNTIME` at a copy of that
-directory.
+the clone where it is, or point `RUSCAL_RUNTIME` at the
+`crates/ruscal_runtime` of a copy of the whole checkout (the crate takes
+its edition and version from the workspace around it).
 
 ## Examples
 
@@ -253,8 +255,9 @@ for files going back to DOS).
 cargo run -p ruscal -- fmt examples/database/*.pas
 
 # Only check: list the files that would change, and fail if there are any
-# (handy in CI; this repository's tests check examples/ this way).
-cargo run -p ruscal -- fmt --check examples/*.pas examples/*/*.pas
+# (handy in CI; this repository's tests check the user's examples this way,
+# leaving out examples/ruscal, whose programs are formatted on their own).
+cargo run -p ruscal -- fmt --check $(find examples -name '*.pas' -not -path '*/ruscal/*')
 
 # Keep DOS line endings, for files that Turbo Pascal in DOS will read.
 cargo run -p ruscal -- fmt --crlf GAME.PAS
