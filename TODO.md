@@ -346,8 +346,8 @@ Last: raw bytes and C strings
   - [x] A constant expression that doesn't fit its operands' type (`C + 1`, `C = 32767`) was cut back to an Integer (-32768); TP types it by its value, a LongInt, and so the arithmetic around it: `i * (C + 1)` is 98304 for `i = 3`.
   - [x] `High`/`Low` of a field (`High(r.Items)`, `High(Items)` in a method or a `with`) stayed a number; it's `r.items.high()`. `High(Letter)` for a Char or enum subrange gave the whole type's bound (chr 255); it's the subrange's.
   - [x] `const Top = High(Integer)` and a `case` label `High(Integer)` are `i16::MAX`; `array[-K..K]` reads `K + K + 1`, not `K - -K + 1`; `{ N as usize }`, not `{ N as i16 as usize }`; the sets section of the architecture contradicted the named-constants rule.
-  - [x] PUNT: `Cnt = Ord(Last) - Ord(Mon) + 1` (enum constants) gets no `// Pascal` comment, where other worked-out constants do; constant `x / Z` with `Z = 0` is runtime error 200 (TP may have refused it when compiling).
-- [ ] Findings of review batch R (b89b0fe..721ee55):
+  - [x] PUNT: `Cnt = Ord(Last) - Ord(Mon) + 1` (enum constants) gets no `// Pascal` comment, where other worked-out constants do; constant `x / Z` with `Z = 0` is runtime error 200 (TP may have refused it when compiling). (Settled 2026-11-11: TP 7 refuses it, and so does Ruscal now; batch AE.)
+- [x] Findings of review batch R (b89b0fe..721ee55):
   - [x] `Inc(i, 32768)` on an Integer (`Inc(s, 128)` on a ShortInt) was an out-of-range literal that rustc refused; it wraps to -32768 now, as in TP.
   - [x] Division by a constant 0 in a subrange, array bound, string length, variant or case label gave a second, generic error (and a type declaration both twice); the docs didn't say it's a compile error, nor that a parameter's type must be a type's name.
   - [x] Real division by zero (`x / 0`) printed `+Inf`; TP stops with runtime error 200. The user (2026-11-06): stop with runtime error 200, as TP did.
