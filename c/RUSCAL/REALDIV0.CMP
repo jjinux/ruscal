@@ -1,0 +1,4 @@
+Turbo Pascal  Version 7.0  Copyright (c) 1983,92 Borland International
+REALDIV0.PAS(1)REALDIV0.PAS(1)REALDIV0.PAS(11): Error 140: Invalid floating point operation.
+   R := 1 / 0;
+             ^

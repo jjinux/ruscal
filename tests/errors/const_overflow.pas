@@ -12,8 +12,11 @@ const
    Huge = 1E300 * 1E300;
 var
    L: LongInt;
+   R: Real;
 begin
    WriteLn(-$80000000, Fine);
    L := MaxLongInt + 1;
    WriteLn(Round(1E300 * 1E300));
+   { Huge's error isn't given again here. }
+   R := Huge;
 end.

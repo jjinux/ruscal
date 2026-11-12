@@ -11,6 +11,7 @@ const
    Inside = Ord(Color(4));
    Ranged = Sub(6);
    Typed: Color = Color(3);
+   InSet: set of Color = [Red, Color(5)];
 var
    C: Color;
 begin

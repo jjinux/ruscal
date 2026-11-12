@@ -329,7 +329,9 @@ Integer division by zero is a Rust panic, which becomes Pascal runtime
 error 200 (§17). Real division by zero would give infinity in Rust, so a
 divisor that isn't a constant other than 0 goes through the runtime's
 `nonzero` (`x / nonzero(y)`), which stops with error 200 as TP does; `div` or `mod` by a constant 0 (`5 div 0`, `n mod Z`) is a
-compile error, as in TP (sema's `division_by_zero`, which also keeps a
+compile error, as in TP, and so is a constant `/` by 0 (`1.0 / 0.0`,
+`1 / Z`: TP's "Invalid floating point operation"; `x / 0` of a variable
+is left to run time, as TP left it) (sema's `division_by_zero`, which also keeps a
 "must be a constant" error from following it).
 
 ## 8. Strings: `PString`, a 256-byte value type

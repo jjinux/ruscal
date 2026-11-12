@@ -6,5 +6,7 @@ const
    B = Byte('ab');
    C = 2 * Word(0.5);
    D = Boolean(1.5);
+   { A typed constant: one error, not two. }
+   E: Integer = Integer(1.5);
 begin
 end.

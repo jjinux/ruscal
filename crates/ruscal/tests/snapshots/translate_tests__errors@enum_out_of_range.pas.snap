@@ -11,7 +11,7 @@ enum_out_of_range.pas:11:17: error: Color has no value 4 (its values are 0 to 2)
    Inside = Ord(Color(4));
                 ^^^^^^^^
 
-enum_out_of_range.pas:12:13: error: Color (the type of `Sub`) has no value 6 (its values are 0 to 2): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#enum-out-of-range
+enum_out_of_range.pas:12:13: error: `Sub(6)`: Color has no value 6 (its values are 0 to 2): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#enum-out-of-range
    Ranged = Sub(6);
             ^^^^^^
 
@@ -19,6 +19,10 @@ enum_out_of_range.pas:13:19: error: Color has no value 3 (its values are 0 to 2)
    Typed: Color = Color(3);
                   ^^^^^^^^
 
-enum_out_of_range.pas:19:7: error: Color has no value 7 (its values are 0 to 2): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#enum-out-of-range
+enum_out_of_range.pas:14:32: error: Color has no value 5 (its values are 0 to 2): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#enum-out-of-range
+   InSet: set of Color = [Red, Color(5)];
+                               ^^^^^^^^
+
+enum_out_of_range.pas:20:7: error: Color has no value 7 (its values are 0 to 2): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have; how to rewrite it: https://github.com/jjinux/ruscal/blob/main/docs/rust_limits.md#enum-out-of-range
       Color(7): WriteLn('never');
       ^^^^^^^^

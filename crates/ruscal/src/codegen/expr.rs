@@ -810,13 +810,8 @@ impl<'a> Codegen<'a> {
             (Type::IntLit(n), Type::Int(k), _) => Some(format!("{n}_{}", k.rust())),
             (Type::IntLit(n), Type::Real(_), _) => Some(format!("{n}.0_f64")),
             (_, _, ExprKind::Real(x)) => Some(format!("{}_f64", real_literal(*x))),
-            (_, _, ExprKind::Unary { op: UnaryOp::Neg, operand }) if matches!(operand.kind, ExprKind::Real(_)) => {
-                match operand.kind {
-                    ExprKind::Real(x) => Some(format!("-{}_f64", real_literal(x))),
-                    _ => None,
-                }
-            }
-            // A real sum of literals (`Round(2.5 + 0.0)`): its value, which
+            // A negated real literal (`Abs(-1.5)`), or a real sum of literals
+            // (`Round(2.5 + 0.0)`): its value, which
             // Rust can call a method on, where `(2.5 + 0.0).round()` has no
             // type it knows.
             (_, Type::Real(_), ExprKind::Binary { .. } | ExprKind::Unary { .. }) if self.literals_only(e) => {

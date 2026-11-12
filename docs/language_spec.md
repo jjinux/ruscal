@@ -141,7 +141,10 @@ own below.
 - Integer and real arithmetic with TP's promotion rules; `/` is always real;
   `div`, `mod`; unary minus. Dividing by zero, with `/` as with `div` and
   `mod`, stops with runtime error 200, as in TP; so do `div` and `mod` of
-  the most negative Integer by -1, as TP's divide trap gave
+  the most negative Integer by -1, as TP's divide trap gave. As in TP,
+  `div` or `mod` by a constant 0, and a constant `/` by 0 (`1.0 / 0.0`,
+  `1 / Z`), are errors when Ruscal compiles; `x / 0` of a variable stops
+  at run time
 - `and`, `or`, `not`, `xor` on booleans (short-circuit) and on integers;
   `shl`, `shr` (TP's: `shr` is a logical shift, and shifting by the type's
   width or more gives 0)
@@ -157,7 +160,8 @@ own below.
   the same size); only an untyped parameter can be seen that way
 - Constant expressions in `const` sections, array bounds and `case` labels,
   worked out in 32 bits as in TP (`C + 1` with `C = 32767` is 32768;
-  one that doesn't fit, `MaxLongInt + 1` or `-$80000000`, is an error), and
+  one that doesn't fit, `MaxLongInt + 1` or `-$80000000`, is an error, as
+  is a real one too big for a Real, `1E300 * 1E300`), and
   kept in the Rust with their constants' names (`const M = K * 2 + 1` is
   `const M: i16 = K * 2 + 1;`), with TP 7's constant functions: `Abs`, `Chr`, `Hi`, `High`, `Length`,
   `Lo`, `Low`, `Odd`, `Ord`, `Pred`, `Round`, `SizeOf`, `Succ`, `Swap`,
@@ -443,7 +447,8 @@ which Ruscal ignores); Ruscal's own `calls_rust.pas` links its Rust with
   under `{$Q+}`, as Turbo Pascal 7 does (checked in DOSBox: `Inc(i)` at
   32767 is -32768, while `i := i + 1` is error 215). A constant expression
   (`2 + 3`, `C * 2`) is never checked: TP works it out when it compiles.
-  (`div` or `mod` by a constant 0 is a compile error, as in TP.)
+  (Division by a constant 0 is a compile error; see
+  [Expressions](#expressions).)
 - `{$N+}`/`{$N-}`: see the `{$N+}` types under [Types](#types). They hold
   for the whole file, so, as in TP 7, they go before the `uses` clause and
   the declarations (elsewhere they're an error)

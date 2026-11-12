@@ -683,16 +683,16 @@ impl Checker {
             ConstVal::Set(_) => self.expr(e),
             // (`expr` records the names used, for codegen: a constant worked
             // out from another names it in a comment.)
-            other => {
-                self.expr(e);
-                match other {
-                    ConstVal::Real(_) => Type::REAL,
-                    ConstVal::Bool(_) => Type::Bool,
-                    ConstVal::Str(s) if s.len() == 1 => Type::Char,
-                    ConstVal::Str(s) => Type::StrLit(s.len()),
-                    ConstVal::Int(_) | ConstVal::Set(_) => unreachable!("matched above"),
-                }
-            }
+            // (An error already given, such as an overflow: no type, so
+            // that each use doesn't give it again.)
+            _ if self.expr(e) == Type::Error => Type::Error,
+            other => match other {
+                ConstVal::Real(_) => Type::REAL,
+                ConstVal::Bool(_) => Type::Bool,
+                ConstVal::Str(s) if s.len() == 1 => Type::Char,
+                ConstVal::Str(s) => Type::StrLit(s.len()),
+                ConstVal::Int(_) | ConstVal::Set(_) => unreachable!("matched above"),
+            },
         };
         let rust_name = Self::unique_in(&mut self.used_const_names, screaming_snake_case(&c.name.name));
         let sym = self.add_symbol(&c.name.name, rust_name, SymKind::Const { value, ty });
@@ -703,14 +703,18 @@ impl Checker {
     fn const_value(&mut self, value: &ConstValue, ty: &Type) {
         match (value, ty) {
             (ConstValue::Expr(e), _) => {
+                let errors_before = self.errors.len();
                 let value_ty = match self.proc_value(e, ty) {
                     Some(value_ty) => value_ty,
                     None => self.expr(e),
                 };
                 if !ty.accepts(&value_ty) {
                     self.error(e.span, format!("expected a {ty} value, found {value_ty}"));
-                } else if let Some((span, message)) = self.invalid_typecast(e) {
-                    // `const Unset: Color = Color(3);`
+                } else if self.errors.len() == errors_before
+                    && let Some((span, message)) = self.invalid_typecast(e)
+                {
+                    // `const Unset: Color = Color(3);` (unless checking the
+                    // value already found what's wrong with it)
                     self.error(span, message);
                 } else if *ty == Type::PChar && value_ty.is_char_array0() {
                     self.error(
@@ -1729,7 +1733,7 @@ impl Checker {
                     // `Sub(5)`, where `Sub = Red..Green`: say which enum.
                     let what = match &callee.kind {
                         ExprKind::Name(name) if !name.name.eq_ignore_ascii_case(&target.to_string()) => {
-                            format!("{target} (the type of `{}`)", name.name)
+                            format!("`{}({n})`: {target}", name.name)
                         }
                         _ => target.to_string(),
                     };
@@ -1752,6 +1756,11 @@ impl Checker {
             }
             ExprKind::Binary { lhs, rhs, .. } => self.invalid_typecast(lhs).or_else(|| self.invalid_typecast(rhs)),
             ExprKind::Unary { operand, .. } => self.invalid_typecast(operand),
+            // `[Color(5)]`
+            ExprKind::Set(elems) => elems.iter().find_map(|elem| match elem {
+                SetElem::Single(e) => self.invalid_typecast(e),
+                SetElem::Range(lo, hi) => self.invalid_typecast(lo).or_else(|| self.invalid_typecast(hi)),
+            }),
             _ => None,
         }
     }
@@ -1761,8 +1770,8 @@ impl Checker {
     /// [`Self::eval_const`] just gives up there.
     fn division_by_zero(&self, e: &Expr) -> Option<Span> {
         match &e.kind {
-            ExprKind::Binary { op: BinaryOp::Div | BinaryOp::Mod, rhs, .. }
-                if self.eval_const(rhs) == Some(ConstVal::Int(0)) =>
+            ExprKind::Binary { op: BinaryOp::Div | BinaryOp::Mod | BinaryOp::RealDiv, rhs, .. }
+                if matches!(self.eval_const(rhs), Some(ConstVal::Int(0)) | Some(ConstVal::Real(0.0))) =>
             {
                 Some(rhs.span)
             }
@@ -1872,7 +1881,7 @@ impl Checker {
                             BinaryOp::Add => Some(Real(a + b)),
                             BinaryOp::Sub => Some(Real(a - b)),
                             BinaryOp::Mul => Some(Real(a * b)),
-                            BinaryOp::RealDiv => Some(Real(a / b)),
+                            BinaryOp::RealDiv if b != 0.0 => Some(Real(a / b)),
                             _ => None,
                         }
                     }
@@ -2949,6 +2958,16 @@ impl Checker {
         // error "Division by zero"; rustc refuses it too.
         if let (Div | Mod, ExprKind::Binary { rhs, .. }) = (op, &e.kind)
             && self.eval_const(rhs) == Some(ConstVal::Int(0))
+        {
+            self.error(rhs.span, "division by zero");
+            return Type::Error;
+        }
+        // `1.0 / 0.0`, `1 / 0`: TP refuses a constant `/` by 0 too
+        // ("Invalid floating point operation"), though `x / 0` of a variable
+        // is left to run time (runtime error 200).
+        if let (RealDiv, ExprKind::Binary { lhs, rhs, .. }) = (op, &e.kind)
+            && self.eval_const(lhs).is_some()
+            && matches!(self.eval_const(rhs), Some(ConstVal::Int(0)) | Some(ConstVal::Real(0.0)))
         {
             self.error(rhs.span, "division by zero");
             return Type::Error;

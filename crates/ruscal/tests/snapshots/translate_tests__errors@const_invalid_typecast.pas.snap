@@ -18,3 +18,7 @@ const_invalid_typecast.pas:7:12: error: invalid type cast: a Real can't be cast 
 const_invalid_typecast.pas:8:8: error: invalid type cast: a Real can't be cast to Boolean
    D = Boolean(1.5);
        ^^^^^^^^^^^^
+
+const_invalid_typecast.pas:10:17: error: cannot cast a Real value to Integer
+   E: Integer = Integer(1.5);
+                ^^^^^^^^^^^^
