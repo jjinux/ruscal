@@ -42,6 +42,13 @@ fn pascal_main() {
     pwriteln!(wd(r, 0, 1));
     r = (-1.5_f64).abs();
     pwriteln!(wd(r, 0, 1));
+    r = (-1.5_f64).abs();
+    l = (-2.5_f64).trunc() as i32;
+    pwriteln!(wd(r, 0, 1), " ", l);
+    r = 0.0;
+    pwrite!(wd(r, 0, 1), " ");
+    r = -5.0;
+    pwriteln!(wd(r, 0, 1));
 }
 
 fn main() {

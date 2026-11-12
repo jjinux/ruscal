@@ -709,6 +709,9 @@ impl Checker {
                 };
                 if !ty.accepts(&value_ty) {
                     self.error(e.span, format!("expected a {ty} value, found {value_ty}"));
+                } else if let Some((span, message)) = self.invalid_typecast(e) {
+                    // `const Unset: Color = Color(3);`
+                    self.error(span, message);
                 } else if *ty == Type::PChar && value_ty.is_char_array0() {
                     self.error(
                         e.span,
@@ -1372,7 +1375,10 @@ impl Checker {
                     Some(ConstVal::Str(bytes)) if bytes.len() == 1 => bytes[0] as i64,
                     _ => {
                         if self.division_by_zero(label).is_none() {
-                            self.error(label.span, "a variant's labels must be constants");
+                            let (span, message) = self
+                                .invalid_typecast(label)
+                                .unwrap_or((label.span, "a variant's labels must be constants".to_string()));
+                            self.error(span, message);
                         }
                         continue;
                     }
@@ -1706,6 +1712,10 @@ impl Checker {
     fn invalid_typecast(&self, e: &Expr) -> Option<(Span, String)> {
         match &e.kind {
             ExprKind::Call { callee, args } => {
+                // Inside the arguments first: `Ord(Color(5))`, `Byte(Color(5))`.
+                if let Some(found) = args.iter().find_map(|a| self.invalid_typecast(a)) {
+                    return Some(found);
+                }
                 let target = self.typecast_target(callee, args)?;
                 if !target.is_ordinal() {
                     return None;
@@ -1716,10 +1726,17 @@ impl Checker {
                 if let (Type::Enum(en), ConstVal::Int(n)) = (&target, &value)
                     && !(0..en.variants.len() as i64).contains(n)
                 {
+                    // `Sub(5)`, where `Sub = Red..Green`: say which enum.
+                    let what = match &callee.kind {
+                        ExprKind::Name(name) if !name.name.eq_ignore_ascii_case(&target.to_string()) => {
+                            format!("{target} (the type of `{}`)", name.name)
+                        }
+                        _ => target.to_string(),
+                    };
                     return Some((
                         e.span,
                         format!(
-                            "{target} has no value {n} (its values are 0 to {}): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have{}",
+                            "{what} has no value {n} (its values are 0 to {}): Turbo Pascal keeps it anyway, but a Rust enum can't hold a value it doesn't have{}",
                             en.variants.len() - 1,
                             super::rewrite_link("enum-out-of-range")
                         ),
@@ -2035,7 +2052,10 @@ impl Checker {
                                     _ => None,
                                 });
                             } else if self.division_by_zero(e).is_none() {
-                                self.error(e.span, "`case` labels must be constants");
+                                let (span, message) = self
+                                    .invalid_typecast(e)
+                                    .unwrap_or((e.span, "`case` labels must be constants".to_string()));
+                                self.error(span, message);
                             }
                             if !ty.accepts(&label_ty) {
                                 self.error(e.span, format!("expected a {ty} label, found {label_ty}"));
@@ -2708,6 +2728,15 @@ impl Checker {
         {
             if self.overflows_32_bits(e, &value) {
                 self.error(e.span, "overflow in a constant expression: the result doesn't fit in a LongInt");
+                self.a.types.insert(e.id, Type::Error);
+                return Type::Error;
+            }
+            // `1E300 * 1E300`: infinite, which Rust can't write as a literal
+            // (TP's 6-byte Real stopped far sooner, at about 1.7E38).
+            if let ConstVal::Real(x) = value
+                && !x.is_finite()
+            {
+                self.error(e.span, "overflow in a constant expression: the result is too big for a Real");
                 self.a.types.insert(e.id, Type::Error);
                 return Type::Error;
             }

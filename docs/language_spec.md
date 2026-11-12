@@ -428,8 +428,10 @@ TP 5.5's object-oriented programming.
 
 ### Compiler directives
 
-Few programs need these: in `examples/`, only `menu.pas` has one
-(`{$M $4000, 0, 0}`, the memory sizes `Exec` needed, which Ruscal ignores).
+Few programs need these: of the user's programs in `examples/`, only
+`menu.pas` has one (`{$M $4000, 0, 0}`, the memory sizes `Exec` needed,
+which Ruscal ignores); Ruscal's own `calls_rust.pas` links its Rust with
+`{$L calls_rust.rs}`.
 
 - `{$I-}`/`{$I+}` switch I/O checking (see
   [Input, output and files](#input-output-and-files))

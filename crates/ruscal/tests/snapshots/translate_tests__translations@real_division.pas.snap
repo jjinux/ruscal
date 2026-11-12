@@ -44,7 +44,7 @@ fn pascal_main() {
         " ",
         wd(f64::from(i) / 2.0, 0, 2),
         " ",
-        wd(-x / f64::from(-4), 0, 2)
+        wd(-x / -4.0, 0, 2)
     );
     y = 0.0;
     pwriteln!(wd(x / nonzero(y), 0, 2));

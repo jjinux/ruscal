@@ -615,10 +615,17 @@ impl<'a> Codegen<'a> {
         {
             return (char_literal(bytes[0]), prec::ATOM);
         }
-        if let (Type::Real(_), Type::IntLit(_)) = (to, &from)
-            && let ExprKind::Int(n) = e.kind
-        {
-            return (format!("{n}.0"), prec::ATOM);
+        if let (Type::Real(_), Type::IntLit(_)) = (to, &from) {
+            match &e.kind {
+                ExprKind::Int(n) => return (format!("{n}.0"), prec::ATOM),
+                // `-5` (and `-0`, which is 0) as a real: `-5.0`.
+                ExprKind::Unary { op: UnaryOp::Neg, operand } => match operand.kind {
+                    ExprKind::Int(0) => return ("0.0".to_string(), prec::ATOM),
+                    ExprKind::Int(n) => return (format!("-{n}.0"), prec::UNARY),
+                    _ => {}
+                },
+                _ => {}
+            }
         }
         if let (Type::Str { .. }, ExprKind::Str(bytes)) = (to, &e.kind)
             && bytes.is_empty()
@@ -803,10 +810,12 @@ impl<'a> Codegen<'a> {
             (Type::IntLit(n), Type::Int(k), _) => Some(format!("{n}_{}", k.rust())),
             (Type::IntLit(n), Type::Real(_), _) => Some(format!("{n}.0_f64")),
             (_, _, ExprKind::Real(x)) => Some(format!("{}_f64", real_literal(*x))),
-            (_, _, ExprKind::Unary { op: UnaryOp::Neg, operand }) => match operand.kind {
-                ExprKind::Real(x) => Some(format!("-{}_f64", real_literal(x))),
-                _ => None,
-            },
+            (_, _, ExprKind::Unary { op: UnaryOp::Neg, operand }) if matches!(operand.kind, ExprKind::Real(_)) => {
+                match operand.kind {
+                    ExprKind::Real(x) => Some(format!("-{}_f64", real_literal(x))),
+                    _ => None,
+                }
+            }
             // A real sum of literals (`Round(2.5 + 0.0)`): its value, which
             // Rust can call a method on, where `(2.5 + 0.0).round()` has no
             // type it knows.

@@ -3,30 +3,38 @@ source: crates/ruscal/tests/translate_tests.rs
 expression: error
 input_file: tests/errors/const_overflow.pas
 ---
-const_overflow.pas:5:10: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:6:10: error: overflow in a constant expression: the result doesn't fit in a LongInt
    Neg = -$80000000;
          ^^^^^^^^^^
 
-const_overflow.pas:6:10: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:7:10: error: overflow in a constant expression: the result doesn't fit in a LongInt
    Big = MaxLongInt + 1;
          ^^^^^^^^^^^^^^
 
-const_overflow.pas:8:13: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:9:13: error: overflow in a constant expression: the result doesn't fit in a LongInt
    AbsMin = Abs(-$7FFFFFFF - 1);
             ^^^^^^^^^^^^^^^^^^^
 
-const_overflow.pas:9:15: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:10:15: error: overflow in a constant expression: the result doesn't fit in a LongInt
    AfterMax = Succ(MaxLongInt);
               ^^^^^^^^^^^^^^^^
 
-const_overflow.pas:10:16: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:11:16: error: overflow in a constant expression: the result doesn't fit in a LongInt
    BeforeMin = Pred(-$7FFFFFFF - 1);
                ^^^^^^^^^^^^^^^^^^^^
 
-const_overflow.pas:14:12: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:12:11: error: overflow in a constant expression: the result is too big for a Real
+   Huge = 1E300 * 1E300;
+          ^^^^^^^^^^^^^
+
+const_overflow.pas:16:12: error: overflow in a constant expression: the result doesn't fit in a LongInt
    WriteLn(-$80000000, Fine);
            ^^^^^^^^^^
 
-const_overflow.pas:15:9: error: overflow in a constant expression: the result doesn't fit in a LongInt
+const_overflow.pas:17:9: error: overflow in a constant expression: the result doesn't fit in a LongInt
    L := MaxLongInt + 1;
         ^^^^^^^^^^^^^^
+
+const_overflow.pas:18:18: error: overflow in a constant expression: the result is too big for a Real
+   WriteLn(Round(1E300 * 1E300));
+                 ^^^^^^^^^^^^^
