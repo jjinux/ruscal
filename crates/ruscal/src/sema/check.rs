@@ -699,6 +699,17 @@ impl Checker {
         self.bind(&c.name, sym);
     }
 
+    /// A record or object constant gives each field once (TP 7: "Invalid
+    /// ordering of fields"; Rust refuses a field twice in a struct too).
+    fn fields_given_once(&mut self, fields: &[(Ident, ConstValue)]) {
+        let mut seen = HashSet::new();
+        for (name, _) in fields {
+            if !seen.insert(name.key()) {
+                self.error(name.span, format!("the field `{}` is given twice", name.name));
+            }
+        }
+    }
+
     /// Check the initializer of a typed constant against its type.
     fn const_value(&mut self, value: &ConstValue, ty: &Type) {
         match (value, ty) {
@@ -735,6 +746,7 @@ impl Checker {
                 }
             }
             (ConstValue::Record(fields, span), Type::Record(r)) => {
+                self.fields_given_once(fields);
                 for (name, value) in fields {
                     match r.field(&name.name) {
                         Some(field) => self.const_value(value, &field.ty.clone()),
@@ -748,6 +760,7 @@ impl Checker {
             // An object constant (TP 7): its fields, inherited ones too, as
             // in a record constant; its methods take no values.
             (ConstValue::Record(fields, _), Type::Object(o)) => {
+                self.fields_given_once(fields);
                 for (name, value) in fields {
                     match o.field_path(&name.name) {
                         Some((_, field_ty)) => self.const_value(value, &field_ty),
@@ -2235,6 +2248,10 @@ impl Checker {
     fn with_member(&self, key: &str) -> Option<&Expr> {
         self.with_records.iter().rev().find_map(|(record, ty)| {
             let found = match ty {
+                // `AH` in a `with` on the Dos unit's `Registers` is its (missing)
+                // byte half, as in TP, even if the program has an `AH` of its own:
+                // `select_field` says why it's missing.
+                Type::Record(_) if is_byte_register(key) && super::units::is_dos_registers(ty) => true,
                 Type::Record(r) => r.field(key).is_some(),
                 Type::Object(o) => o.field_path(key).is_some() || self.find_method(o, key).is_some(),
                 _ => false,
@@ -2508,7 +2525,7 @@ impl Checker {
         let Some(sym) = self.lookup(&var.key()) else {
             // A `with` field already has its own error (`check_with_for_loops`).
             if self.with_member(&var.key()).is_none() {
-                self.error(var.span, self.unknown_name(&var.name));
+                self.error(var.span, unknown_identifier(&var.name));
             }
             self.active_for_vars.push(usize::MAX);
             return Type::Error;
@@ -2811,7 +2828,7 @@ impl Checker {
             ExprKind::Name(ident) => {
                 let sym = match self.resolve(&ident.key()) {
                     None => {
-                        self.error(ident.span, self.unknown_name(&ident.name));
+                        self.error(ident.span, unknown_identifier(&ident.name));
                         return Type::Error;
                     }
                     Some(Resolved::SelfField { self_sym, path, ty }) => {
@@ -2968,7 +2985,7 @@ impl Checker {
         // error "Division by zero"; rustc refuses it too.
         // (A number divided: `'a' div 0` is a type error, said below.)
         if let (Div | Mod, ExprKind::Binary { rhs, .. }) = (op, &e.kind)
-            && l.is_numeric()
+            && l.is_integer()
             && self.eval_const(rhs) == Some(ConstVal::Int(0))
         {
             self.error(rhs.span, "division by zero");
@@ -3077,7 +3094,7 @@ impl Checker {
         let ty = match &e.kind {
             ExprKind::Name(ident) => match self.resolve(&ident.key()) {
                 None => {
-                    self.error(ident.span, self.unknown_name(&ident.name));
+                    self.error(ident.span, unknown_identifier(&ident.name));
                     Type::Error
                 }
                 Some(Resolved::SelfField { self_sym, path, ty }) => {
@@ -3264,16 +3281,6 @@ impl Checker {
         }
     }
 
-    /// The error for a name that isn't declared: in `with Regs do AH :=
-    /// $4C`, the missing byte half of `Registers`.
-    fn unknown_name(&self, name: &str) -> String {
-        let registers = super::units::registers_type();
-        if is_byte_register(name) && self.with_records.iter().any(|(_, ty)| *ty == registers) {
-            return byte_register_message(name);
-        }
-        unknown_identifier(name)
-    }
-
     fn select_field(&mut self, base: Type, field: &Ident) -> Type {
         match &base {
             Type::Object(o) => match o.field_path(&field.name) {
@@ -3287,7 +3294,7 @@ impl Checker {
                 Some(f) => f.ty.clone(),
                 // `Regs.AH := $4C`: the byte halves only matter to `Intr` and
                 // `MsDos`, so say why they're missing.
-                None if is_byte_register(&field.name) && base == super::units::registers_type() => {
+                None if is_byte_register(&field.name) && super::units::is_dos_registers(&base) => {
                     self.error(field.span, byte_register_message(&field.name));
                     Type::Error
                 }
@@ -3427,7 +3434,7 @@ impl Checker {
         };
         let sym = match self.resolve(&ident.key()) {
             None => {
-                self.error(ident.span, self.unknown_name(&ident.name));
+                self.error(ident.span, unknown_identifier(&ident.name));
                 return Type::Error;
             }
             // A sibling method called from inside a method: `self.method()`.
@@ -5113,8 +5120,6 @@ fn a(ty: &Type) -> String {
     format!("{article} {text}")
 }
 
-/// "unknown identifier `X`", or, for DOS's `Port` and `Mem` arrays, why
-/// they aren't there.
 /// `AL`, `AH`, ... `DH`: the `Byte` halves of the `Dos` unit's `Registers`.
 fn is_byte_register(name: &str) -> bool {
     matches!(name.to_ascii_lowercase().as_str(), "al" | "ah" | "bl" | "bh" | "cl" | "ch" | "dl" | "dh")
@@ -5126,6 +5131,8 @@ fn byte_register_message(name: &str) -> String {
     )
 }
 
+/// "unknown identifier `X`", or, for DOS's `Port` and `Mem` arrays, why
+/// they aren't there.
 fn unknown_identifier(name: &str) -> String {
     match name.to_ascii_lowercase().as_str() {
         "port" | "portw" | "mem" | "memw" | "meml" => {

@@ -23,6 +23,7 @@ mod cmt_unit2;
 use crate::cmt_unit::*;
 #[allow(unused_imports)]
 use crate::cmt_unit2::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // This program checks comment placement.

@@ -3,14 +3,26 @@ source: crates/ruscal/tests/translate_tests.rs
 expression: error
 input_file: tests/errors/object_constant_errors.pas
 ---
-object_constant_errors.pas:15:26: error: `TBase` has no field `Bump`
+object_constant_errors.pas:19:26: error: `TBase` has no field `Bump`
    K: TBase = (Count: 1; Bump: 2);
                          ^^^^
 
-object_constant_errors.pas:16:22: error: `TBase` has no field `Size`
+object_constant_errors.pas:20:22: error: `TBase` has no field `Size`
    Missing: TBase = (Size: 3);
                      ^^^^
 
-object_constant_errors.pas:18:12: error: operator can't combine String and Integer values
+object_constant_errors.pas:21:30: error: the field `Count` is given twice
+   Twice: TBase = (Count: 1; Count: 2);
+                             ^^^^^
+
+object_constant_errors.pas:22:23: error: the field `X` is given twice
+   P: TPoint = (X: 1; X: 2);
+                      ^
+
+object_constant_errors.pas:24:12: error: operator can't combine String and Integer values
    WriteLn('a' / 0);
            ^^^^^^^
+
+object_constant_errors.pas:25:12: error: operator can't combine Real and Integer values
+   WriteLn(1.5 div 0);
+           ^^^^^^^^^

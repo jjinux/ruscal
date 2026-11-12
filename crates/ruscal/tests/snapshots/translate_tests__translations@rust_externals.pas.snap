@@ -25,6 +25,7 @@ mod rustlink;
 
 #[allow(unused_imports)]
 use crate::rust_link::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // Calling Rust from Turbo Pascal: `external` routines are Rust functions

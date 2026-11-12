@@ -23,6 +23,7 @@ mod labels;
 use crate::geometry::*;
 #[allow(unused_imports)]
 use crate::labels::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 /// The main program: the `begin ... end.` block of `UnitsDemo`.

@@ -27,6 +27,7 @@ mod shared;
 use crate::link_a::*;
 #[allow(unused_imports)]
 use crate::link_b::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // Two units that link the same Rust file (shared.rs): it's one module.

@@ -107,13 +107,29 @@ pub fn date_time_type() -> Type {
 /// also has the `Byte` halves, `AL`, `AH`, ...; using one says why it's
 /// missing: sema's `byte_register_message`).
 pub fn registers_type() -> Type {
-    use super::types::{Field, RecordType};
-    let names = ["AX", "BX", "CX", "DX", "BP", "SI", "DI", "DS", "ES", "Flags"];
-    let fields = names
-        .iter()
-        .map(|n| Field { name: n.to_string(), rust_name: n.to_ascii_lowercase(), ty: Type::Int(IntKind::Word) })
-        .collect();
-    Type::Record(std::rc::Rc::new(RecordType { rust_name: "Registers".to_string(), fields, variant: None }))
+    // One shared value (`thread_local!` holds a value per thread, which
+    // is fine for a compiler that runs on one), so `is_dos_registers` can
+    // tell it from a program's own record of the same shape.
+    thread_local! {
+        static REGISTERS: Type = {
+            use super::types::{Field, RecordType};
+            let names = ["AX", "BX", "CX", "DX", "BP", "SI", "DI", "DS", "ES", "Flags"];
+            let fields = names
+                .iter()
+                .map(|n| Field { name: n.to_string(), rust_name: n.to_ascii_lowercase(), ty: Type::Int(IntKind::Word) })
+                .collect();
+            Type::Record(std::rc::Rc::new(RecordType { rust_name: "Registers".to_string(), fields, variant: None }))
+        };
+    }
+    REGISTERS.with(Type::clone)
+}
+
+/// Is `ty` the `Dos` unit's `Registers` (not a program's own record)?
+pub fn is_dos_registers(ty: &Type) -> bool {
+    match (ty, registers_type()) {
+        (Type::Record(a), Type::Record(b)) => std::rc::Rc::ptr_eq(a, &b),
+        _ => false,
+    }
 }
 
 /// A record type a unit declares, whose Rust struct the runtime defines with

@@ -5,10 +5,14 @@ program DosRegisters;
 uses Dos;
 var
    R: Registers;
+   AH: Byte;
 begin
    R.AX := 1;
    R.AH := $4C;
    with R do
       AL := 0;
+   { In a with, AH is the record's (TP binds it so), not the variable. }
+   with R do
+      AH := 1;
    MsDos(R);
 end.

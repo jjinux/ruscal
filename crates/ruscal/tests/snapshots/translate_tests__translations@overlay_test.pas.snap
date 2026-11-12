@@ -20,6 +20,7 @@ mod ovl_help;
 
 #[allow(unused_imports)]
 use crate::ovl_help::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // The Overlay unit, faked: there's nothing to load, so it reports success

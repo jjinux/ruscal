@@ -335,8 +335,9 @@ impl<'a> Codegen<'a> {
     fn imports(&mut self, current_module: Option<&str>) {
         self.blank();
         // A small unit may use nothing from the runtime, nor a program whose
-        // only uses of it are commented out as dead code.
-        if current_module.is_some() || self.a.has_dead_code {
+        // only uses of it are commented out as dead code, or that only calls
+        // its units (`uses Plain; begin Hello; end.`).
+        if current_module.is_some() || self.a.has_dead_code || !self.a.units.is_empty() {
             self.line("#[allow(unused_imports)]");
         }
         self.line("use ruscal_runtime::prelude::*;");

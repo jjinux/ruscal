@@ -1,0 +1,8 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/own_registers.pas
+---
+own_registers.pas:11:6: error: `Registers` has no field `AH`
+   R.AH := 2;
+     ^^

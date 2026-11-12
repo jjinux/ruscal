@@ -20,6 +20,7 @@ mod rsc_json;
 
 #[allow(unused_imports)]
 use crate::rsc_json::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // RscJson, Ruscal's own unit for JSON: parsing, looking at values,

@@ -20,6 +20,7 @@ mod rsc_turtle;
 
 #[allow(unused_imports)]
 use crate::rsc_turtle::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // RscTurtle, Ruscal's turtle graphics on top of Graph, drawn without a

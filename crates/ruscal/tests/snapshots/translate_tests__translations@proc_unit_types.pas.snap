@@ -20,6 +20,7 @@ mod proc_unit;
 
 #[allow(unused_imports)]
 use crate::proc_unit::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // A routine kept in a unit's procedural type that uses a global of a type

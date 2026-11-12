@@ -20,6 +20,7 @@ mod shapes;
 
 #[allow(unused_imports)]
 use crate::shapes::*;
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // A descendant declared in the program of an object whose unit has the
