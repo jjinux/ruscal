@@ -10,7 +10,7 @@ pub use files::{AnyFile, FileRecord, FileString, Hint, PBlockFile, PFile, PText,
 #[cfg(feature = "crt")]
 pub(crate) use read::read_key_plain;
 pub use read::{Capped, LineReader, PasRead, eof, eoln, read_into, readln_end, seek_eof, seek_eoln};
-pub use write::{Formatted, PasWrite, use_coprocessor_format, w, wd};
+pub use write::{Formatted, PasWrite, RealIn, coprocessor_format, software_format, use_coprocessor_format, w, wd};
 
 use std::io::Write;
 

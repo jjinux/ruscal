@@ -178,20 +178,52 @@ fn real_format() -> &'static RealFormat {
     if COPROCESSOR.load(std::sync::atomic::Ordering::Relaxed) { &COPROCESSOR_REALS } else { &SOFTWARE_REALS }
 }
 
+/// `x:width` prints in scientific notation, using as many digits as fit.
+fn write_real(x: f64, format: &RealFormat, width: i32, out: &mut Vec<u8>) {
+    // The fixed parts are: sign or space, one digit, '.', 'E', the
+    // exponent sign and the exponent's digits (7 characters, or 9).
+    let fixed = 5 + format.exponent_digits as i32;
+    let digits = (width - fixed).clamp(1, format.max_digits) as usize;
+    let text = format_scientific(x, digits, format.exponent_digits);
+    pad_left(text.as_bytes(), width, out);
+}
+
+/// A real printed in a given format, whatever the program's: in a unit
+/// compiled with another `{$N+}` setting than the program, as TP 7 did.
+pub struct RealIn {
+    value: f64,
+    format: &'static RealFormat,
+}
+
+/// A real printed as `{$N+}` code prints it (` 1.50000000000000E+0000`).
+pub fn coprocessor_format(value: impl Into<f64>) -> RealIn {
+    RealIn { value: value.into(), format: &COPROCESSOR_REALS }
+}
+
+/// A real printed as `{$N-}` code prints it (` 1.5000000000E+00`).
+pub fn software_format(value: impl Into<f64>) -> RealIn {
+    RealIn { value: value.into(), format: &SOFTWARE_REALS }
+}
+
+impl PasWrite for RealIn {
+    fn pas_write(&self, out: &mut Vec<u8>) {
+        write_real(self.value, self.format, self.format.default_width, out);
+    }
+    fn pas_write_width(&self, width: i32, out: &mut Vec<u8>) {
+        write_real(self.value, self.format, width, out);
+    }
+    fn pas_write_decimals(&self, width: i32, decimals: i32, out: &mut Vec<u8>) {
+        self.value.pas_write_decimals(width, decimals, out);
+    }
+}
+
 impl PasWrite for f64 {
     fn pas_write(&self, out: &mut Vec<u8>) {
         self.pas_write_width(real_format().default_width, out);
     }
 
-    /// `x:width` prints in scientific notation, using as many digits as fit.
     fn pas_write_width(&self, width: i32, out: &mut Vec<u8>) {
-        // The fixed parts are: sign or space, one digit, '.', 'E', the
-        // exponent sign and the exponent's digits (7 characters, or 9).
-        let format = real_format();
-        let fixed = 5 + format.exponent_digits as i32;
-        let digits = (width - fixed).clamp(1, format.max_digits) as usize;
-        let text = format_scientific(*self, digits, format.exponent_digits);
-        pad_left(text.as_bytes(), width, out);
+        write_real(*self, real_format(), width, out);
     }
 
     /// `x:width:decimals` prints in fixed-point notation.

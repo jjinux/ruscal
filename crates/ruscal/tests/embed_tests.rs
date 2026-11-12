@@ -30,6 +30,18 @@ fn the_libraries_lib_rs() {
     insta::assert_snapshot!("counter_lib_rs", generated.files[0].1);
 }
 
+/// A `{$N+}` unit as a library prints its reals the 8087's way: there's no
+/// program to set the run's format, so it says so where it writes one.
+#[test]
+fn a_coprocessor_library_says_so_where_it_writes_a_real() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let generated =
+        ruscal::driver::transpile_library(&root.join("tests/run/npunit.pas"), &ruscal::driver::Options::default())
+            .unwrap();
+    let unit = generated.files.iter().find(|(name, _)| name.ends_with("np_unit.rs")).expect("the unit's module");
+    assert!(unit.1.contains("pwriteln!(\n        coprocessor_format(x),"), "{}", unit.1);
+}
+
 /// Build the unit at `unit` as the library `crate_name`, then the Rust
 /// program `tests/embed/<host>.rs` that uses it, and check its output
 /// against `tests/embed/<host>.out`. With `wrapping`, the program's

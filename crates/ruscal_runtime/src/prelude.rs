@@ -10,7 +10,10 @@ pub use crate::bytes::{
     ByteView, Bytes, bytes_after, bytes_from, fill_bytes, move_bytes, sized_bytes, sized_bytes_from, sized_view_bytes,
     sized_view_bytes_from, string_bytes, string_view_bytes,
 };
-pub use crate::io::{FileRecord, Hint, PBlockFile, PFile, PText, PasWrite, eof, eoln, seek_eof, seek_eoln, w, wd};
+pub use crate::io::{
+    FileRecord, Hint, PBlockFile, PFile, PText, PasWrite, coprocessor_format, eof, eoln, seek_eof, seek_eoln,
+    software_format, w, wd,
+};
 pub use crate::open_array::{OpenArray, open_bytes, open_sized_bytes, open_sized_view_bytes, open_view_bytes};
 pub use crate::ordinal::{Enumerated, Ordinal, enum_range};
 pub use crate::overlay::*;
