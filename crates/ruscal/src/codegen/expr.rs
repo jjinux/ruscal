@@ -2364,12 +2364,12 @@ pub(super) fn convert(code: Code, from: &Type, to: &Type) -> Code {
         // A `Single` is an `f32`: kept as one, computed with as an `f64`
         // (TP 7's 8087 computed in extended precision, and rounded when it
         // stored a `Single`).
-        (Type::Int(IntKind::LongInt), Type::Real(RealKind::Single)) => {
+        // (An integer expression of literals is an `i32` to Rust, which
+        // has no `f32::from` for one: `(2 + 3) as f32`.)
+        (Type::Int(IntKind::LongInt) | Type::IntLit(_), Type::Real(RealKind::Single)) => {
             (format!("{} as f32", paren(code, prec::AS)), prec::AS)
         }
-        (Type::Int(_) | Type::IntLit(_), Type::Real(RealKind::Single)) => {
-            (format!("f32::from({})", code.0), prec::POSTFIX)
-        }
+        (Type::Int(_), Type::Real(RealKind::Single)) => (format!("f32::from({})", code.0), prec::POSTFIX),
         (Type::Int(_) | Type::IntLit(_), Type::Real(_)) => (format!("f64::from({})", code.0), prec::POSTFIX),
         (Type::Real(RealKind::Single), Type::Real(_)) => (format!("f64::from({})", code.0), prec::POSTFIX),
         (Type::Real(_), Type::Real(RealKind::Single)) => (format!("{} as f32", paren(code, prec::AS)), prec::AS),

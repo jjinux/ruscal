@@ -1094,18 +1094,25 @@ impl<'a> Codegen<'a> {
                 }
                 // A big enum's subrange that TP kept in one byte says so, as
                 // in a file (`file_record!`'s `enum 1`).
-                None if enum_in_one_byte(&field.ty) => {
+                // So does a `Double` or an `Extended`, which an `f64` (a
+                // 6-byte `Real` in TP's bytes) doesn't say.
+                None if enum_in_one_byte(&field.ty) || real_bytes(&field.ty).is_some() => {
+                    let bytes = real_bytes(&field.ty).unwrap_or(1);
+                    if bytes == 1 {
+                        self.line(format!(
+                            "    // (a subrange of `{ty}`, which TP keeps in one byte, though `{ty}` takes two)"
+                        ));
+                    } else {
+                        self.line(format!("    // (TP keeps it in {bytes} bytes, where an `f64` is a 6-byte `Real`)"));
+                    }
                     self.line(format!(
-                        "    // (a subrange of `{ty}`, which TP keeps in one byte, though `{ty}` takes two)"
+                        "    {vis}fn {name}(&self) -> {ty} {{ self.variants.get_sized({offset}, Hint::new({bytes}, 0)) }}"
                     ));
                     self.line(format!(
-                        "    {vis}fn {name}(&self) -> {ty} {{ self.variants.get_sized({offset}, Hint::new(1, 0)) }}"
+                        "    {vis}fn set_{name}(&mut self, {name}: {ty}) {{ self.variants.set_sized({offset}, Hint::new({bytes}, 0), {name}) }}"
                     ));
                     self.line(format!(
-                        "    {vis}fn set_{name}(&mut self, {name}: {ty}) {{ self.variants.set_sized({offset}, Hint::new(1, 0), {name}) }}"
-                    ));
-                    self.line(format!(
-                        "    {vis}fn {name}_mut(&mut self) -> VariantField<'_, {ty}> {{ self.variants.field_sized({offset}, Hint::new(1, 0)) }}"
+                        "    {vis}fn {name}_mut(&mut self) -> VariantField<'_, {ty}> {{ self.variants.field_sized({offset}, Hint::new({bytes}, 0)) }}"
                     ));
                 }
                 None => {

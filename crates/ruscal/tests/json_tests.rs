@@ -85,6 +85,10 @@ fn float_types() {
     std::fs::write(scratch.join("prices.dat"), &bytes).unwrap();
     let prices = to_json(&scratch.join("prices.pas"), &scratch.join("prices.dat"), None, &Options::default()).unwrap();
     assert_eq!(prices, "[\n  {\n    \"S\": 0.1,\n    \"D\": -2.25,\n    \"E\": 15000000000.0\n  }\n]\n");
+    // And back, byte for byte.
+    std::fs::write(scratch.join("prices.json"), &prices).unwrap();
+    let back = from_json(&scratch.join("prices.pas"), &scratch.join("prices.json"), None, &Options::default()).unwrap();
+    assert_eq!(back, bytes);
 }
 
 /// `from-json` gives back the bytes `to-json` read: exactly, for files

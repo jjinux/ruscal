@@ -83,14 +83,22 @@ Numbers, characters and enumerations
   the 8087 worked in extended precision and rounded when it stored a
   `Single` (`s = (f64::from(s) + 1.0) as f32`). An `Extended` has an
   `f64`'s precision, not the 8087's 64 bits, so its last digit can
-  differ. `Comp` isn't supported. Under `{$N+}`, `Write` prints every
+  differ. `Comp` isn't supported. Ruscal is more lenient than TP 7 in
+  two ways: it takes these types without `{$N+}` (TP said "Must be in
+  8087 mode to compile this", so there's no TP output to compare), and a
+  `Double` or `Extended` for a `var Real` parameter (TP wants the same
+  type; a `Single` is refused, as an `f32`). `Write` and `Read` on a
+  typed file take a variable of exactly the file's type, as in TP.
+  Under `{$N+}`, `Write` prints every
   real type as TP 7 did with the 8087, with 15 digits and a 4-digit
   exponent (` 1.00000000000000E-0001`, against ` 1.0000000000E-01`
   without it), and `Round` at run time rounds half to even, as the 8087
   does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
   round half away from zero (3). (Ruscal's `Real` is an `f64`, so under
   `{$N+}` it prints `0.1` as `1.00000000000000E-0001`, where TP's
-  6-byte `Real` showed `1.00000000000023E-0001`.)
+  6-byte `Real` showed `1.00000000000023E-0001`.) The print format
+  follows the program file's `{$N+}`: a unit compiled with a different
+  setting prints as the program does, where TP chose per call.
 - Enumerated types `(Red, Green, Blue)`; subranges `1..10`, `'A'..'Z'`,
   `Red..Blue`, an integer subrange stored in the smallest type that holds
   its bounds, as in TP (`1..12` is a byte, in `SizeOf` and in files).
