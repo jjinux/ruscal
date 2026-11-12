@@ -84,7 +84,7 @@ fn pascal_main() {
     pwriteln!(wd(r, 0, 1));
     r = Rec::SERIALIZED_SIZE as f64 * 1.5;
     pwriteln!(wd(r, 0, 1));
-    pwriteln!(-(Rec::SERIALIZED_SIZE as i16));
+    pwriteln!(-(Rec::SERIALIZED_SIZE as i16), " ", -(-(Rec::SERIALIZED_SIZE as i16)));
     a[Point::SERIALIZED_SIZE as i16 + 1] = 7;
     pwriteln!(i16::from(a[5]));
     s = pset![6];

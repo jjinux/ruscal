@@ -37,7 +37,7 @@ begin
    WriteLn(R:0:1);
    R := SizeOf(Rec) * 1.5;
    WriteLn(R:0:1);
-   WriteLn(-SizeOf(Rec));
+   WriteLn(-SizeOf(Rec), ' ', -(-SizeOf(Rec)));
    A[SizeOf(Point) + 1] := 7;
    WriteLn(A[5]);
    S := [6];

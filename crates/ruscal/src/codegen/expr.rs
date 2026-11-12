@@ -449,8 +449,9 @@ impl<'a> Codegen<'a> {
                 Some(("0".to_string(), prec::ATOM))
             }
             ExprKind::Unary { op: UnaryOp::Neg, operand } => {
+                // (`-(-K)` keeps its parentheses: `--x` warns in Rust.)
                 let inner = self.const_expr_in(operand, kind, in_const)?;
-                Some((format!("-{}", paren(inner, prec::UNARY)), prec::UNARY))
+                Some((format!("-{}", paren(inner, prec::UNARY + 1)), prec::UNARY))
             }
             ExprKind::Binary { op, lhs, rhs } => {
                 let (rust_op, p) = match op {
