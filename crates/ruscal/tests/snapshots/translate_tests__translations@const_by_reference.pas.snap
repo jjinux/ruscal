@@ -52,9 +52,7 @@ fn greet(s: &PString) {
 
 /// Pascal: `function Total(const X: TBig; const Y: TSmall): Integer;`
 fn total(x: &TBig, y: TSmall) -> i16 {
-    let mut result: i16 = 0;
-    result = x.a + x.b + x.c + y.a + y.b;
-    result
+    x.a + x.b + x.c + y.a + y.b
 }
 
 /// Pascal: `procedure BumpIt(const C: TCounter);`

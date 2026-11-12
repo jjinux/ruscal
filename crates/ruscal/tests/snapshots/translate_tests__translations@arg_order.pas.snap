@@ -37,10 +37,8 @@ struct Node {
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
 fn bump(head: &PNode) -> i16 {
-    let mut result: i16 = 0;
     head.get_mut().value += 10;
-    result = 1;
-    result
+    1
 }
 
 /// Pascal: `procedure Show(a: Integer; var b: Integer);`

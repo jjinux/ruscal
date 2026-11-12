@@ -226,9 +226,7 @@ trait TCircleMethods: TShapeMethods {
 
     /// Pascal: `function TCircle.Area: Integer;`
     fn t_circle_area(&mut self) -> i16 {
-        let mut result: i16 = 0;
-        result = 3 * self.t_circle().r * self.t_circle().r;
-        result
+        3 * self.t_circle().r * self.t_circle().r
     }
 
     /// Pascal: `procedure TCircle.Report;`
@@ -261,9 +259,7 @@ trait TFilledMethods: TCircleMethods {
 
     /// Pascal: `function TFilled.Area: Integer;`
     fn t_filled_area(&mut self) -> i16 {
-        let mut result: i16 = 0;
-        result = self.t_circle_area() + 1;
-        result
+        self.t_circle_area() + 1
     }
 }
 

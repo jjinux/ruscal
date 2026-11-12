@@ -50,9 +50,7 @@ type TBytes = PArray<u8, 0, 256>;
 
 /// Pascal: `function Add(A, B: Integer): Integer;`
 fn add(a: i16, b: i16) -> i16 {
-    let mut result: i16 = 0;
-    result = a + b;
-    result
+    a + b
 }
 
 /// Pascal: `procedure Dump(var Data; Size: Word);`

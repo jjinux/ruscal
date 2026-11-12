@@ -21,13 +21,11 @@ use ruscal_runtime::prelude::*;
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
 fn exists(f: &mut PText, name: PString) -> bool {
-    let mut result: bool = false;
     f.assign(name);
     // `{$I-}`: an I/O error in `io_unchecked` sets `IOResult` instead of
     // stopping the program.
     io_unchecked(|| f.reset());
-    result = io_result() == 0;
-    result
+    io_result() == 0
 }
 
 /// The main program: the `begin ... end.` block of `IOCheck`.

@@ -73,9 +73,7 @@ trait TShapeMethods {
 
     /// Pascal: `function TShape.Name: string;`
     fn t_shape_name(&mut self) -> PString {
-        let mut result: PString = PString::new();
-        result = pstr("shape");
-        result
+        pstr("shape")
     }
 }
 
@@ -113,9 +111,7 @@ trait TSquareMethods: TShapeMethods {
 
     /// Pascal: `function TSquare.Name: string;`
     fn t_square_name(&mut self) -> PString {
-        let mut result: PString = PString::new();
-        result = pstr("square");
-        result
+        pstr("square")
     }
 }
 

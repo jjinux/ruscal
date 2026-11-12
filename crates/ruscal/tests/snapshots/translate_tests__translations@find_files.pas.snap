@@ -46,11 +46,9 @@ fn make(f: &mut PText, name: PString, text: PString) {
 
 /// Pascal: `function Exists(Name: string): Boolean;`
 fn exists(name: PString) -> bool {
-    let mut result: bool = false;
     let mut t: SearchRec = SearchRec::default();
     find_first(name, ANY_FILE, &mut t);
-    result = dos_error() == 0;
-    result
+    dos_error() == 0
 }
 
 // A recursive directory walk: each level's search waits while the levels

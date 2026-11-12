@@ -37,11 +37,9 @@ fn birthday(who: &mut Person) {
 
 /// Pascal: `function Describe(who: Person): string;`
 fn describe(who: Person) -> PString {
-    let mut result: PString = PString::new();
     let mut s: PString = PString::new();
     s = pas_str(who.age);
-    result = who.name + " (" + s + ")";
-    result
+    who.name + " (" + s + ")"
 }
 
 /// The main program: the `begin ... end.` block of `Records`.

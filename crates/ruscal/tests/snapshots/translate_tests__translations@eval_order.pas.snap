@@ -41,33 +41,25 @@ struct Count {
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
 fn bump(n: &mut i16) -> i16 {
-    let mut result: i16 = 0;
     *n += 10;
-    result = 1;
-    result
+    1
 }
 
 /// Pascal: `function F: Integer;`
 fn f() -> i16 {
-    let mut result: i16 = 0;
     pwrite!("F");
-    result = 1;
-    result
+    1
 }
 
 /// Pascal: `function G: Integer;`
 fn g() -> i16 {
-    let mut result: i16 = 0;
     pwrite!("G");
-    result = 2;
-    result
+    2
 }
 
 /// Pascal: `function Twice(x: Integer): Integer;`
 fn twice(x: i16) -> i16 {
-    let mut result: i16 = 0;
-    result = x * 2;
-    result
+    x * 2
 }
 
 // Changes the record p points to, through q.
@@ -75,10 +67,8 @@ fn twice(x: i16) -> i16 {
 ///
 /// Uses globals, which are passed in as parameters.
 fn via_pointer(q: &PCount) -> i16 {
-    let mut result: i16 = 0;
     q.get_mut().n += 1;
-    result = 5;
-    result
+    5
 }
 
 /// Pascal: `procedure Add(var target: Integer; amount: Integer);`
@@ -90,10 +80,8 @@ fn add(target: &mut i16, amount: i16) {
 ///
 /// Uses globals, which are passed in as parameters.
 fn mark(log: &mut PText) -> i16 {
-    let mut result: i16 = 0;
     fwrite!(log, "x");
-    result = 2;
-    result
+    2
 }
 
 /// The main program: the `begin ... end.` block of `EvalOrder`.

@@ -66,16 +66,12 @@ impl Enumerated for AnonymousC {
 
 /// Pascal: `function RandomReal: Real;`
 fn random_real_() -> f64 {
-    let mut result: f64 = 0.0;
-    result = 0.5;
-    result
+    0.5
 }
 
 /// Pascal: `function EnumRange(n: Integer): Integer;`
 fn enum_range_(n: i16) -> i16 {
-    let mut result: i16 = 0;
-    result = n * 2;
-    result
+    n * 2
 }
 
 /// Pascal: `procedure SetRandSeed(n: Integer);`

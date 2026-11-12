@@ -87,9 +87,7 @@ type PPoint = Ptr<Point>;
 
 /// Pascal: `function TopOf(d: Digit): Integer;`
 fn top_of(d: i8) -> i16 {
-    let mut result: i16 = 0;
-    result = 9;
-    result
+    9
 }
 
 /// Pascal: `procedure Check(ok: Boolean; what: string);`

@@ -34,18 +34,14 @@ impl Counter {
 
     /// Pascal: `function Counter.Next: integer;`
     fn next(&mut self) -> i16 {
-        let mut result: i16 = 0;
         self.n += 1;
-        result = self.n;
-        result
+        self.n
     }
 
     /// Pascal: `function Counter.Twice(x: integer): integer;`
     fn twice(&mut self, x: i16) -> i16 {
-        let mut result: i16 = 0;
         self.n += 10;
-        result = 2 * x;
-        result
+        2 * x
     }
 
     /// Pascal: `procedure Counter.Show(x: integer);`

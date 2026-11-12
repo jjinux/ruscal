@@ -49,9 +49,7 @@ impl Rec {
 
 /// Pascal: `function Serialized_String_Size(N: Integer): Integer;`
 fn serialized_string_size_(n: i16) -> i16 {
-    let mut result: i16 = 0;
-    result = n * 10;
-    result
+    n * 10
 }
 
 /// The main program: the `begin ... end.` block of `SizeOfOperators`.

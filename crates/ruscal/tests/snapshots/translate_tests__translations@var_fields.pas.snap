@@ -63,13 +63,11 @@ fn set_two(a: &mut i16, b: &mut i16) {
 
 /// Pascal: `function Swapped(var a, b: Integer): Boolean;`
 fn swapped(a: &mut i16, b: &mut i16) -> bool {
-    let mut result: bool = false;
     let mut t: i16 = 0;
     t = *a;
     *a = *b;
     *b = t;
-    result = *a != *b;
-    result
+    *a != *b
 }
 
 /// Pascal: `procedure Fill(var pt: Point);`

@@ -43,14 +43,12 @@ impl TRec {
 
 /// Pascal: `function Sum(const A: array of Integer): LongInt;`
 fn sum(a: &OpenArray<i16>) -> i32 {
-    let mut result: i32 = 0;
     let mut t: i32 = 0;
     t = 0;
     for i in 0..=a.high() as i16 {
         t += i32::from(a[i]);
     }
-    result = t;
-    result
+    t
 }
 
 /// Pascal: `procedure Twice(var A: array of Integer);`

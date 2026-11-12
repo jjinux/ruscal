@@ -90,6 +90,8 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         lent_roots: Vec::new(),
         running_first: HashSet::new(),
         calling: HashSet::new(),
+        tail_result: None,
+        wrote_tail: false,
         newtypes: HashSet::new(),
         root: if library.is_some() { "super" } else { "crate" },
         goto_blocks: Vec::new(),
@@ -176,6 +178,12 @@ struct Codegen<'a> {
     /// Procedural fields and elements being called (`R.Next` with no
     /// parameters): inside the call, the same expression is the value.
     calling: HashSet<NodeId>,
+    /// The result variable of the function being written, when it has no
+    /// `let`: its one assignment, the last statement, becomes the
+    /// function's last expression.
+    tail_result: Option<SymId>,
+    /// The function's last expression is written already (no `result`).
+    wrote_tail: bool,
     /// Procedural types whose signatures name themselves (see
     /// `self_naming_classes`): structs rather than aliases.
     newtypes: HashSet<ProcId>,
@@ -1742,7 +1750,9 @@ impl<'a> Codegen<'a> {
         self.indent += 1;
         self.open_array_copies(pid);
         self.untyped_guards(pid);
+        self.tail_result = self.tail_result_of(pid, body);
         self.locals(pid);
+        let locals_end = self.out.len();
         // An `Exit` that ends the routine changes nothing, and Rust would warn
         // that the `result` after its `return result;` can't be reached. A bare
         // one is left out (its comments kept).
@@ -1759,18 +1769,83 @@ impl<'a> Codegen<'a> {
             if let Some(comment) = self.comments.take_trailing(exit.span.start) {
                 self.line(comment);
             }
+        } else if let Some(result) = self.tail_result.take() {
+            let (last, rest) = body.body.split_last().expect("a tail result is the last statement");
+            self.stmts(rest);
+            self.tail_assignment(last, result, pid, locals_end);
         } else {
             self.stmts(&body.body);
         }
         let end_comment = self.block_end_comments(body.body_span);
-        if info.result.is_some() && !never_ends {
+        if info.result.is_some() && !never_ends && !self.wrote_tail {
             self.line("result");
         }
+        self.wrote_tail = false;
         self.indent -= 1;
         self.line("}");
         if let Some(comment) = end_comment {
             self.append_comment(&comment);
         }
+    }
+
+    /// A function whose result is set once, by its last statement
+    /// (`Max := b;`), and never read, nor left by `Exit` (which returns
+    /// it): that result variable, which then needs no `let`.
+    fn tail_result_of(&self, pid: ProcId, body: &Block) -> Option<SymId> {
+        let result = self.a.procs[pid].result?;
+        let Some(Stmt { kind: StmtKind::Assign { target, .. }, .. }) = body.body.last() else {
+            return None;
+        };
+        if self.a.refs.get(&target.id) != Some(&result) || self.a.refs.values().filter(|&&s| s == result).count() != 1 {
+            return None;
+        }
+        // A last statement that never runs (after a loop only `Halt`
+        // leaves) is written commented out, as on main.
+        if crate::sema::goto::list_jumps_away(&body.body) || crate::sema::goto::dead(&body.body).last() == Some(&true) {
+            return None;
+        }
+        let mut exits = false;
+        for s in &body.body {
+            crate::sema::visit_stmts(s, &mut |s| {
+                exits |=
+                    matches!(&s.kind, StmtKind::Call(e) if matches!(&e.kind, ExprKind::Name(id) if id.key() == "exit"));
+            });
+        }
+        (!exits).then_some(result)
+    }
+
+    /// The last statement of a function, the one that sets its result
+    /// (`result = a + b;`), as the function's last expression: `a + b`.
+    /// If the assignment needs more than that one line after it (a lent
+    /// `PChar` copied back), the result gets its `let` after all, with the
+    /// other locals (at `let_at`).
+    fn tail_assignment(&mut self, last: &Stmt, result: SymId, pid: ProcId, let_at: usize) {
+        let StmtKind::Assign { target, value } = &last.kind else {
+            unreachable!("tail_result_of checked it's an assignment");
+        };
+        self.leading_comments(last.span.start);
+        let roots = self.a.lent_roots.get(&last.span.start).cloned().unwrap_or_default();
+        let saved = std::mem::replace(&mut self.lent_roots, roots);
+        let line = self.assignment(target, value);
+        let name = self.a.sym(result).rust_name.clone();
+        let tail = line.strip_prefix(&format!("{name} = ")).and_then(|v| v.strip_suffix(';'));
+        match tail {
+            Some(value) if self.after.is_empty() => {
+                let value = value.to_string();
+                self.line(value);
+                self.wrote_tail = true;
+            }
+            _ => {
+                let ty = self.a.procs[pid].ret.clone().expect("a function has a result type");
+                let indent = "    ".repeat(self.indent);
+                let decl = format!("{indent}let mut {name}: {} = {};\n", ty.rust(), default_value(&ty));
+                self.out.insert_str(let_at, &decl);
+                self.line(line);
+            }
+        }
+        self.lent_roots = saved;
+        // The Pascal comment after it, once the line is decided.
+        self.trailing_comment(last.span.start);
     }
 
     /// The parameter list of a procedure's Rust function: captured outer
@@ -1959,6 +2034,9 @@ impl<'a> Codegen<'a> {
     fn locals(&mut self, pid: ProcId) {
         for &sym in &self.a.procs[pid].locals {
             let at = self.decl_starts.get(&sym).copied();
+            if self.tail_result == Some(sym) {
+                continue;
+            }
             if self.a.elided_vars.contains(&sym) {
                 // No `let` (a `for` loop declares it), but keep its comments,
                 // which often describe the whole procedure.

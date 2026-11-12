@@ -89,7 +89,5 @@ use ruscal_runtime::prelude::*;
 
 /// Pascal: `function Twice(n: Integer): Integer;`
 pub fn twice(n: i16) -> i16 {
-    let mut result: i16 = 0;
-    result = n * 2;
-    result
+    n * 2
 }

@@ -830,6 +830,14 @@ becomes `return result;` (or `return;` in procedures). The function name on the
 right-hand side inside its own body is a recursive call (TP rule); sema
 distinguishes the two by position.
 
+A function whose result is set only by its last statement, and never left
+by `Exit`, needs no `result`: the body ends with that value, as hand-written
+Rust would (`fn twice(n: i16) -> i16 { n * 2 }`). Codegen checks this
+(`tail_result_of`: the last statement assigns the result, runs, nothing
+else mentions it, no `Exit`). If the assignment needs a line after it (a
+lent `PChar` copied back), the result keeps its `let`, with the other
+locals (codegen's `tail_assignment`).
+
 ### Globals: lifted into `main`
 
 Decision: a program's global variables (and each unit's interface and

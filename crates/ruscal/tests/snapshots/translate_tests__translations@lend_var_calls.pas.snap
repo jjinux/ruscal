@@ -37,7 +37,6 @@ struct Rec {
 
 /// Pascal: `function Grow(var rr: Rec): Integer;`
 fn grow(rr: &mut Rec) -> i16 {
-    let mut result: i16 = 0;
     // A Char array used as a PChar: Rust can't point into the array, so
     // the statement gets a copy of its characters, copied back after it
     // if it may change them.
@@ -45,8 +44,7 @@ fn grow(rr: &mut Rec) -> i16 {
     str_cat(&a_chars, &PChar::literal("y"));
     a_chars.copy_to(rr.a.as_mut_slice());
     let a_chars = PChar::copy_of(rr.a.as_slice());
-    result = str_len(&a_chars) as i16;
-    result
+    str_len(&a_chars) as i16
 }
 
 // A Pascal object's methods go in an `impl` block. Each takes `&mut self`,
@@ -54,13 +52,11 @@ fn grow(rr: &mut Rec) -> i16 {
 impl TObj {
     /// Pascal: `function TObj.Len: Integer;`
     fn len(&mut self) -> i16 {
-        let mut result: i16 = 0;
         let a_chars = PChar::copy_of(self.a.as_slice());
         str_cat(&a_chars, &PChar::literal("x"));
         a_chars.copy_to(self.a.as_mut_slice());
         let a_chars = PChar::copy_of(self.a.as_slice());
-        result = str_len(&a_chars) as i16;
-        result
+        str_len(&a_chars) as i16
     }
 }
 

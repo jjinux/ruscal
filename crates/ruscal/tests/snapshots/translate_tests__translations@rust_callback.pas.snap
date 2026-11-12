@@ -40,9 +40,7 @@ type TList = PArray<i16, 1, 6>;
 
 /// Pascal: `function Descending(A, B: Integer): Boolean;`
 fn descending(a: i16, b: i16) -> bool {
-    let mut result: bool = false;
-    result = a > b;
-    result
+    a > b
 }
 
 /// The main program: the `begin ... end.` block of `RustCallback`.

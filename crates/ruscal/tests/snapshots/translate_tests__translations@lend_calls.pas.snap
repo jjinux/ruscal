@@ -26,25 +26,21 @@ use ruscal_runtime::prelude::*;
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
 fn fill(buf: &mut PArray<u8, 0, 16>) -> i16 {
-    let mut result: i16 = 0;
     // A Char array used as a PChar: Rust can't point into the array, so
     // the statement gets a copy of its characters, copied back after it
     // if it may change them.
     let buf_chars = PChar::copy_of(buf.as_slice());
     str_copy(&buf_chars, &PChar::literal("filled"));
     buf_chars.copy_to(buf.as_mut_slice());
-    result = 1;
-    result
+    1
 }
 
 /// Pascal: `function Direct: Integer;`
 ///
 /// Uses globals, which are passed in as parameters.
 fn direct(buf: &mut PArray<u8, 0, 16>) -> i16 {
-    let mut result: i16 = 0;
     buf[0] = b'D';
-    result = 2;
-    result
+    2
 }
 
 /// The main program: the `begin ... end.` block of `LendCalls`.
