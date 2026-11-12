@@ -3184,8 +3184,43 @@ impl<'a> Codegen<'a> {
                 }
                 format!("{} {{ {} }}", r.rust_name, parts.join(", "))
             }
+            (ConstValue::Record(fields, _), Type::Object(o)) => {
+                let fields: Vec<&(crate::ast::Ident, ConstValue)> = fields.iter().collect();
+                self.object_init(o, &fields)
+            }
             _ => unreachable!("sema checked the initializer's shape"),
         }
+    }
+
+    /// An object constant: `TKid { base: TBase { count: 5 }, step: 2 }`.
+    /// The fields an ancestor declares go in its part, `base` (the object
+    /// has no field for TP's VMT: virtual methods go through a trait).
+    fn object_init(&mut self, o: &ObjectType, fields: &[&(crate::ast::Ident, ConstValue)]) -> String {
+        let mut parts = Vec::new();
+        let mut inherited = Vec::new();
+        for &field in fields {
+            let (name, value) = field;
+            match o.fields.iter().find(|f| f.name.eq_ignore_ascii_case(&name.name)) {
+                Some(f) => {
+                    let init = self.const_init(value, &f.ty);
+                    parts.push(format!("{}: {init}", f.rust_name));
+                }
+                None => inherited.push(field),
+            }
+        }
+        let mut wanted = o.fields.len();
+        if let Some(parent) = &o.parent {
+            wanted += 1;
+            if !inherited.is_empty() {
+                // First, as in the struct.
+                parts.insert(0, format!("base: {}", self.object_init(parent, &inherited)));
+            }
+        }
+        if parts.len() < wanted {
+            // Struct update syntax: the rest from the default value.
+            parts.push("..Default::default()".to_string());
+        }
+        format!("{} {{ {} }}", o.rust_name, parts.join(", "))
     }
 }
 

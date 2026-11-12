@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/object_constant_errors.pas
+---
+object_constant_errors.pas:15:26: error: `TBase` has no field `Bump`
+   K: TBase = (Count: 1; Bump: 2);
+                         ^^^^
+
+object_constant_errors.pas:16:22: error: `TBase` has no field `Size`
+   Missing: TBase = (Size: 3);
+                     ^^^^
+
+object_constant_errors.pas:18:12: error: operator can't combine String and Integer values
+   WriteLn('a' / 0);
+           ^^^^^^^

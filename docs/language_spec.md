@@ -131,7 +131,12 @@ Sets and typed constants
   is never in a set (`300 in s` is False for a `set of Byte`, for a
   constant or a variable; Free Pascal cuts a variable down to a byte)
 - Typed constants (`const Days: array[0..6] of String[9] = (...)`;
-  `const x: integer = 5`), which are initialized variables in TP
+  `const x: integer = 5`), which are initialized variables in TP; of
+  records, and (TP 7) of objects, inherited fields too (`const K: TKid =
+  (Count: 5; Step: 2)`, as `TKid { base: TBase { count: 5 }, step: 2 }`).
+  An object with virtual methods works without a constructor call, as TP
+  set up its VMT itself. TP wants the fields in their declared order, from
+  the first; Ruscal also takes them in any order
 
 Strings, pointers, objects and procedural types have sections of their
 own below.

@@ -745,6 +745,16 @@ impl Checker {
                     self.variant_constant(&r.fields, part, fields, *span);
                 }
             }
+            // An object constant (TP 7): its fields, inherited ones too, as
+            // in a record constant; its methods take no values.
+            (ConstValue::Record(fields, _), Type::Object(o)) => {
+                for (name, value) in fields {
+                    match o.field_path(&name.name) {
+                        Some((_, field_ty)) => self.const_value(value, &field_ty),
+                        None => self.error(name.span, format!("`{}` has no field `{}`", o.rust_name, name.name)),
+                    }
+                }
+            }
             (ConstValue::List(_, span) | ConstValue::Record(_, span), _) => {
                 self.error(*span, format!("this initializer doesn't fit type {ty}"));
             }
@@ -2956,7 +2966,9 @@ impl Checker {
         }
         // `5 div 0` (or `n mod Z`, with `Z = 0` a constant) is TP's compile
         // error "Division by zero"; rustc refuses it too.
+        // (A number divided: `'a' div 0` is a type error, said below.)
         if let (Div | Mod, ExprKind::Binary { rhs, .. }) = (op, &e.kind)
+            && l.is_numeric()
             && self.eval_const(rhs) == Some(ConstVal::Int(0))
         {
             self.error(rhs.span, "division by zero");
@@ -2966,6 +2978,7 @@ impl Checker {
         // ("Invalid floating point operation"), though `x / 0` of a variable
         // is left to run time (runtime error 200).
         if let (RealDiv, ExprKind::Binary { lhs, rhs, .. }) = (op, &e.kind)
+            && l.is_numeric()
             && self.eval_const(lhs).is_some()
             && matches!(self.eval_const(rhs), Some(ConstVal::Int(0)) | Some(ConstVal::Real(0.0)))
         {
