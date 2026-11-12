@@ -1751,6 +1751,7 @@ impl<'a> Codegen<'a> {
         self.untyped_guards(pid);
         self.tail_result = self.tail_result_of(pid, body);
         self.locals(pid);
+        let locals_end = self.out.len();
         // An `Exit` that ends the routine changes nothing, and Rust would warn
         // that the `result` after its `return result;` can't be reached. A bare
         // one is left out (its comments kept).
@@ -1770,7 +1771,7 @@ impl<'a> Codegen<'a> {
         } else if let Some(result) = self.tail_result.take() {
             let (last, rest) = body.body.split_last().expect("a tail result is the last statement");
             self.stmts(rest);
-            self.tail_assignment(last, result, pid);
+            self.tail_assignment(last, result, pid, locals_end);
         } else {
             self.stmts(&body.body);
         }
@@ -1797,6 +1798,11 @@ impl<'a> Codegen<'a> {
         if self.a.refs.get(&target.id) != Some(&result) || self.a.refs.values().filter(|&&s| s == result).count() != 1 {
             return None;
         }
+        // A last statement that never runs (after a loop only `Halt`
+        // leaves) is written commented out, as on main.
+        if crate::sema::goto::list_jumps_away(&body.body) || crate::sema::goto::dead(&body.body).last() == Some(&true) {
+            return None;
+        }
         let mut exits = false;
         for s in &body.body {
             crate::sema::visit_stmts(s, &mut |s| {
@@ -1809,51 +1815,36 @@ impl<'a> Codegen<'a> {
 
     /// The last statement of a function, the one that sets its result
     /// (`result = a + b;`), as the function's last expression: `a + b`.
-    /// If it doesn't end with such a line, the result gets its `let` after
-    /// all.
-    fn tail_assignment(&mut self, last: &Stmt, result: SymId, pid: ProcId) {
-        let start = self.out.len();
-        self.stmts(std::slice::from_ref(last));
-        let written = self.out.split_off(start);
-        let mut lines: Vec<&str> = written.lines().collect();
-        let name = &self.a.sym(result).rust_name;
-        let prefix = format!("{name} = ");
-        let tail = lines.last().and_then(|l| {
-            let code = l.trim_start();
-            let rest = code.strip_prefix(&prefix)?;
-            // `result = i; // the bigger one` keeps its comment: `i // the
-            // bigger one`. (The last `; //`: a string in the value may
-            // hold one too.)
-            let value = match rest.strip_suffix(';') {
-                Some(value) => value.to_string(),
-                None => {
-                    let (value, comment) = rest.rsplit_once("; //")?;
-                    format!("{value} //{comment}")
-                }
-            };
-            Some((l.len() - code.len(), value))
-        });
-        // At the statement's own level (not inside a block it opened);
-        // lines before it are comments, or statements that set it up
-        // (`let a_chars = ...;`).
+    /// If the assignment needs more than that one line after it (a lent
+    /// `PChar` copied back), the result gets its `let` after all, with the
+    /// other locals (at `let_at`).
+    fn tail_assignment(&mut self, last: &Stmt, result: SymId, pid: ProcId, let_at: usize) {
+        let StmtKind::Assign { target, value } = &last.kind else {
+            unreachable!("tail_result_of checked it's an assignment");
+        };
+        self.leading_comments(last.span.start);
+        let roots = self.a.lent_roots.get(&last.span.start).cloned().unwrap_or_default();
+        let saved = std::mem::replace(&mut self.lent_roots, roots);
+        let line = self.assignment(target, value);
+        let name = self.a.sym(result).rust_name.clone();
+        let tail = line.strip_prefix(&format!("{name} = ")).and_then(|v| v.strip_suffix(';'));
         match tail {
-            Some((indent, value)) if indent == 4 * self.indent => {
-                let line = format!("{}{value}", &lines[lines.len() - 1][..indent]);
-                lines.pop();
-                for l in lines {
-                    self.out.push_str(l);
-                    self.out.push('\n');
-                }
-                self.out.push_str(&line);
-                self.out.push('\n');
+            Some(value) if self.after.is_empty() => {
+                let value = value.to_string();
+                self.line(value);
                 self.wrote_tail = true;
             }
             _ => {
                 let ty = self.a.procs[pid].ret.clone().expect("a function has a result type");
-                self.line(format!("let mut {name}: {} = {};", ty.rust(), default_value(&ty)));
-                self.out.push_str(&written);
+                let indent = "    ".repeat(self.indent);
+                let decl = format!("{indent}let mut {name}: {} = {};\n", ty.rust(), default_value(&ty));
+                self.out.insert_str(let_at, &decl);
+                self.line(line);
             }
         }
+        self.lent_roots = saved;
+        // The Pascal comment after it, once the line is decided.
+        self.trailing_comment(last.span.start);
     }
 
     /// The parameter list of a procedure's Rust function: captured outer

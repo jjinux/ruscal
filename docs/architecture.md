@@ -833,9 +833,10 @@ distinguishes the two by position.
 A function whose result is set only by its last statement, and never left
 by `Exit`, needs no `result`: the body ends with that value, as hand-written
 Rust would (`fn twice(n: i16) -> i16 { n * 2 }`). Codegen checks this
-(`tail_result_of`: the last statement assigns the result, nothing else
-mentions it, no `Exit`) and keeps the `let` if the assignment isn't written
-as one `result = x;` line at the end (codegen's `tail_assignment`).
+(`tail_result_of`: the last statement assigns the result, runs, nothing
+else mentions it, no `Exit`). If the assignment needs a line after it (a
+lent `PChar` copied back), the result keeps its `let`, with the other
+locals (codegen's `tail_assignment`).
 
 ### Globals: lifted into `main`
 

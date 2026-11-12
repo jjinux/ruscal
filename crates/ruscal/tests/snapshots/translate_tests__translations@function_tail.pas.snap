@@ -14,10 +14,12 @@ input_file: tests/translate/function_tail.pas
 // (`b := 250; Inc(b, 10)`) is fine too.
 #![allow(unused_variables, unused_assignments, dead_code, arithmetic_overflow)]
 
+#[allow(unused_imports)]
 use ruscal_runtime::prelude::*;
 
 // A function whose result is set only by its last statement: in the Rust
-// the function ends with that value, with no `result` variable.
+// the function ends with that value, with no `result` variable. (Expected
+// output by hand: fpc finds tests/run/strings.pas for the Strings unit.)
 
 /// Pascal: `function Twice(N: Integer): Integer;`
 fn twice(n: i16) -> i16 {
@@ -63,6 +65,51 @@ fn outer_inner(n: i16) -> i16 {
     n + 10
 }
 
+// Comments after the last statement, with a ; or a // in them.
+/// Pascal: `function A(X: Integer): Integer;`
+fn a(x: i16) -> i16 {
+    x + 1 // see note;
+}
+
+/// Pascal: `function B(X: Integer): Integer;`
+fn b(x: i16) -> i16 {
+    x + 2 // first; // second
+}
+
+/// Pascal: `function S: Short;`
+fn s() -> PString {
+    pstr("a; // b").truncated(5) // c;
+}
+
+// A PChar lent for the statement and copied back after it: the result
+// keeps its variable, declared with the other locals.
+/// Pascal: `function Upper: Integer;`
+///
+/// Uses globals, which are passed in as parameters.
+fn upper(i: &mut i16, buf: &mut PArray<u8, 0, 10>) -> i16 {
+    let mut result: i16 = 0;
+    *i += 1;
+    // A Char array used as a PChar: Rust can't point into the array, so
+    // the statement gets a copy of its characters, copied back after it
+    // if it may change them.
+    let buf_chars = PChar::copy_of(buf.as_slice());
+    result = str_len(&str_upper(&buf_chars)) as i16;
+    buf_chars.copy_to(buf.as_mut_slice());
+    result
+}
+
+// A last statement that never runs: it stays commented out.
+/// Pascal: `function Loop: Integer;`
+fn loop_() -> i16 {
+    let result: i16 = 0;
+    // Pascal `repeat ... until`: the body always runs at least once.
+    loop {
+        halt(0);
+    }
+    // Never runs, in the Pascal either:
+    // result = 1;
+}
+
 // Set in two places, or left by Exit: these keep their result variable.
 /// Pascal: `function Sign(N: Integer): Integer;`
 fn sign(n: i16) -> i16 {
@@ -90,8 +137,14 @@ fn digits(mut n: i16) -> i16 {
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
     let mut i: i16 = 0;
+    let mut buf: PArray<u8, 0, 10> = PArray::default();
     pwriteln!(twice(21), " ", bigger(&mut i, 3, 7), " ", clip(pstr("abcdefgh")), " ", checked(41));
     pwriteln!(outer(1), " ", sign(5), " ", sign(-5), " ", digits(12345));
+    let buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&buf_chars, &PChar::literal("abc"));
+    buf_chars.copy_to(buf.as_mut_slice());
+    pwriteln!(a(1), " ", b(1), " ", s(), " ", upper(&mut i, &mut buf), " ", buf);
+    pwriteln!(loop_());
 }
 
 fn main() {
