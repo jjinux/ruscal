@@ -104,7 +104,8 @@ pub fn date_time_type() -> Type {
 /// The `Dos` unit's `Registers`, for `Intr` and `MsDos`, which Ruscal
 /// refuses: declared so a program that uses them gets that error and not
 /// "unknown type". Only the `Word` registers (TP's is a variant record that
-/// also has the `Byte` halves, `AL`, `AH`, ...).
+/// also has the `Byte` halves, `AL`, `AH`, ...; using one says why it's
+/// missing: sema's `byte_register_message`).
 pub fn registers_type() -> Type {
     use super::types::{Field, RecordType};
     let names = ["AX", "BX", "CX", "DX", "BP", "SI", "DI", "DS", "ES", "Flags"];

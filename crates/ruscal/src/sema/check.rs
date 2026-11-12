@@ -2498,7 +2498,7 @@ impl Checker {
         let Some(sym) = self.lookup(&var.key()) else {
             // A `with` field already has its own error (`check_with_for_loops`).
             if self.with_member(&var.key()).is_none() {
-                self.error(var.span, unknown_identifier(&var.name));
+                self.error(var.span, self.unknown_name(&var.name));
             }
             self.active_for_vars.push(usize::MAX);
             return Type::Error;
@@ -2801,7 +2801,7 @@ impl Checker {
             ExprKind::Name(ident) => {
                 let sym = match self.resolve(&ident.key()) {
                     None => {
-                        self.error(ident.span, unknown_identifier(&ident.name));
+                        self.error(ident.span, self.unknown_name(&ident.name));
                         return Type::Error;
                     }
                     Some(Resolved::SelfField { self_sym, path, ty }) => {
@@ -3064,7 +3064,7 @@ impl Checker {
         let ty = match &e.kind {
             ExprKind::Name(ident) => match self.resolve(&ident.key()) {
                 None => {
-                    self.error(ident.span, unknown_identifier(&ident.name));
+                    self.error(ident.span, self.unknown_name(&ident.name));
                     Type::Error
                 }
                 Some(Resolved::SelfField { self_sym, path, ty }) => {
@@ -3251,6 +3251,16 @@ impl Checker {
         }
     }
 
+    /// The error for a name that isn't declared: in `with Regs do AH :=
+    /// $4C`, the missing byte half of `Registers`.
+    fn unknown_name(&self, name: &str) -> String {
+        let registers = super::units::registers_type();
+        if is_byte_register(name) && self.with_records.iter().any(|(_, ty)| *ty == registers) {
+            return byte_register_message(name);
+        }
+        unknown_identifier(name)
+    }
+
     fn select_field(&mut self, base: Type, field: &Ident) -> Type {
         match &base {
             Type::Object(o) => match o.field_path(&field.name) {
@@ -3262,6 +3272,12 @@ impl Checker {
             },
             Type::Record(r) => match r.field(&field.name) {
                 Some(f) => f.ty.clone(),
+                // `Regs.AH := $4C`: the byte halves only matter to `Intr` and
+                // `MsDos`, so say why they're missing.
+                None if is_byte_register(&field.name) && base == super::units::registers_type() => {
+                    self.error(field.span, byte_register_message(&field.name));
+                    Type::Error
+                }
                 None => {
                     self.error(field.span, format!("`{}` has no field `{}`", r.rust_name, field.name));
                     Type::Error
@@ -3398,7 +3414,7 @@ impl Checker {
         };
         let sym = match self.resolve(&ident.key()) {
             None => {
-                self.error(ident.span, unknown_identifier(&ident.name));
+                self.error(ident.span, self.unknown_name(&ident.name));
                 return Type::Error;
             }
             // A sibling method called from inside a method: `self.method()`.
@@ -5086,6 +5102,17 @@ fn a(ty: &Type) -> String {
 
 /// "unknown identifier `X`", or, for DOS's `Port` and `Mem` arrays, why
 /// they aren't there.
+/// `AL`, `AH`, ... `DH`: the `Byte` halves of the `Dos` unit's `Registers`.
+fn is_byte_register(name: &str) -> bool {
+    matches!(name.to_ascii_lowercase().as_str(), "al" | "ah" | "bl" | "bh" | "cl" | "ch" | "dl" | "dh")
+}
+
+fn byte_register_message(name: &str) -> String {
+    format!(
+        "Ruscal's `Registers` has no `{name}`: its byte halves (`AL`, `AH`, ...) are only for `Intr` and `MsDos`, which call DOS itself and need a real DOS PC, so Ruscal can't translate them; see \"Never supported\" in the README"
+    )
+}
+
 fn unknown_identifier(name: &str) -> String {
     match name.to_ascii_lowercase().as_str() {
         "port" | "portw" | "mem" | "memw" | "meml" => {

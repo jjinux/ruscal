@@ -547,7 +547,8 @@ Faked: a Rust program has all its code in memory.
   points to the main-loop replacement in docs/timer_interrupts.md
 - Refused with a clear error, since they need real DOS: `Intr`, `MsDos`,
   `Keep` (`Registers` is declared, with its `Word` registers, so a program
-  using it gets that error)
+  using it gets that error; its `Byte` halves, `AH`, `AL` and so on, give
+  the same reason)
 
 ### WinDos
 

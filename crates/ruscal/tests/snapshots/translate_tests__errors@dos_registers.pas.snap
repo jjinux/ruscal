@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/dos_registers.pas
+---
+dos_registers.pas:10:6: error: Ruscal's `Registers` has no `AH`: its byte halves (`AL`, `AH`, ...) are only for `Intr` and `MsDos`, which call DOS itself and need a real DOS PC, so Ruscal can't translate them; see "Never supported" in the README
+   R.AH := $4C;
+     ^^
+
+dos_registers.pas:12:7: error: Ruscal's `Registers` has no `AL`: its byte halves (`AL`, `AH`, ...) are only for `Intr` and `MsDos`, which call DOS itself and need a real DOS PC, so Ruscal can't translate them; see "Never supported" in the README
+      AL := 0;
+      ^^
+
+dos_registers.pas:13:4: error: Ruscal can't run `MsDos`: it calls DOS itself (interrupt 21h), which needs real DOS
+   MsDos(R);
+   ^^^^^^^^
