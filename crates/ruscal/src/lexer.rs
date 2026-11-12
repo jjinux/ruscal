@@ -269,6 +269,10 @@ impl<'a> Lexer<'a> {
         let start = self.pos;
         self.pos += 1; // the `$`
         let digits_start = self.pos;
+        if !self.peek().is_ascii_hexdigit() {
+            self.push(TokenKind::Dollar, start);
+            return Ok(());
+        }
         while self.peek().is_ascii_hexdigit() {
             self.pos += 1;
         }

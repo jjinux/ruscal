@@ -307,6 +307,7 @@ end;
 begin
 asm
 mov ax, 1
+jmp $+2
 mov X, ax
 end;
 WriteLn(X);
@@ -322,6 +323,7 @@ procedure Beep; assembler;
 begin
    asm
       mov ax, 1
+      jmp $+2
       mov X, ax
    end;
    WriteLn(X);

@@ -46,6 +46,9 @@ pub enum TokenKind {
     RBracket,
     Caret,
     At,
+    /// A `$` without hex digits: only the location counter in an `asm`
+    /// block (`jmp $+2`), which the parser refuses but `ruscal fmt` keeps.
+    Dollar,
     Eof,
 }
 
@@ -95,6 +98,7 @@ impl TokenKind {
             TokenKind::RBracket => "]",
             TokenKind::Caret => "^",
             TokenKind::At => "@",
+            TokenKind::Dollar => "$",
             _ => "?",
         }
     }
