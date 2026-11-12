@@ -81,7 +81,6 @@ fn add_digit(s: &mut PSet<i8>, n: i16) {
 
 /// Pascal: `function Count(s: Digits): Integer;`
 fn count(s: PSet<i8>) -> i16 {
-    let mut result: i16 = 0;
     let mut k: i16 = 0;
     k = 0;
     for n in 0_i16..=9 {
@@ -89,8 +88,7 @@ fn count(s: PSet<i8>) -> i16 {
             k += 1;
         }
     }
-    result = k;
-    result
+    k
 }
 
 /// The main program: the `begin ... end.` block of `Sets`.

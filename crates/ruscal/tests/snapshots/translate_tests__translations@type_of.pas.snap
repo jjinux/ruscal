@@ -84,9 +84,7 @@ trait TShapeMethods {
 
     /// Pascal: `function TShape.IsCircle: Boolean;`
     fn is_circle(&mut self) -> bool {
-        let mut result: bool = false;
-        result = self.type_name() == "TCircle";
-        result
+        self.type_name() == "TCircle"
     }
 }
 

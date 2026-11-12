@@ -32,7 +32,6 @@ fn show(s: PChar) {
 
 /// Pascal: `function CountChar(s: PChar; c: Char): Integer;`
 fn count_char(mut s: PChar, c: u8) -> i16 {
-    let mut result: i16 = 0;
     let mut k: i16 = 0;
     k = 0;
     while s.get(0) != b'\x00' {
@@ -41,8 +40,7 @@ fn count_char(mut s: PChar, c: u8) -> i16 {
         }
         s += 1;
     }
-    result = k;
-    result
+    k
 }
 
 /// Pascal: `procedure Shout(s: PChar);`

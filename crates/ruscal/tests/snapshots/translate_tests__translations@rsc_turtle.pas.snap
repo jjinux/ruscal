@@ -200,18 +200,14 @@ pub fn setup(turtle: &mut TTurtleContext) {
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn screen_x(turtle: TTurtleContext, x: f64) -> i16 {
-    let mut result: i16 = 0;
-    result = (i32::from(turtle.win_width / 2) + x.round() as i32) as i16;
-    result
+    (i32::from(turtle.win_width / 2) + x.round() as i32) as i16
 }
 
 /// Pascal: `function ScreenY(Y: Real): Integer;`
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn screen_y(turtle: TTurtleContext, y: f64) -> i16 {
-    let mut result: i16 = 0;
-    result = (i32::from(turtle.win_height / 2) - y.round() as i32) as i16;
-    result
+    (i32::from(turtle.win_height / 2) - y.round() as i32) as i16
 }
 
 // Flip a pixel's colour, as XOR mode does for lines.
@@ -393,15 +389,13 @@ pub fn back(turtle: &mut TTurtleContext, dist: i16) {
 // An angle kept between 0 and 360.
 /// Pascal: `function Normal(A: Real): Real;`
 pub fn normal(mut a: f64) -> f64 {
-    let mut result: f64 = 0.0;
     while a < 0.0 {
         a += 360.0;
     }
     while a >= 360.0 {
         a -= 360.0;
     }
-    result = a;
-    result
+    a
 }
 
 /// Pascal: `procedure Turn(Angle: Real);`
@@ -444,9 +438,7 @@ pub fn set_heading(turtle: &mut TTurtleContext, angle: i16) {
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn heading(turtle: TTurtleContext) -> i16 {
-    let mut result: i16 = 0;
-    result = (turtle.dir.round() as i32 % 360) as i16;
-    result
+    (turtle.dir.round() as i32 % 360) as i16
 }
 
 /// Pascal: `procedure SetPosition(X, Y: Integer);`
@@ -468,18 +460,14 @@ pub fn set_position(turtle: &mut TTurtleContext, x: i16, y: i16) {
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn xcor(turtle: TTurtleContext) -> i16 {
-    let mut result: i16 = 0;
-    result = turtle.pos_x.round() as i16;
-    result
+    turtle.pos_x.round() as i16
 }
 
 /// Pascal: `function Ycor: Integer;`
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn ycor(turtle: TTurtleContext) -> i16 {
-    let mut result: i16 = 0;
-    result = turtle.pos_y.round() as i16;
-    result
+    turtle.pos_y.round() as i16
 }
 
 /// Pascal: `procedure Home;`
@@ -579,11 +567,8 @@ pub fn turtle_delay(turtle: &mut TTurtleContext, ms: i16) {
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn turtle_there(turtle: &mut TTurtleContext) -> bool {
-    let mut result: bool = false;
     setup(turtle);
-    result = turtle.pos_x.abs() <= f64::from(turtle.win_width) / 2.0
-        && turtle.pos_y.abs() <= f64::from(turtle.win_height) / 2.0;
-    result
+    turtle.pos_x.abs() <= f64::from(turtle.win_width) / 2.0 && turtle.pos_y.abs() <= f64::from(turtle.win_height) / 2.0
 }
 
 // The turtle's window: W by H pixels with its centre at (X, Y) on the

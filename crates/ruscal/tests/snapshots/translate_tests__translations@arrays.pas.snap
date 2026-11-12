@@ -36,7 +36,6 @@ fn clear(g: &mut GridT) {
 
 /// Pascal: `function CountAlive(g: GridT): integer;`
 fn count_alive(g: GridT) -> i16 {
-    let mut result: i16 = 0;
     let mut n: i16 = 0;
     n = 0;
     for c in 0..=MAX_COL {
@@ -46,8 +45,7 @@ fn count_alive(g: GridT) -> i16 {
             }
         }
     }
-    result = n;
-    result
+    n
 }
 
 /// The main program: the `begin ... end.` block of `Arrays`.

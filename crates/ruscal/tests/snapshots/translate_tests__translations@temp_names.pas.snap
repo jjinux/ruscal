@@ -34,9 +34,7 @@ struct Node {
 
 /// Pascal: `function Double(n: integer): integer;`
 fn double(n: i16) -> i16 {
-    let mut result: i16 = 0;
-    result = n * 2;
-    result
+    n * 2
 }
 
 /// The main program: the `begin ... end.` block of `TempNames`.

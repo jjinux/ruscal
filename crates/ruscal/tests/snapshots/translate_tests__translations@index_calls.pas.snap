@@ -33,19 +33,15 @@ struct Bag {
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
 fn pick(arr: PArray<i16, 1, 3>) -> i16 {
-    let mut result: i16 = 0;
-    result = arr[1];
-    result
+    arr[1]
 }
 
 /// Pascal: `function Next: Integer;`
 ///
 /// Uses globals, which are passed in as parameters.
 fn next(calls: &mut i16) -> i16 {
-    let mut result: i16 = 0;
     *calls += 1;
-    result = *calls;
-    result
+    *calls
 }
 
 /// Pascal: `procedure Touch(var v: Integer);`
@@ -66,17 +62,13 @@ impl Bag {
 
     /// Pascal: `function Bag.Count: Integer;`
     fn count(&mut self) -> i16 {
-        let mut result: i16 = 0;
-        result = self.n;
-        result
+        self.n
     }
 
     /// Pascal: `function Bag.Last: Char;`
     fn last(&mut self) -> u8 {
-        let mut result: u8 = 0;
         let index = self.count();
-        result = self.items[index];
-        result
+        self.items[index]
     }
 
     /// Pascal: `procedure Bag.Grow;`

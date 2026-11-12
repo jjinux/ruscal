@@ -34,10 +34,8 @@ struct Node {
 
 /// Pascal: `function Show(x: Integer): Integer;`
 fn show(x: i16) -> i16 {
-    let mut result: i16 = 0;
     pwriteln!("Show ", x);
-    result = x;
-    result
+    x
 }
 
 /// The main program: the `begin ... end.` block of `ShortCircuit`.

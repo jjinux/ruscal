@@ -26,14 +26,12 @@ const TICK_MS: i16 = 55; // the PC timer's 18.2 ticks a second
 // Milliseconds since midnight.
 /// Pascal: `function NowMs: LongInt;`
 fn now_ms() -> i32 {
-    let mut result: i32 = 0;
     let mut h: u16 = 0;
     let mut m: u16 = 0;
     let mut s: u16 = 0;
     let mut s100: u16 = 0;
     get_time(&mut h, &mut m, &mut s, &mut s100);
-    result = ((i32::from(h) * 60 + i32::from(m)) * 60 + i32::from(s)) * 1000 + i32::from(s100 * 10);
-    result
+    ((i32::from(h) * 60 + i32::from(m)) * 60 + i32::from(s)) * 1000 + i32::from(s100 * 10)
 }
 
 // What the interrupt handler did.

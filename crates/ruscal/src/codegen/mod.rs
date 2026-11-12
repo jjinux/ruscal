@@ -90,6 +90,8 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         lent_roots: Vec::new(),
         running_first: HashSet::new(),
         calling: HashSet::new(),
+        tail_result: None,
+        wrote_tail: false,
         newtypes: HashSet::new(),
         root: if library.is_some() { "super" } else { "crate" },
         goto_blocks: Vec::new(),
@@ -176,6 +178,12 @@ struct Codegen<'a> {
     /// Procedural fields and elements being called (`R.Next` with no
     /// parameters): inside the call, the same expression is the value.
     calling: HashSet<NodeId>,
+    /// The result variable of the function being written, when it has no
+    /// `let`: its one assignment, the last statement, becomes the
+    /// function's last expression.
+    tail_result: Option<SymId>,
+    /// The function's last expression is written already (no `result`).
+    wrote_tail: bool,
     /// Procedural types whose signatures name themselves (see
     /// `self_naming_classes`): structs rather than aliases.
     newtypes: HashSet<ProcId>,
@@ -1741,6 +1749,7 @@ impl<'a> Codegen<'a> {
         self.indent += 1;
         self.open_array_copies(pid);
         self.untyped_guards(pid);
+        self.tail_result = self.tail_result_of(pid, body);
         self.locals(pid);
         // An `Exit` that ends the routine changes nothing, and Rust would warn
         // that the `result` after its `return result;` can't be reached. A bare
@@ -1758,17 +1767,92 @@ impl<'a> Codegen<'a> {
             if let Some(comment) = self.comments.take_trailing(exit.span.start) {
                 self.line(comment);
             }
+        } else if let Some(result) = self.tail_result.take() {
+            let (last, rest) = body.body.split_last().expect("a tail result is the last statement");
+            self.stmts(rest);
+            self.tail_assignment(last, result, pid);
         } else {
             self.stmts(&body.body);
         }
         let end_comment = self.block_end_comments(body.body_span);
-        if info.result.is_some() && !never_ends {
+        if info.result.is_some() && !never_ends && !self.wrote_tail {
             self.line("result");
         }
+        self.wrote_tail = false;
         self.indent -= 1;
         self.line("}");
         if let Some(comment) = end_comment {
             self.append_comment(&comment);
+        }
+    }
+
+    /// A function whose result is set once, by its last statement
+    /// (`Max := b;`), and never read, nor left by `Exit` (which returns
+    /// it): that result variable, which then needs no `let`.
+    fn tail_result_of(&self, pid: ProcId, body: &Block) -> Option<SymId> {
+        let result = self.a.procs[pid].result?;
+        let Some(Stmt { kind: StmtKind::Assign { target, .. }, .. }) = body.body.last() else {
+            return None;
+        };
+        if self.a.refs.get(&target.id) != Some(&result) || self.a.refs.values().filter(|&&s| s == result).count() != 1 {
+            return None;
+        }
+        let mut exits = false;
+        for s in &body.body {
+            crate::sema::visit_stmts(s, &mut |s| {
+                exits |=
+                    matches!(&s.kind, StmtKind::Call(e) if matches!(&e.kind, ExprKind::Name(id) if id.key() == "exit"));
+            });
+        }
+        (!exits).then_some(result)
+    }
+
+    /// The last statement of a function, the one that sets its result
+    /// (`result = a + b;`), as the function's last expression: `a + b`.
+    /// If it doesn't end with such a line, the result gets its `let` after
+    /// all.
+    fn tail_assignment(&mut self, last: &Stmt, result: SymId, pid: ProcId) {
+        let start = self.out.len();
+        self.stmts(std::slice::from_ref(last));
+        let written = self.out.split_off(start);
+        let mut lines: Vec<&str> = written.lines().collect();
+        let name = &self.a.sym(result).rust_name;
+        let prefix = format!("{name} = ");
+        let tail = lines.last().and_then(|l| {
+            let code = l.trim_start();
+            let rest = code.strip_prefix(&prefix)?;
+            // `result = i; // the bigger one` keeps its comment: `i // the
+            // bigger one`. (The last `; //`: a string in the value may
+            // hold one too.)
+            let value = match rest.strip_suffix(';') {
+                Some(value) => value.to_string(),
+                None => {
+                    let (value, comment) = rest.rsplit_once("; //")?;
+                    format!("{value} //{comment}")
+                }
+            };
+            Some((l.len() - code.len(), value))
+        });
+        // At the statement's own level (not inside a block it opened);
+        // lines before it are comments, or statements that set it up
+        // (`let a_chars = ...;`).
+        match tail {
+            Some((indent, value)) if indent == 4 * self.indent => {
+                let line = format!("{}{value}", &lines[lines.len() - 1][..indent]);
+                lines.pop();
+                for l in lines {
+                    self.out.push_str(l);
+                    self.out.push('\n');
+                }
+                self.out.push_str(&line);
+                self.out.push('\n');
+                self.wrote_tail = true;
+            }
+            _ => {
+                let ty = self.a.procs[pid].ret.clone().expect("a function has a result type");
+                self.line(format!("let mut {name}: {} = {};", ty.rust(), default_value(&ty)));
+                self.out.push_str(&written);
+            }
         }
     }
 
@@ -1958,6 +2042,9 @@ impl<'a> Codegen<'a> {
     fn locals(&mut self, pid: ProcId) {
         for &sym in &self.a.procs[pid].locals {
             let at = self.decl_starts.get(&sym).copied();
+            if self.tail_result == Some(sym) {
+                continue;
+            }
             if self.a.elided_vars.contains(&sym) {
                 // No `let` (a `for` loop declares it), but keep its comments,
                 // which often describe the whole procedure.

@@ -87,9 +87,7 @@ pub fn describe(p: Point) {
 
 /// Pascal: `function Name: string;`
 pub fn name() -> PString {
-    let mut result: PString = PString::new();
-    result = pstr("geometry");
-    result
+    pstr("geometry")
 }
 
 /// The initialization part of unit `Geometry`, run before the main program.
@@ -113,9 +111,7 @@ use ruscal_runtime::prelude::*;
 
 /// Pascal: `function Name: string;`
 pub fn labels_name() -> PString {
-    let mut result: PString = PString::new();
-    result = pstr("labels");
-    result
+    pstr("labels")
 }
 
 /// Pascal: `procedure Tag(p: Point; text: string);`

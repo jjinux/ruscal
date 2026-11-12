@@ -82,21 +82,17 @@ trait TAnimalMethods {
 
     /// Pascal: `function TAnimal.Sound: string;`
     fn t_animal_sound(&mut self) -> PString {
-        let mut result: PString = PString::new();
-        result = pstr("...");
-        result
+        pstr("...")
     }
 
     /// Pascal: `function TAnimal.Speak(times: Integer): string;`
     fn t_animal_speak(&mut self, times: i16) -> PString {
-        let mut result: PString = PString::new();
         let mut s: PString = PString::new();
         s = self.t_animal().name + ":";
         for i in 1..=times {
             s = s + " " + self.sound();
         }
-        result = s;
-        result
+        s
     }
 }
 
@@ -233,16 +229,12 @@ trait TDogMethods: TAnimalMethods {
 
     /// Pascal: `function TDog.Sound: string;`
     fn t_dog_sound(&mut self) -> PString {
-        let mut result: PString = PString::new();
-        result = pstr("woof");
-        result
+        pstr("woof")
     }
 
     /// Pascal: `function TDog.Tricks: Integer;`
     fn t_dog_tricks(&mut self) -> i16 {
-        let mut result: i16 = 0;
-        result = 1;
-        result
+        1
     }
 
     /// Pascal: `procedure TDog.Report;`
@@ -278,9 +270,7 @@ trait TPuppyMethods: TDogMethods {
 
     /// Pascal: `function TPuppy.Tricks: Integer;`
     fn t_puppy_tricks(&mut self) -> i16 {
-        let mut result: i16 = 0;
-        result = self.t_dog_tricks() + 2;
-        result
+        self.t_dog_tricks() + 2
     }
 }
 

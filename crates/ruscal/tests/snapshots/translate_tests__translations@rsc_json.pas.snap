@@ -466,7 +466,6 @@ pub struct TJsonValue {
 // ----- Building values -----
 /// Pascal: `function NewValue(Kind: TJsonKind): PJsonValue;`
 pub fn new_value(kind: TJsonKind) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut v: PJsonValue = Ptr::nil();
     v = Ptr::alloc();
     v.get_mut().kind = kind;
@@ -478,59 +477,46 @@ pub fn new_value(kind: TJsonKind) -> PJsonValue {
     v.get_mut().first = Ptr::nil();
     v.get_mut().last = Ptr::nil();
     v.get_mut().next = Ptr::nil();
-    result = v.clone();
-    result
+    v.clone()
 }
 
 /// Pascal: `function JsonNewNull: PJsonValue;`
 pub fn json_new_null() -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
-    result = new_value(TJsonKind::JkNull);
-    result
+    new_value(TJsonKind::JkNull)
 }
 
 /// Pascal: `function JsonNewBool(B: Boolean): PJsonValue;`
 pub fn json_new_bool(b: bool) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut v: PJsonValue = Ptr::nil();
     v = new_value(TJsonKind::JkBoolean);
     v.get_mut().bool = b;
-    result = v.clone();
-    result
+    v.clone()
 }
 
 /// Pascal: `function JsonNewNumber(X: Real): PJsonValue;`
 pub fn json_new_number(x: f64) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut v: PJsonValue = Ptr::nil();
     v = new_value(TJsonKind::JkNumber);
     v.get_mut().number = x;
-    result = v.clone();
-    result
+    v.clone()
 }
 
 /// Pascal: `function JsonNewString(const S: string): PJsonValue;`
 pub fn json_new_string(s: &PString) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut v: PJsonValue = Ptr::nil();
     v = new_value(TJsonKind::JkString);
     v.get_mut().str = *s;
-    result = v.clone();
-    result
+    v.clone()
 }
 
 /// Pascal: `function JsonNewArray: PJsonValue;`
 pub fn json_new_array() -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
-    result = new_value(TJsonKind::JkArray);
-    result
+    new_value(TJsonKind::JkArray)
 }
 
 /// Pascal: `function JsonNewObject: PJsonValue;`
 pub fn json_new_object() -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
-    result = new_value(TJsonKind::JkObject);
-    result
+    new_value(TJsonKind::JkObject)
 }
 
 // Put V at the end of a list of members.
@@ -632,7 +618,6 @@ pub fn json_count(v: PJsonValue) -> i16 {
 
 /// Pascal: `function JsonItem(V: PJsonValue; Index: Integer): PJsonValue;`
 pub fn json_item(v: PJsonValue, mut index: i16) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut member: PJsonValue = Ptr::nil();
     member = Ptr::nil();
     if !v.is_nil() && index >= 0 {
@@ -643,13 +628,11 @@ pub fn json_item(v: PJsonValue, mut index: i16) -> PJsonValue {
             index -= 1;
         }
     }
-    result = member.clone();
-    result
+    member.clone()
 }
 
 /// Pascal: `function JsonGet(V: PJsonValue; const Key: string): PJsonValue;`
 pub fn json_get(v: PJsonValue, key: &PString) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut member: PJsonValue = Ptr::nil();
     member = Ptr::nil();
     if !v.is_nil() && v.get().kind == TJsonKind::JkObject {
@@ -659,8 +642,7 @@ pub fn json_get(v: PJsonValue, key: &PString) -> PJsonValue {
             member = next;
         }
     }
-    result = member.clone();
-    result
+    member.clone()
 }
 
 /// Pascal: `function JsonString(V: PJsonValue): string;`
@@ -687,44 +669,32 @@ pub fn json_number(v: PJsonValue) -> f64 {
 
 /// Pascal: `function JsonInteger(V: PJsonValue): LongInt;`
 pub fn json_integer(v: PJsonValue) -> i32 {
-    let mut result: i32 = 0;
-    result = json_number(v.clone()).round() as i32;
-    result
+    json_number(v.clone()).round() as i32
 }
 
 /// Pascal: `function JsonBool(V: PJsonValue): Boolean;`
 pub fn json_bool(v: PJsonValue) -> bool {
-    let mut result: bool = false;
-    result = !v.is_nil() && v.get().kind == TJsonKind::JkBoolean && v.get().bool;
-    result
+    !v.is_nil() && v.get().kind == TJsonKind::JkBoolean && v.get().bool
 }
 
 /// Pascal: `function JsonGetString(V: PJsonValue; const Key: string): string;`
 pub fn json_get_string(v: PJsonValue, key: &PString) -> PString {
-    let mut result: PString = PString::new();
-    result = json_string(json_get(v.clone(), key));
-    result
+    json_string(json_get(v.clone(), key))
 }
 
 /// Pascal: `function JsonGetNumber(V: PJsonValue; const Key: string): Real;`
 pub fn json_get_number(v: PJsonValue, key: &PString) -> f64 {
-    let mut result: f64 = 0.0;
-    result = json_number(json_get(v.clone(), key));
-    result
+    json_number(json_get(v.clone(), key))
 }
 
 /// Pascal: `function JsonGetInteger(V: PJsonValue; const Key: string): LongInt;`
 pub fn json_get_integer(v: PJsonValue, key: &PString) -> i32 {
-    let mut result: i32 = 0;
-    result = json_integer(json_get(v.clone(), key));
-    result
+    json_integer(json_get(v.clone(), key))
 }
 
 /// Pascal: `function JsonGetBool(V: PJsonValue; const Key: string): Boolean;`
 pub fn json_get_bool(v: PJsonValue, key: &PString) -> bool {
-    let mut result: bool = false;
-    result = json_bool(json_get(v.clone(), key));
-    result
+    json_bool(json_get(v.clone(), key))
 }
 
 /// Pascal: `procedure NextChar;`
@@ -830,7 +800,6 @@ pub fn hex_digits(
     where_: &mut i32,
     failed: &mut bool,
 ) -> i32 {
-    let mut result: i32 = 0;
     let mut d: i16 = 0;
     let mut n: i32 = 0;
     n = 0;
@@ -846,8 +815,7 @@ pub fn hex_digits(
         }
         n = n * 16 + i32::from(d);
     }
-    result = n;
-    result
+    n
 }
 
 // A string, with Ch at its opening quote.
@@ -865,7 +833,6 @@ pub fn parse_string(
     where_: &mut i32,
     failed: &mut bool,
 ) -> PString {
-    let mut result: PString = PString::new();
     let mut s: PString = PString::new();
     let mut c: u8 = 0;
     let mut code: i32 = 0;
@@ -906,8 +873,7 @@ pub fn parse_string(
         }
     }
     next_char(from_file, source, source_pos, input2, ch, at_end, where_);
-    result = s;
-    result
+    s
 }
 
 // A number, with Ch at its first character.
@@ -925,7 +891,6 @@ pub fn parse_number(
     where_: &mut i32,
     failed: &mut bool,
 ) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut s: PString = PString::new();
     let mut x: f64 = 0.0;
     let mut code: i16 = 0;
@@ -939,8 +904,7 @@ pub fn parse_number(
     if code != 0 || x.abs() > 1.7e38 {
         fail(json_error, *at_end, *where_, failed, &pstr("a bad number"));
     }
-    result = json_new_number(x);
-    result
+    json_new_number(x)
 }
 
 // true, false or null, with Ch at its first letter.
@@ -994,7 +958,6 @@ pub fn parse_list(
     failed: &mut bool,
     kind: TJsonKind,
 ) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut list: PJsonValue = Ptr::nil();
     let mut member: PJsonValue = Ptr::nil();
     let mut key: PString = PString::new();
@@ -1036,8 +999,7 @@ pub fn parse_list(
             }
         }
     }
-    result = list.clone();
-    result
+    list.clone()
 }
 
 /// Pascal: `function ParseValue: PJsonValue;`
@@ -1119,7 +1081,6 @@ pub fn parse_all(
     where_: &mut i32,
     failed: &mut bool,
 ) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     let mut v: PJsonValue = Ptr::nil();
     *json_error = PString::new();
     *failed = false;
@@ -1134,8 +1095,7 @@ pub fn parse_all(
         json_free(v.clone());
         v = Ptr::nil();
     }
-    result = v.clone();
-    result
+    v.clone()
 }
 
 /// Pascal: `function JsonParse(const S: string): PJsonValue;`
@@ -1153,12 +1113,10 @@ pub fn json_parse(
     failed: &mut bool,
     s: &PString,
 ) -> PJsonValue {
-    let mut result: PJsonValue = Ptr::nil();
     *from_file = false;
     *source = *s;
     *source_pos = 1;
-    result = parse_all(json_error, *from_file, *source, source_pos, input2, ch, at_end, where_, failed).clone();
-    result
+    parse_all(json_error, *from_file, *source, source_pos, input2, ch, at_end, where_, failed).clone()
 }
 
 /// Pascal: `function JsonLoad(const FileName: string): PJsonValue;`
@@ -1197,7 +1155,6 @@ pub fn json_load(
 // without trailing zeros.
 /// Pascal: `function NumberText(X: Real): string;`
 pub fn number_text(x: f64) -> PString {
-    let mut result: PString = PString::new();
     let mut s: PString = PString::new();
     if x.fract() == 0.0 && x.abs() < 2147483647.0 {
         s = pas_str(x.trunc() as i32);
@@ -1210,8 +1167,7 @@ pub fn number_text(x: f64) -> PString {
             s.delete(s.length(), 1);
         }
     }
-    result = s;
-    result
+    s
 }
 
 /// Pascal: `procedure Put(var F: Text; const S: string);`
@@ -1382,11 +1338,9 @@ pub fn json_save(
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn json_to_string(to_string: &mut bool, output2: &mut PString, hex: PString, v: PJsonValue) -> PString {
-    let mut result: PString = PString::new();
     *to_string = true;
     *output2 = PString::new();
     write_value(*to_string, output2, hex, &mut PText::console(), v.clone(), 0, 0);
     *to_string = false;
-    result = *output2;
-    result
+    *output2
 }

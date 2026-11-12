@@ -54,7 +54,6 @@ fn push(list: &mut NodePtr, v: i16) {
 
 /// Pascal: `function Sum(list: NodePtr): integer;`
 fn sum(mut list: NodePtr) -> i16 {
-    let mut result: i16 = 0;
     let mut total: i16 = 0;
     total = 0;
     while !list.is_nil() {
@@ -62,8 +61,7 @@ fn sum(mut list: NodePtr) -> i16 {
         let next = list.get().next.clone();
         list = next;
     }
-    result = total;
-    result
+    total
 }
 
 /// Pascal: `procedure Insert(var root: KeyPtr; id: longint; var successful: boolean);`

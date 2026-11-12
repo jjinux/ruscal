@@ -5074,7 +5074,7 @@ fn byte_sequence(ty: &Type) -> bool {
 }
 
 /// Call `f` on a statement and every statement nested in it.
-fn visit_stmts(s: &Stmt, f: &mut impl FnMut(&Stmt)) {
+pub(crate) fn visit_stmts(s: &Stmt, f: &mut impl FnMut(&Stmt)) {
     f(s);
     match &s.kind {
         StmtKind::Compound(body) | StmtKind::Repeat { body, .. } => body.iter().for_each(|s| visit_stmts(s, f)),

@@ -64,10 +64,8 @@ fn hello(calls: &mut i16) {
 ///
 /// Kept in a `IntFunc`, so it takes the globals any `IntFunc` routine uses.
 fn tick(n: &mut i16) -> i16 {
-    let mut result: i16 = 0;
     *n += 1;
-    result = *n;
-    result
+    *n
 }
 
 // A Pascal object's methods go in an `impl` block. Each takes `&mut self`,
@@ -87,9 +85,7 @@ impl Counter {
     ///
     /// Uses globals, which are passed in as parameters.
     fn twice(&mut self, n: &mut i16) -> i16 {
-        let mut result: i16 = 0;
-        result = self.next.get()(n) + self.next.get()(n);
-        result
+        self.next.get()(n) + self.next.get()(n)
     }
 }
 

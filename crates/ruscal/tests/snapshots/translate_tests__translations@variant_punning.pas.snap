@@ -115,14 +115,12 @@ fn sum(data: &mut dyn ByteView, size: i16) -> i16 {
     // `Bytes` copies them, and when it's dropped (at any `return`) it
     // writes them back into the variable.
     let data = Bytes::of(data);
-    let mut result: i16 = 0;
     let mut total: i16 = 0;
     total = 0;
     for k in 1..=size {
         total += i16::from(data[k - 1]);
     }
-    result = total;
-    result
+    total
 }
 
 /// The main program: the `begin ... end.` block of `VariantPunning`.
