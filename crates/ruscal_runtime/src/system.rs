@@ -153,6 +153,14 @@ impl ValTarget for f64 {
     }
 }
 
+/// A `Single`: read as an `f64`, then rounded to an `f32`, as TP rounded
+/// what the 8087 read.
+impl ValTarget for f32 {
+    fn parse_pascal(text: &str) -> Option<f32> {
+        f64::parse_pascal(text).map(|x| x as f32)
+    }
+}
+
 /// Pascal `Val(s, x, code)`: parse `s` into `x`. `code` is 0 on success, or
 /// the 1-based position of the first bad character.
 pub fn val<T: ValTarget>(s: impl Into<PString>, x: &mut T, code: &mut i16) {

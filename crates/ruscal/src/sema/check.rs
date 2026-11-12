@@ -719,6 +719,10 @@ impl Checker {
                     Some(value_ty) => value_ty,
                     None => self.expr(e),
                 };
+                if ty.accepts(&value_ty) {
+                    // `const B: Byte = 300`, `const S: Single = 1E39`
+                    self.check_constant_range(ty, e);
+                }
                 if !ty.accepts(&value_ty) {
                     self.error(e.span, format!("expected a {ty} value, found {value_ty}"));
                 } else if self.errors.len() == errors_before
@@ -2682,6 +2686,15 @@ impl Checker {
         {
             self.error(value.span, format!("the constant {n} is out of range for {target}"));
         }
+        // A real one too big for a `Single` (`s := 1E39`): the 8087 stopped
+        // with runtime error 205; Rust refuses the `f32` literal.
+        if let Type::Real(RealKind::Single) = target
+            && let Some(ConstVal::Real(x)) = self.eval_const(value)
+            && x.is_finite()
+            && (x as f32).is_infinite()
+        {
+            self.error(value.span, format!("the constant {x:E} is too big for a Single"));
+        }
     }
 
     /// A procedure call used as a statement.
@@ -4158,9 +4171,23 @@ impl Checker {
                         if b == Writeln {
                             self.error(span, "`Writeln` needs a text file");
                         }
+                        // As in TP 7, each is a variable of the file's own type:
+                        // `Write(F, 3)` is "Variable identifier expected", and a
+                        // `Single` for a `file of Real` "Type mismatch".
                         for arg in args {
-                            let ty = self.expr(arg);
-                            if !elem.accepts(&ty) {
+                            if !matches!(
+                                arg.kind,
+                                ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) | ExprKind::Deref(_)
+                            ) {
+                                self.expr(arg);
+                                self.error(
+                                    arg.span,
+                                    format!("`{name}` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)"),
+                                );
+                                continue;
+                            }
+                            let ty = self.place(arg, false);
+                            if !same_file_type(&ty, &elem) && ty != Type::Error {
                                 self.error(arg.span, format!("this file holds {elem} values, not {ty}"));
                             }
                         }
@@ -4216,7 +4243,7 @@ impl Checker {
                     if let Type::File(elem) = file_ty {
                         for arg in args {
                             let ty = self.place(arg, true);
-                            if ty != *elem && ty != Type::Error {
+                            if !same_file_type(&ty, &elem) && ty != Type::Error {
                                 self.error(arg.span, format!("this file holds {elem} values, not {ty}"));
                             }
                         }
@@ -4640,7 +4667,19 @@ impl Checker {
                 }
                 Type::Void
             }
-            Abs | Sqr => self.unary_builtin(span, args, &name, |t| t.is_numeric(), |t| t.concrete()),
+            Abs => self.unary_builtin(span, args, &name, |t| t.is_numeric(), |t| t.concrete()),
+            // A real's square is worked out as an `f64`, a `Single`'s too (as
+            // the 8087 did, in extended precision).
+            Sqr => self.unary_builtin(
+                span,
+                args,
+                &name,
+                |t| t.is_numeric(),
+                |t| match t {
+                    Type::Real(_) => Type::REAL,
+                    t => t.concrete(),
+                },
+            ),
             Sqrt | Sin | Cos | ArcTan | Ln | Exp | Int | Frac => {
                 self.unary_builtin(span, args, &name, |t| t.is_numeric(), |_| Type::REAL)
             }
@@ -4903,7 +4942,8 @@ impl Checker {
 
 /// The type in which `l op r` is computed for `+`, `-` and `*`.
 pub fn numeric_common(l: &Type, r: &Type) -> Option<Type> {
-    if *l == Type::REAL && r.is_numeric() || *r == Type::REAL && l.is_numeric() {
+    // Real arithmetic is done in `f64`, a `Single`'s too.
+    if matches!(l, Type::Real(_)) && r.is_numeric() || matches!(r, Type::Real(_)) && l.is_numeric() {
         Some(Type::REAL)
     } else {
         int_common(l, r)
@@ -5129,6 +5169,16 @@ fn byte_register_message(name: &str) -> String {
     format!(
         "Ruscal's `Registers` has no `{name}`: its byte halves (`AL`, `AH`, ...) are only for `Intr` and `MsDos`, which call DOS itself and need a real DOS PC, so Ruscal can't translate them; see \"Never supported\" in the README"
     )
+}
+
+/// Is a variable of type `ty` what a `file of elem` holds? The same type,
+/// and for reals the same kind: a `Double` isn't a `Real` in a file (they
+/// take 8 bytes and 6), though they're one type to sema otherwise.
+fn same_file_type(ty: &Type, elem: &Type) -> bool {
+    match (ty, elem) {
+        (Type::Real(a), Type::Real(b)) => std::mem::discriminant(a) == std::mem::discriminant(b),
+        _ => ty == elem,
+    }
 }
 
 /// "unknown identifier `X`", or, for DOS's `Port` and `Mem` arrays, why

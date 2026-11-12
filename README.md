@@ -188,7 +188,8 @@ graphics. Ruscal provides all three in its runtime.
 - **`goto`:** a jump forward or back within a statement list, translated
   as Rust's labeled blocks and loops.
 - **Files:** text files, typed files (`file of T`) and untyped files.
-  Typed files use Turbo Pascal's own byte layout (6-byte `Real`s,
+  Typed files use Turbo Pascal's own byte layout (6-byte `Real`s, and
+  `Single`, `Double` and `Extended` as the 8087 stored them,
   `string[n]` as n+1 bytes, unpadded records), so a program can read the
   data files it wrote decades ago. `{$I-}` and `IOResult` work.
 - **Standard units:** `Crt`, `Dos`, `Graph` (in a window), `Printer`,

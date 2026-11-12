@@ -142,24 +142,55 @@ macro_rules! impl_pas_write_int {
 // (`usize` for `SizeOf(Rec)`, which is `Rec::SERIALIZED_SIZE`.)
 impl_pas_write_int!(i8, i16, i32, i64, u16, u32, u64, usize);
 
+/// How reals print: TP's software reals (`{$N-}`, the default), or the
+/// 8087's (`{$N+}`).
+struct RealFormat {
+    /// The width with none given.
+    default_width: i32,
+    /// Exponent digits: `E+02`, or `E+0002` with the 8087.
+    exponent_digits: usize,
+    /// Most digits after the point.
+    max_digits: i32,
+}
+
 /// Turbo Pascal prints a `Real` with no width in scientific notation, 17
 /// characters wide: ` 1.2345000000E+02`. That's at most 11 significant
 /// digits, the precision of TP's 6-byte `Real`, even though Ruscal
 /// stores a `Real` as an `f64`; so `x:25` pads with spaces rather than
 /// printing more digits.
-const DEFAULT_REAL_WIDTH: i32 = 17;
+const SOFTWARE_REALS: RealFormat = RealFormat { default_width: 17, exponent_digits: 2, max_digits: 10 };
+
+/// Under `{$N+}`, TP 7 prints every real type the 8087's way, 23
+/// characters wide: ` 1.23450000000000E+0002`, 15 significant digits.
+/// (Past that TP printed garbage digits; Ruscal pads.)
+const COPROCESSOR_REALS: RealFormat = RealFormat { default_width: 23, exponent_digits: 4, max_digits: 14 };
+
+/// Set by a program compiled with `{$N+}`. (An atomic is a global that's
+/// safe to change without `unsafe`, even with threads.)
+static COPROCESSOR: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Print reals as TP 7 did with `{$N+}`. The program's `main` calls this.
+pub fn use_coprocessor_format() {
+    COPROCESSOR.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn real_format() -> &'static RealFormat {
+    if COPROCESSOR.load(std::sync::atomic::Ordering::Relaxed) { &COPROCESSOR_REALS } else { &SOFTWARE_REALS }
+}
 
 impl PasWrite for f64 {
     fn pas_write(&self, out: &mut Vec<u8>) {
-        self.pas_write_width(DEFAULT_REAL_WIDTH, out);
+        self.pas_write_width(real_format().default_width, out);
     }
 
     /// `x:width` prints in scientific notation, using as many digits as fit.
     fn pas_write_width(&self, width: i32, out: &mut Vec<u8>) {
         // The fixed parts are: sign or space, one digit, '.', 'E', the
-        // exponent sign and two exponent digits, which is 7 characters.
-        let digits = (width - 7).clamp(1, 10) as usize;
-        let text = format_scientific(*self, digits);
+        // exponent sign and the exponent's digits (7 characters, or 9).
+        let format = real_format();
+        let fixed = 5 + format.exponent_digits as i32;
+        let digits = (width - fixed).clamp(1, format.max_digits) as usize;
+        let text = format_scientific(*self, digits, format.exponent_digits);
         pad_left(text.as_bytes(), width, out);
     }
 
@@ -188,9 +219,10 @@ impl PasWrite for f32 {
     }
 }
 
-/// Format like Turbo Pascal: ` 1.2340000000E+02` or `-1.2340000000E-05`,
+/// Format like Turbo Pascal: ` 1.2340000000E+02` or `-1.2340000000E-05` (or
+/// `E+0002`, with 4 `exponent_digits`),
 /// with `digits` digits after the point.
-fn format_scientific(x: f64, digits: usize) -> String {
+fn format_scientific(x: f64, digits: usize, exponent_digits: usize) -> String {
     if let Some(text) = format_non_finite(x) {
         return text;
     }
@@ -200,7 +232,7 @@ fn format_scientific(x: f64, digits: usize) -> String {
     let mantissa: String = rounded[..=digits].iter().map(|&d| char::from(b'0' + d)).collect();
     let sign = if x.is_sign_negative() { '-' } else { ' ' };
     let exp_sign = if exp < 0 { '-' } else { '+' };
-    format!("{sign}{}.{}E{exp_sign}{:02}", &mantissa[..1], &mantissa[1..], exp.abs())
+    format!("{sign}{}.{}E{exp_sign}{:0exponent_digits$}", &mantissa[..1], &mantissa[1..], exp.abs())
 }
 
 /// Format like Turbo Pascal's `x:width:decimals`: `-12.35`.

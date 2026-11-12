@@ -8,6 +8,7 @@
 
 use super::Codegen;
 use crate::ast::*;
+use crate::sema::types::RealKind;
 use crate::sema::{Access, Builtin, ConstVal, IntKind, SymId, SymKind, Type, numeric_common};
 
 /// Rust operator precedence, loosest first. Only the relative order matters.
@@ -614,6 +615,18 @@ impl<'a> Codegen<'a> {
             && bytes.len() == 1
         {
             return (char_literal(bytes[0]), prec::ATOM);
+        }
+        // A real literal for a `Single`: Rust takes `0.1` as an `f32` there.
+        if let Type::Real(RealKind::Single) = to {
+            match &e.kind {
+                ExprKind::Real(x) => return (real_literal(*x), prec::ATOM),
+                ExprKind::Unary { op: UnaryOp::Neg, operand } => {
+                    if let ExprKind::Real(x) = operand.kind {
+                        return (format!("-{}", real_literal(x)), prec::UNARY);
+                    }
+                }
+                _ => {}
+            }
         }
         if let (Type::Real(_), Type::IntLit(_)) = (to, &from) {
             match &e.kind {
@@ -2348,7 +2361,18 @@ pub(super) fn convert(code: Code, from: &Type, to: &Type) -> Code {
         (Type::Int(_) | Type::IntLit(_) | Type::Char | Type::Bool | Type::Enum(_), Type::Int(_) | Type::Char) => {
             cast(code, &from.concrete(), to)
         }
+        // A `Single` is an `f32`: kept as one, computed with as an `f64`
+        // (TP 7's 8087 computed in extended precision, and rounded when it
+        // stored a `Single`).
+        // (An integer expression of literals is an `i32` to Rust, which
+        // has no `f32::from` for one: `(2 + 3) as f32`.)
+        (Type::Int(IntKind::LongInt) | Type::IntLit(_), Type::Real(RealKind::Single)) => {
+            (format!("{} as f32", paren(code, prec::AS)), prec::AS)
+        }
+        (Type::Int(_), Type::Real(RealKind::Single)) => (format!("f32::from({})", code.0), prec::POSTFIX),
         (Type::Int(_) | Type::IntLit(_), Type::Real(_)) => (format!("f64::from({})", code.0), prec::POSTFIX),
+        (Type::Real(RealKind::Single), Type::Real(_)) => (format!("f64::from({})", code.0), prec::POSTFIX),
+        (Type::Real(_), Type::Real(RealKind::Single)) => (format!("{} as f32", paren(code, prec::AS)), prec::AS),
         (Type::StrLit(_) | Type::Char, Type::Str { .. }) => (format!("pstr({})", code.0), prec::POSTFIX),
         _ => code,
     }

@@ -118,12 +118,12 @@ impl IntKind {
     }
 }
 
-/// Which real type a [`Type::Real`] is. In Rust every one of them is an
-/// `f64`, so to sema they're all the same type: two kinds always compare
-/// equal (the `PartialEq` below), and `x: Double := r` needs no conversion.
-/// The kind only says how TP stored the value: on disk a `Single` took 4
-/// bytes, a `Real` 6, a `Double` 8 and an `Extended` 10. (Ruscal's files
-/// store them all as a 6-byte `Real` for now; `to-json` refuses the others.)
+/// Which real type a [`Type::Real`] is. In Rust a `Single` is an `f32`
+/// and the others are `f64`s, so to sema those three are the same type:
+/// they compare equal (the `PartialEq` below), and `x: Double := r` needs
+/// no conversion, where a `Single` does. The kind also says how TP stored
+/// the value: a `Single` took 4 bytes, a `Real` 6, a `Double` 8 and an
+/// `Extended` 10, in memory (`SizeOf`) and in files.
 #[derive(Debug, Clone, Copy)]
 pub enum RealKind {
     Real,
@@ -133,8 +133,8 @@ pub enum RealKind {
 }
 
 impl PartialEq for RealKind {
-    fn eq(&self, _other: &Self) -> bool {
-        true
+    fn eq(&self, other: &Self) -> bool {
+        matches!(self, RealKind::Single) == matches!(other, RealKind::Single)
     }
 }
 
@@ -589,6 +589,7 @@ impl Type {
         match self {
             Type::Int(k) => k.rust().to_string(),
             Type::IntLit(v) => IntKind::for_literal(*v).rust().to_string(),
+            Type::Real(RealKind::Single) => "f32".to_string(),
             Type::Real(_) => "f64".to_string(),
             Type::Bool => "bool".to_string(),
             Type::Char => "u8".to_string(),
@@ -788,7 +789,10 @@ pub fn serialized_size(ty: &Type) -> Option<i64> {
         Type::Int(IntKind::LongInt) => 4,
         // `Double`, `Single` and `Extended` are stored as a `Real` for now,
         // so they get its 6 bytes too (see `RealKind`).
-        Type::Real(_) => 6,
+        Type::Real(RealKind::Single) => 4,
+        Type::Real(RealKind::Real) => 6,
+        Type::Real(RealKind::Double) => 8,
+        Type::Real(RealKind::Extended) => 10,
         Type::Enum(e) => {
             if e.variants.len() <= 256 || e.in_one_byte {
                 1

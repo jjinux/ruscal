@@ -204,7 +204,7 @@ macro_rules! impl_read_number {
         } )*
     };
 }
-impl_read_number!(i8, i16, i32, i64, u16, f64);
+impl_read_number!(i8, i16, i32, i64, u16, f32, f64);
 
 /// Reading a `Char` takes exactly one character. At the end of a line it
 /// gives `#13` (carriage return), as on DOS, and moves to the next line.

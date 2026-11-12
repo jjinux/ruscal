@@ -48,6 +48,7 @@ type:
 | `Char` | 1 byte, code page 437 | a one-character string (`"é"` for #130) |
 | `string[n]` | a length byte, then `n` bytes | the string; the bytes after its length are leftovers TP never cleared, and are dropped |
 | `Real` | 6 bytes | a number, written as the shortest decimal that gives the same 6 bytes (`0.1`, not `0.10000000000002274`) |
+| `Single`, `Double`, `Extended` | 4, 8, 10 bytes | a number (a `Single` as its shortest decimal, `0.1`) |
 | an enumerated type | 1 byte (2 for more than 256 values, but 1 for a subrange of such a type whose upper bound fits a byte) | the value's name as the source spells it (`"Blue"`) |
 | `set of T` | a bit per possible element | an array of the elements (`["Red", "Blue"]`, `["a", "z"]`) |
 | `array[lo..hi] of T` | the elements | an array, in index order (an array of arrays for `[1..2, 1..3]`) |
@@ -103,10 +104,9 @@ bytes after the name), and `from-json` then `to-json` gives back the JSON.
 
 ## What it can't read
 
-- `Single`, `Double` and `Extended`: TP stores them in 4, 8 and 10 bytes,
-  but Ruscal (in translated programs too) stores every real as a 6-byte
-  `Real` for now, so both commands refuse them rather than use the wrong
-  bytes.
+- `Comp`, which Ruscal doesn't support yet.
+- An `Extended` keeps 64 bits of mantissa; Ruscal reads it as an `f64`
+  (53 bits), so its last digits may be lost.
 - Subranges (`Month: 1..12`) are checked against their host type only
   (`Byte`), so `from-json` accepts 13.
 - An `object` with a constructor, destructor or virtual method:

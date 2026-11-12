@@ -27,7 +27,7 @@ fn pascal_main() {
     let mut r: f64 = 0.0;
     let mut d: f64 = 0.0;
     let mut e: f64 = 0.0;
-    let mut s: f64 = 0.0;
+    let mut s: f32 = 0.0;
     r = 2.5;
     d = 2.5;
     e = 2.5;
@@ -59,6 +59,9 @@ fn pascal_main() {
 }
 
 fn main() {
+    // `{$N+}`: reals print as Turbo Pascal 7 printed them with the 8087,
+    // with 15 digits (` 1.50000000000000E+0000`).
+    ruscal_runtime::io::use_coprocessor_format();
     // `run` turns Pascal runtime errors into Turbo Pascal style messages and
     // exit codes.
     ruscal_runtime::run(pascal_main);

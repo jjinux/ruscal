@@ -72,7 +72,8 @@ Pascal, variant fields included, so an object never repeats a key.
 - `Single`, `Double`, `Extended`, `Comp`: Ruscal maps them all to `Real`
   (6 bytes on disk), so a file written by the real TP with a `Double`
   field (8 bytes) doesn't read correctly, neither by a translated program
-  nor here. **Open question 1.**
+  nor here. **Open question 1.** (Settled 2026-11-11: `Single`, `Double`
+  and `Extended` take TP's 4, 8 and 10 bytes now; `Comp` isn't supported.)
 - A file whose size isn't a whole number of records: an error naming the
   record size and the leftover bytes.
 

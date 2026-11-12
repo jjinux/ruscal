@@ -1,0 +1,16 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/float_range.pas
+---
+float_range.pas:6:14: error: the constant 300 is out of range for Byte
+   B: Byte = 300;
+             ^^^
+
+float_range.pas:7:16: error: the constant 1E39 is too big for a Single
+   C: Single = 1E39;
+               ^^^^
+
+float_range.pas:11:9: error: the constant 1E39 is too big for a Single
+   S := 1E39;
+        ^^^^

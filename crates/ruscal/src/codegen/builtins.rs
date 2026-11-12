@@ -454,12 +454,15 @@ impl<'a> Codegen<'a> {
                 format!("{n}.abs()")
             }
             Sqr => {
-                let t = ty(self, &args[0]).concrete();
+                let t = match ty(self, &args[0]).concrete() {
+                    Type::Real(_) => Type::REAL,
+                    t => t,
+                };
                 let n = self.postfix(&args[0], &t);
                 if matches!(t, Type::Int(_)) && self.overflow_checked_at(span) && !self.is_constant(&args[0]) {
                     return self.checked_op((n, prec::POSTFIX), "checked_pow", "2").0;
                 }
-                let method = if t == Type::REAL { "powi" } else { "pow" };
+                let method = if matches!(t, Type::Real(_)) { "powi" } else { "pow" };
                 format!("{n}.{method}(2)")
             }
             Sqrt | Sin | Cos | ArcTan | Ln | Exp | Int | Frac => {
@@ -496,7 +499,12 @@ impl<'a> Codegen<'a> {
                     _ if even => "round_ties_even",
                     _ => "round",
                 };
-                format!("{}.{method}() as i32", self.postfix(&args[0], &Type::REAL))
+                // A `Single` rounds the same as an `f32` (`s.round()`).
+                let real = match ty(self, &args[0]) {
+                    t @ Type::Real(_) => t,
+                    _ => Type::REAL,
+                };
+                format!("{}.{method}() as i32", self.postfix(&args[0], &real))
             }
             // `::std`: a program's unit named `Std` becomes a module `std`.
             Pi => "::std::f64::consts::PI".to_string(),

@@ -117,7 +117,15 @@ fn value(analysis: &Analysis, ty: &Type, json: &Value, out: &mut Out, path: &str
             }
         }
         Type::Real(kind) => {
-            return Err(format!("{path} is a {kind:?}: Ruscal writes only 6-byte `Real`s to files for now"));
+            let x = json.as_f64().ok_or_else(|| format!("{path} should be a number, not {json}"))?;
+            match kind {
+                RealKind::Single if x.is_finite() && (x as f32).is_infinite() => {
+                    return Err(format!("{path} is {json}, too big for a Single"));
+                }
+                RealKind::Single => out.set(&(x as f32).to_le_bytes()),
+                RealKind::Extended => out.set(&ruscal_runtime::io::extended80::from_f64(x)),
+                _ => out.set(&x.to_le_bytes()),
+            }
         }
         Type::Enum(_) => {
             let ordinal = ordinal(ty, json, path)?;

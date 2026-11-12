@@ -76,12 +76,29 @@ behaves like TP, and there is a test for it.
 Numbers, characters and enumerations
 
 - `Integer`, `LongInt`, `ShortInt`, `Word`, `Byte`, `Real`, `Boolean`, `Char`
-- `{$N+}` types `Single`, `Double` and `Extended` are accepted and kept as
-  a `Real` (an `f64` in Rust, 6 bytes in `SizeOf` and typed files) for now;
-  `Comp` isn't supported;
-  under `{$N+}`, `Round` at run time rounds half to even, as TP 7's 8087
+- `{$N+}` types (TP 7 with the 8087): `Single` is an `f32`, `Double` and
+  `Extended` are `f64`s; `SizeOf` and typed files give them TP's 4, 8
+  and 10 bytes (an `Extended` in the 8087's 10-byte format), so files
+  TP wrote read back. Arithmetic is done in `f64`, a `Single`'s too, as
+  the 8087 worked in extended precision and rounded when it stored a
+  `Single` (`s = (f64::from(s) + 1.0) as f32`). An `Extended` has an
+  `f64`'s precision, not the 8087's 64 bits, so its last digit can
+  differ. `Comp` isn't supported. Ruscal is more lenient than TP 7 in
+  two ways: it takes these types without `{$N+}` (TP said "Must be in
+  8087 mode to compile this", so there's no TP output to compare), and a
+  `Double` or `Extended` for a `var Real` parameter (TP wants the same
+  type; a `Single` is refused, as an `f32`). `Write` and `Read` on a
+  typed file take a variable of exactly the file's type, as in TP.
+  Under `{$N+}`, `Write` prints every
+  real type as TP 7 did with the 8087, with 15 digits and a 4-digit
+  exponent (` 1.00000000000000E-0001`, against ` 1.0000000000E-01`
+  without it), and `Round` at run time rounds half to even, as the 8087
   does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
-  round half away from zero (3)
+  round half away from zero (3). (Ruscal's `Real` is an `f64`, so under
+  `{$N+}` it prints `0.1` as `1.00000000000000E-0001`, where TP's
+  6-byte `Real` showed `1.00000000000023E-0001`.) The print format
+  follows the program file's `{$N+}`: a unit compiled with a different
+  setting prints as the program does, where TP chose per call.
 - Enumerated types `(Red, Green, Blue)`; subranges `1..10`, `'A'..'Z'`,
   `Red..Blue`, an integer subrange stored in the smallest type that holds
   its bounds, as in TP (`1..12` is a byte, in `SizeOf` and in files).
@@ -655,8 +672,7 @@ Real TP features, not in the examples, worth doing in this order:
 8. `absolute` variables when both are scalars of the same size
 9. The bundled-globals and place-descriptor options for pathological
    aliasing (see `architecture.md` §15)
-10. `Single`, `Double` and `Extended` as types of their own (`f32`,
-    `f64`, `f64`), and `Comp` (`i64`)
+10. `Comp`, TP's 8-byte integer kept as a real
 
 Also not yet: `{$B+}` and `{$R+}` (see
 [Compiler directives](#compiler-directives)), and the two object cases
