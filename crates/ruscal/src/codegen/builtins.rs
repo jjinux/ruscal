@@ -75,8 +75,11 @@ impl<'a> Codegen<'a> {
                 // `Write(f, x, y)` on a typed file writes whole records.
                 Some(Type::File(_)) => {
                     let file = self.place_receiver(&args[0]);
-                    let writes: Vec<String> =
-                        args[1..].iter().map(|a| format!("{file}.write(&{});", self.expr(a).0)).collect();
+                    // (A typecast variable, `Word(I)`, is `&(i as u16)`.)
+                    let writes: Vec<String> = args[1..]
+                        .iter()
+                        .map(|a| format!("{file}.write(&{});", paren(self.expr(a), prec::UNARY)))
+                        .collect();
                     writes.join(" ")
                 }
                 Some(Type::Text) => {

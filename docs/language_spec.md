@@ -88,7 +88,11 @@ Numbers, characters and enumerations
   8087 mode to compile this", so there's no TP output to compare), and a
   `Double` or `Extended` for a `var Real` parameter (TP wants the same
   type; a `Single` is refused, as an `f32`). `Write` and `Read` on a
-  typed file take a variable of exactly the file's type, as in TP.
+  typed file take a variable of exactly the file's type, as in TP
+  (`Write(F, Word(I))` counts as one for a `file of Word`); Ruscal also
+  takes a `const` parameter there, which TP refused. A constant too big
+  for a `Single` (`S := 1E39`) is an error: TP stored an infinity, and
+  Rust refuses the `f32` literal.
   Under `{$N+}`, `Write` prints every
   real type as TP 7 did with the 8087, with 15 digits and a 4-digit
   exponent (` 1.00000000000000E-0001`, against ` 1.0000000000E-01`
@@ -183,7 +187,10 @@ own below.
 - Constant expressions in `const` sections, array bounds and `case` labels,
   worked out in 32 bits as in TP (`C + 1` with `C = 32767` is 32768;
   one that doesn't fit, `MaxLongInt + 1` or `-$80000000`, is an error, as
-  is a real one too big for a Real, `1E300 * 1E300`), and
+  is a real one too big for a Real, `1E300 * 1E300`; so is a constant
+  out of range for where it goes, `B := 300` for a Byte, in an
+  assignment, a value argument or a typed constant, as TP's "Constant out
+  of range"), and
   kept in the Rust with their constants' names (`const M = K * 2 + 1` is
   `const M: i16 = K * 2 + 1;`), with TP 7's constant functions: `Abs`, `Chr`, `Hi`, `High`, `Length`,
   `Lo`, `Low`, `Odd`, `Ord`, `Pred`, `Round`, `SizeOf`, `Succ`, `Swap`,

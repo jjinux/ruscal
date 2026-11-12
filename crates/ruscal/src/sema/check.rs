@@ -1726,6 +1726,17 @@ impl Checker {
         }
     }
 
+    /// Is `e` a variable, or a typecast of one (`Word(I)`), as TP takes for
+    /// `Write` to a typed file?
+    fn is_variable_reference(&self, e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Call { callee, args } if self.typecast_target(callee, args).is_some() => {
+                self.is_variable_reference(&args[0])
+            }
+            _ => is_place(e),
+        }
+    }
+
     /// The type a call converts to, if it's a typecast (`Word(x)`).
     fn typecast_target(&self, callee: &Expr, args: &[Expr]) -> Option<Type> {
         let ExprKind::Name(id) = &callee.kind else {
@@ -2686,8 +2697,8 @@ impl Checker {
         {
             self.error(value.span, format!("the constant {n} is out of range for {target}"));
         }
-        // A real one too big for a `Single` (`s := 1E39`): the 8087 stopped
-        // with runtime error 205; Rust refuses the `f32` literal.
+        // A real one too big for a `Single` (`s := 1E39`): TP 7 compiled
+        // it (and stored an infinity), but Rust refuses the `f32` literal.
         if let Type::Real(RealKind::Single) = target
             && let Some(ConstVal::Real(x)) = self.eval_const(value)
             && x.is_finite()
@@ -4026,6 +4037,9 @@ impl Checker {
                     self.error(arg.span, format!("an {ty} parameter needs an array of {elem}{one}, found {arg_ty}"));
                 } else if !ty.accepts(&arg_ty) {
                     self.error(arg.span, format!("expected {} argument, found {arg_ty}", a(&ty)));
+                } else {
+                    // `P(300)` for a Byte, `P(1E39)` for a Single.
+                    self.check_constant_range(&ty, arg);
                 }
                 // The routine may write through a `PChar`, or keep it.
                 if matches!(ty, Type::PChar | Type::AnyPointer) {
@@ -4174,11 +4188,9 @@ impl Checker {
                         // As in TP 7, each is a variable of the file's own type:
                         // `Write(F, 3)` is "Variable identifier expected", and a
                         // `Single` for a `file of Real` "Type mismatch".
+                        // A typecast variable (`Word(I)`) is a variable too.
                         for arg in args {
-                            if !matches!(
-                                arg.kind,
-                                ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) | ExprKind::Deref(_)
-                            ) {
+                            if !self.is_variable_reference(arg) {
                                 self.expr(arg);
                                 self.error(
                                     arg.span,
@@ -4186,7 +4198,7 @@ impl Checker {
                                 );
                                 continue;
                             }
-                            let ty = self.place(arg, false);
+                            let ty = if is_place(arg) { self.place(arg, false) } else { self.expr(arg) };
                             if !same_file_type(&ty, &elem) && ty != Type::Error {
                                 self.error(arg.span, format!("this file holds {elem} values, not {ty}"));
                             }
@@ -5174,6 +5186,11 @@ fn byte_register_message(name: &str) -> String {
 /// Is a variable of type `ty` what a `file of elem` holds? The same type,
 /// and for reals the same kind: a `Double` isn't a `Real` in a file (they
 /// take 8 bytes and 6), though they're one type to sema otherwise.
+/// Is `e` a variable or a part of one (as opposed to a computed value)?
+pub(crate) fn is_place(e: &Expr) -> bool {
+    matches!(e.kind, ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) | ExprKind::Deref(_))
+}
+
 fn same_file_type(ty: &Type, elem: &Type) -> bool {
     match (ty, elem) {
         (Type::Real(a), Type::Real(b)) => std::mem::discriminant(a) == std::mem::discriminant(b),

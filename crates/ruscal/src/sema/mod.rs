@@ -20,7 +20,7 @@
 
 pub mod builtins;
 mod check;
-pub(crate) use check::visit_stmts;
+pub(crate) use check::{is_place, visit_stmts};
 pub mod goto;
 pub use check::{int_common, numeric_common};
 mod lift;

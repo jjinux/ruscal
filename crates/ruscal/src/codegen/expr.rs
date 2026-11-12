@@ -2335,10 +2335,7 @@ fn derefs(e: &Expr) -> bool {
     }
 }
 
-/// Is `e` a variable or a part of one (as opposed to a computed value)?
-pub(super) fn is_place(e: &Expr) -> bool {
-    matches!(e.kind, ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) | ExprKind::Deref(_))
-}
+pub(super) use crate::sema::is_place;
 
 /// The type in which two values are compared.
 fn comparison_type(l: &Type, r: &Type) -> Type {
@@ -2366,6 +2363,14 @@ pub(super) fn convert(code: Code, from: &Type, to: &Type) -> Code {
         // stored a `Single`).
         // (An integer expression of literals is an `i32` to Rust, which
         // has no `f32::from` for one: `(2 + 3) as f32`.)
+        // An integer literal (`High(Word)` is `65535`) is a real one,
+        // `65535.0`, if it's exact in an `f32` (up to 2^24).
+        (Type::Int(_) | Type::IntLit(_), Type::Real(kind))
+            if code.0.parse::<i64>().is_ok_and(|n| *kind != RealKind::Single || n.unsigned_abs() <= 1 << 24) =>
+        {
+            let p = if code.0.starts_with('-') { prec::UNARY } else { prec::ATOM };
+            (format!("{}.0", code.0), p)
+        }
         (Type::Int(IntKind::LongInt) | Type::IntLit(_), Type::Real(RealKind::Single)) => {
             (format!("{} as f32", paren(code, prec::AS)), prec::AS)
         }

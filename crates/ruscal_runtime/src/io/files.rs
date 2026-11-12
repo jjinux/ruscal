@@ -352,8 +352,9 @@ macro_rules! freadln {
 /// The byte layout is Turbo Pascal's, so files written by the original DOS
 /// programs can be read: little-endian numbers, a `Real` in TP's 6 bytes
 /// ([`real48`]), a `string[n]` in n+1 bytes (its length, then the
-/// characters), a set in the bytes TP kept it in. (`Single`, `Double` and
-/// the other real types are stored as a 6-byte `Real` for now.) Every value
+/// characters), a set in the bytes TP kept it in, a `Single` or `Double` in
+/// IEEE's 4 or 8 bytes and an `Extended` in the 8087's 10 ([`extended80`]).
+/// Every value
 /// of a type encodes to the same number of bytes, so that `Seek` can find
 /// record `n` at byte `n * size`.
 pub trait FileRecord: Default {
