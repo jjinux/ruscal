@@ -7,13 +7,13 @@ has the details, by topic: the language, then the standard units, then
 what isn't supported yet, or never will be, and why.
 
 - [Turbo Pascal, not ISO Pascal](#turbo-pascal-not-iso-pascal)
-- The language: [programs and units](#programs-and-units),
-  [compiler directives](#compiler-directives), [types](#types),
+- The language: [programs and units](#programs-and-units), [types](#types),
   [expressions](#expressions), [statements](#statements),
   [routines and parameters](#routines-and-parameters),
   [objects](#objects), [pointers and memory](#pointers-and-memory),
   [strings](#strings), [input, output and files](#input-output-and-files),
-  [other System routines and variables](#other-system-routines-and-variables)
+  [other System routines and variables](#other-system-routines-and-variables),
+  [compiler directives](#compiler-directives)
 - The standard units: [Crt](#crt), [Printer](#printer),
   [Overlay](#overlay), [Dos](#dos), [WinDos](#windos), [Graph](#graph),
   [Ruscal's own units](#ruscals-own-units)
@@ -70,29 +70,6 @@ behaves like TP, and there is a test for it.
 - Shadowing of built-in names by user declarations (`procedure Exit(var
   leave: boolean)` and `type ShortString = string[20]` both appear in the
   examples)
-
-### Compiler directives
-
-- `{$I-}`/`{$I+}` switch I/O checking (see
-  [Input, output and files](#input-output-and-files))
-- `{$Q+}`/`{$Q-}` switch overflow checking: in `{$Q+}` code,
-  integer `+`, `-`, `*`, negation, `Abs`, `Sqr`, `Succ` and `Pred` stop
-  with runtime error 215 when the result doesn't fit its type
-  (`i.checked_add(1).unwrap_or_else(overflow)`); elsewhere they wrap, as in
-  TP's default `{$Q-}`. `Inc` and `Dec` are never checked: they wrap even
-  under `{$Q+}`, as Turbo Pascal 7 does (checked in DOSBox: `Inc(i)` at
-  32767 is -32768, while `i := i + 1` is error 215). A constant expression
-  (`2 + 3`, `C * 2`) is never checked: TP works it out when it compiles.
-  (`div` or `mod` by a constant 0 is a compile error, as in TP.)
-- `{$N+}`/`{$N-}`: see the `{$N+}` types under [Types](#types). They hold
-  for the whole file, so, as in TP 7, they go before the `uses` clause and
-  the declarations (elsewhere they're an error)
-- `{$X+}`, TP 7's extended syntax, is always on, as in TP 7 (see `PChar`
-  under [Strings](#strings))
-- The others are parsed and ignored, with a warning for ones that change
-  semantics (`{$B+}`, `{$R+}`); `{$M}` and the overlay ones (`{$O+}`,
-  `{$O UnitName}`, `{$F+}`) are ignored silently; include files
-  (`{$I name}`) are an error
 
 ### Types
 
@@ -448,6 +425,32 @@ TP 5.5's object-oriented programming.
   `RandSeed`, `FileMode` (how `Reset` opens typed files), and `Input` and
   `Output` (see [Input, output and files](#input-output-and-files))
 - Faked, so old programs run: `Test8087` (3)
+
+### Compiler directives
+
+Few programs need these: in `examples/`, only `menu.pas` has one
+(`{$M $4000, 0, 0}`, the memory sizes `Exec` needed, which Ruscal ignores).
+
+- `{$I-}`/`{$I+}` switch I/O checking (see
+  [Input, output and files](#input-output-and-files))
+- `{$Q+}`/`{$Q-}` switch overflow checking: in `{$Q+}` code,
+  integer `+`, `-`, `*`, negation, `Abs`, `Sqr`, `Succ` and `Pred` stop
+  with runtime error 215 when the result doesn't fit its type
+  (`i.checked_add(1).unwrap_or_else(overflow)`); elsewhere they wrap, as in
+  TP's default `{$Q-}`. `Inc` and `Dec` are never checked: they wrap even
+  under `{$Q+}`, as Turbo Pascal 7 does (checked in DOSBox: `Inc(i)` at
+  32767 is -32768, while `i := i + 1` is error 215). A constant expression
+  (`2 + 3`, `C * 2`) is never checked: TP works it out when it compiles.
+  (`div` or `mod` by a constant 0 is a compile error, as in TP.)
+- `{$N+}`/`{$N-}`: see the `{$N+}` types under [Types](#types). They hold
+  for the whole file, so, as in TP 7, they go before the `uses` clause and
+  the declarations (elsewhere they're an error)
+- `{$X+}`, TP 7's extended syntax, is always on, as in TP 7 (see `PChar`
+  under [Strings](#strings))
+- The others are parsed and ignored, with a warning for ones that change
+  semantics (`{$B+}`, `{$R+}`); `{$M}` and the overlay ones (`{$O+}`,
+  `{$O UnitName}`, `{$F+}`) are ignored silently; include files
+  (`{$I name}`) are an error
 
 ## The standard units
 
