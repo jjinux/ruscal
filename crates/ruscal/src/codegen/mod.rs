@@ -78,6 +78,7 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         indent: 0,
         proc: MAIN,
         explained: Default::default(),
+        real_format_explained: HashSet::new(),
         end_comment: None,
         hoisted: HashMap::new(),
         file: 0,
@@ -148,6 +149,8 @@ struct Codegen<'a> {
     /// Teaching comments already written. Each explanation appears in full
     /// only the first time, so the output doesn't drown in them.
     explained: std::collections::HashSet<&'static str>,
+    /// The files (by index) whose reals' print format has been explained.
+    real_format_explained: HashSet<usize>,
     /// The comment after the `end` of an `if` or loop body (`end; {loop}`),
     /// for the line that closes the Rust block. See [`Codegen::line`].
     end_comment: Option<String>,

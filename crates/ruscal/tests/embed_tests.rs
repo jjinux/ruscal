@@ -40,6 +40,7 @@ fn a_coprocessor_library_says_so_where_it_writes_a_real() {
             .unwrap();
     let unit = generated.files.iter().find(|(name, _)| name.ends_with("np_unit.rs")).expect("the unit's module");
     assert!(unit.1.contains("pwriteln!(\n        coprocessor_format(x),"), "{}", unit.1);
+    assert!(unit.1.contains("// A library has no program to set how reals print"), "{}", unit.1);
 }
 
 /// Build the unit at `unit` as the library `crate_name`, then the Rust

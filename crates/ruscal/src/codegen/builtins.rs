@@ -694,10 +694,13 @@ impl<'a> Codegen<'a> {
         {
             let (wrapper, setting) =
                 if self.coprocessor_run { ("software_format", "`{$N-}`") } else { ("coprocessor_format", "`{$N+}`") };
-            if self.first_time("real_format") {
-                self.pending.push(format!(
-                    "// This unit is compiled with {setting}, unlike the program: its reals print its way."
-                ));
+            // (Once in each unit's file: a reader opens one at a time.)
+            if self.real_format_explained.insert(self.file) {
+                self.pending.push(if self.root == "super" {
+                    "// A library has no program to set how reals print: this `{$N+}` unit's say so.".to_string()
+                } else {
+                    format!("// This unit is compiled with {setting}, unlike the program: its reals print its way.")
+                });
             }
             format!("{wrapper}({code})")
         } else {
