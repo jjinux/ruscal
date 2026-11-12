@@ -160,7 +160,25 @@ impl Structure {
             self.stmt_list(level + 1);
             self.mark(level);
             self.expect("end");
+        } else if self.peek() == "asm" {
+            // `procedure P; assembler; asm ... end;`
+            self.mark(level);
+            self.asm_block(level);
         }
+    }
+
+    /// `asm ... end`, at the `asm`: its instructions one level in, each
+    /// line that starts one, and the `end` lined up with the `asm`.
+    fn asm_block(&mut self, level: usize) {
+        self.advance();
+        while !self.done() && self.peek() != "end" {
+            if self.line_of[self.pos] != self.line_of[self.pos - 1] {
+                self.mark(level + 1);
+            }
+            self.advance();
+        }
+        self.mark(level);
+        self.expect("end");
     }
 
     /// `uses`, `const`/`type`/`var`/`label` sections and routines. In a
@@ -324,6 +342,7 @@ impl Structure {
             return;
         }
         match self.peek() {
+            "asm" => self.asm_block(level),
             "begin" => {
                 self.advance();
                 self.stmt_list(level + 1);

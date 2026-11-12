@@ -4,5 +4,5 @@ program DosAsm;
 begin
    asm
       mov ax, 1
-end;
-   end.
+   end;
+end.

@@ -290,3 +290,42 @@ fn record_after_of() {
         "type\n   TList = array[1..2] of record\n      Z: integer;\n   end;\n   TOne = record\n      Z: integer;\n   end;\nvar\n   L: TList;\nbegin\nend.\n"
     );
 }
+
+#[test]
+fn asm_blocks_are_blocks() {
+    // An `asm` statement and an `assembler` routine's body (one level in,
+    // as a `begin` would be): the instructions go one level further, and
+    // `end` lines up with `asm`.
+    check(
+        "program P;
+var X: Integer;
+procedure Beep; assembler;
+asm
+mov ah, 2
+  mov dl, 7
+end;
+begin
+asm
+mov ax, 1
+mov X, ax
+end;
+WriteLn(X);
+end.
+",
+        "program P;
+var X: Integer;
+procedure Beep; assembler;
+   asm
+      mov ah, 2
+      mov dl, 7
+   end;
+begin
+   asm
+      mov ax, 1
+      mov X, ax
+   end;
+   WriteLn(X);
+end.
+",
+    );
+}
