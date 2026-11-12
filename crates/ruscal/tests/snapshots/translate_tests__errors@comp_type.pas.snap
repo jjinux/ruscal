@@ -1,0 +1,12 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/comp_type.pas
+---
+comp_type.pas:8:7: error: `Comp` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, or `Double`, which holds whole numbers exactly up to 2^53
+   C: Comp;
+      ^^^^
+
+comp_type.pas:6:13: error: `Comp` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, or `Double`, which holds whole numbers exactly up to 2^53
+   PComp = ^Comp;
+            ^^^^

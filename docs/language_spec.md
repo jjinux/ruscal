@@ -83,7 +83,7 @@ Numbers, characters and enumerations
   the 8087 worked in extended precision and rounded when it stored a
   `Single` (`s = (f64::from(s) + 1.0) as f32`). An `Extended` has an
   `f64`'s precision, not the 8087's 64 bits, so its last digit can
-  differ. `Comp` isn't supported. Ruscal is more lenient than TP 7 in
+  differ. `Comp` isn't supported (see [Never supported](#never-supported)). Ruscal is more lenient than TP 7 in
   two ways: it takes these types without `{$N+}` (TP said "Must be in
   8087 mode to compile this", so there's no TP output to compare), and a
   `Double` or `Extended` for a `var Real` parameter (TP wants the same
@@ -679,7 +679,6 @@ Real TP features, not in the examples, worth doing in this order:
 8. `absolute` variables when both are scalars of the same size
 9. The bundled-globals and place-descriptor options for pathological
    aliasing (see `architecture.md` §15)
-10. `Comp`, TP's 8-byte integer kept as a real
 
 Also not yet: `{$B+}` and `{$R+}` (see
 [Compiler directives](#compiler-directives)), and the two object cases
@@ -705,6 +704,9 @@ DOS and x86 machinery with no sensible Rust translation:
 - `Graph3` and `Turbo3`, the units TP 4.0 to 7.0 kept for Turbo Pascal
   3.0 programs (TP 3's turtle graphics, its `Kbd` file, and so on);
   `uses` of one says so
+- `Comp`, the 8087's 64-bit integer: the error says to use `LongInt`
+  if the values fit in 32 bits, or `Double` (exact for whole numbers up
+  to 2^53)
 - ISO-only: conformant arrays, `pack`/`unpack`, `get`/`put` with file buffer
   variables `f^`, `program(input, output)` header parameters (ignored)
 

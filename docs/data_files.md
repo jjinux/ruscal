@@ -104,7 +104,7 @@ bytes after the name), and `from-json` then `to-json` gives back the JSON.
 
 ## What it can't read
 
-- `Comp`, which Ruscal doesn't support yet.
+- `Comp`, which Ruscal doesn't support (use `LongInt` or `Double`).
 - An `Extended` keeps 64 bits of mantissa; Ruscal reads it as an `f64`
   (53 bits), so its last digits may be lost.
 - Subranges (`Month: 1..12`) are checked against their host type only

@@ -610,7 +610,7 @@ impl Checker {
     /// current scope must have been given a body.
     fn check_forwards(&mut self) {
         for (_, target) in std::mem::take(&mut self.pending_pointers) {
-            self.error(target.span, format!("unknown type `{}`", target.name));
+            self.error(target.span, unknown_type(&target.name));
         }
         let mut missing: Vec<(Span, String)> = Vec::new();
         for (key, &sym) in self.scopes.last().unwrap() {
@@ -1101,7 +1101,7 @@ impl Checker {
                     Type::Error
                 }
                 None => {
-                    self.error(ident.span, format!("unknown type `{}`", ident.name));
+                    self.error(ident.span, unknown_type(&ident.name));
                     Type::Error
                 }
             },
@@ -5186,6 +5186,20 @@ fn byte_register_message(name: &str) -> String {
 /// Is a variable of type `ty` what a `file of elem` holds? The same type,
 /// and for reals the same kind: a `Double` isn't a `Real` in a file (they
 /// take 8 bytes and 6), though they're one type to sema otherwise.
+/// The error for a type name that isn't declared. `Comp`, the 8087's 64-bit
+/// integer, says what to use instead (it isn't planned: no program here
+/// used it).
+fn unknown_type(name: &str) -> String {
+    if name.eq_ignore_ascii_case("comp") {
+        format!(
+            "`{name}` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, \
+             or `Double`, which holds whole numbers exactly up to 2^53"
+        )
+    } else {
+        format!("unknown type `{name}`")
+    }
+}
+
 /// Is `e` a variable or a part of one (as opposed to a computed value)?
 pub(crate) fn is_place(e: &Expr) -> bool {
     matches!(e.kind, ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) | ExprKind::Deref(_))

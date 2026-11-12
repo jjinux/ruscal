@@ -225,7 +225,7 @@ via `run()` and `catch_unwind` (§17).
 | `LongInt` / `ShortInt`    | `i32` / `i8`                           | |
 | `Word` / `Byte`           | `u16` / `u8`                           | |
 | `Real`                    | `f64`                                  | TP's 6-byte real is a subset of f64 |
-| `Single`/`Double`/`Extended` | `f32`/`f64`/`f64`  | `{$N+}` types; arithmetic in `f64`, 4/8/10 bytes in files; `Comp` not yet |
+| `Single`/`Double`/`Extended` | `f32`/`f64`/`f64`  | `{$N+}` types; arithmetic in `f64`, 4/8/10 bytes in files; `Comp` not supported |
 | `Boolean`                 | `bool`                                 | |
 | `Char`                    | `u8`                                   | TP chars are bytes (CP437); see §9 |
 | `String`, `String[n]`     | `PString`                              | 256-byte, Copy; see §8 |
