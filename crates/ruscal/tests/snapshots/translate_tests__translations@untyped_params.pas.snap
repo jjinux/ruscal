@@ -113,7 +113,7 @@ fn pascal_main() {
     pwriteln!(r2.name, " ", r2.n);
     set_some(&mut buf, 3);
     dump(&mut buf, 8);
-    fill_bytes(&mut r, 8, 1);
+    fill_bytes(&mut r, Rec::SERIALIZED_SIZE as u16, 1);
     pwriteln!(r.n, " ", r.name.length());
     fill_bytes(&mut buf, 3, 0);
     dump(&mut buf, 8);

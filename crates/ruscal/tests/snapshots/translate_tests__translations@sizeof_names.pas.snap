@@ -180,7 +180,7 @@ fn pascal_main() {
     r.name = pstr("seven");
     f.assign("sizeof_names.dat");
     f.rewrite_records(1);
-    f.block_write(&r.to_bytes(), 25);
+    f.block_write(&r.to_bytes(), Rec::SERIALIZED_SIZE as u16);
     pwriteln!(f.file_size() / Rec::SERIALIZED_SIZE as i32);
     f.close();
     f.erase();

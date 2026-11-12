@@ -315,7 +315,7 @@ impl<'a> Codegen<'a> {
             // `contains` takes any ordinal, so an integer is passed as it
             // is: `300 in s` is false for a set of bytes, rather than
             // testing 300 cut down to a byte (44).
-            let x = if self.a.type_of(lhs.id).is_integer() { self.expr(lhs) } else { x };
+            let x = if self.a.type_of(lhs.id).is_integer() { self.sized_constant(lhs) } else { x };
             return (format!("{}.contains({})", paren(set, prec::POSTFIX), x.0), prec::POSTFIX);
         }
         let (l, r) = (self.expr(lhs), self.expr(rhs));
@@ -449,8 +449,9 @@ impl<'a> Codegen<'a> {
                 Some(("0".to_string(), prec::ATOM))
             }
             ExprKind::Unary { op: UnaryOp::Neg, operand } => {
+                // (`-(-K)` keeps its parentheses: `--x` warns in Rust.)
                 let inner = self.const_expr_in(operand, kind, in_const)?;
-                Some((format!("-{}", paren(inner, prec::UNARY)), prec::UNARY))
+                Some((format!("-{}", paren(inner, prec::UNARY + 1)), prec::UNARY))
             }
             ExprKind::Binary { op, lhs, rhs } => {
                 let (rust_op, p) = match op {
@@ -627,6 +628,20 @@ impl<'a> Codegen<'a> {
                 }
                 _ => {}
             }
+        }
+        // `SizeOf(Rec)` as a real: `Rec::SERIALIZED_SIZE as f64` (there's no
+        // `f64::from` for a `usize`). A constant sum of it, `SizeOf(Rec) * 2`,
+        // is worked out in its integer type first.
+        if let (Type::Real(kind), Type::IntLit(_)) = (to, &from)
+            && self.uses_sizeof(e)
+        {
+            if let Some(code) = self.sizeof_code(e) {
+                let real = if *kind == RealKind::Single { "f32" } else { "f64" };
+                return (format!("{} as {real}", paren(code, prec::AS)), prec::AS);
+            }
+            let int = from.concrete();
+            let code = self.coerce(e, &int);
+            return convert(code, &int, to);
         }
         if let (Type::Real(_), Type::IntLit(_)) = (to, &from) {
             match &e.kind {
@@ -1046,6 +1061,11 @@ impl<'a> Codegen<'a> {
             // `5_i16.checked_mul(i)`). A constant operand isn't checked
             // (`i * (2 + 3)` is `i.checked_mul(2 + 3)`): see `is_constant`.
             let left = match lt {
+                // A constant with a `SizeOf` keeps its name:
+                // `(Rec::SERIALIZED_SIZE as i16).checked_mul(i)`.
+                Type::IntLit(_) if self.uses_sizeof(lhs) => {
+                    (paren(self.coerce(lhs, &Type::Int(kind)), prec::POSTFIX), prec::POSTFIX)
+                }
                 Type::IntLit(n) => {
                     let precedence = if n < 0 { prec::UNARY } else { prec::ATOM };
                     (format!("{n}_{}", kind.rust()), precedence)
@@ -1277,7 +1297,7 @@ impl<'a> Codegen<'a> {
                         // A character literal index must become a byte
                         // literal: `counts['a']` → `counts[b'a']`.
                         Type::Array(a) if a.index == Type::Char => self.coerce(index, &Type::Char).0,
-                        _ => self.expr(index).0,
+                        _ => self.sized_constant(index).0,
                     };
                     self.mutable_place = saved;
                     code.push_str(&format!("[{index_code}]"));
@@ -1297,6 +1317,18 @@ impl<'a> Codegen<'a> {
     pub(super) fn untyped_name(&self, e: &Expr) -> String {
         let sym = self.a.refs[&e.id];
         self.a.sym(sym).rust_name.clone()
+    }
+
+    /// `e`, but a constant with a `SizeOf` in it in the integer type TP
+    /// works it out in, so it keeps its name: an index or an `in` operand
+    /// (`a[Point::SERIALIZED_SIZE as i16 + 1]`), which take any ordinal.
+    fn sized_constant(&mut self, e: &Expr) -> Code {
+        let ty = self.a.type_of(e.id).clone();
+        if matches!(ty, Type::IntLit(_)) && self.uses_sizeof(e) && !self.uses_array_bound(e) {
+            self.coerce(e, &ty.concrete())
+        } else {
+            self.expr(e)
+        }
     }
 
     /// If `e` is a typecast of an untyped parameter (`TBytes(Data)`), the

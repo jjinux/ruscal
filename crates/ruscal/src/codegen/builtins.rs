@@ -126,12 +126,12 @@ impl<'a> Codegen<'a> {
             // `Reset(f, 1)`: an untyped file in records of 1 byte.
             Reset | Rewrite if args.len() == 2 => {
                 let method = if b == Reset { "reset_records" } else { "rewrite_records" };
-                format!("{}.{method}({});", self.place_receiver(&args[0]), self.expr(&args[1]).0)
+                format!("{}.{method}({});", self.place_receiver(&args[0]), self.size_arg(&args[1], IntKind::Word))
             }
             BlockRead | BlockWrite => {
                 let file = self.place_receiver(&args[0]);
                 let buffer = if b == BlockRead { self.view_arg(&args[1]) } else { self.view_bytes(&args[1]) };
-                let count = self.expr(&args[2]).0;
+                let count = self.size_arg(&args[2], IntKind::Word);
                 let method = if b == BlockRead { "block_read" } else { "block_write" };
                 match args.get(3) {
                     None => format!("{file}.{method}({buffer}, {count});"),
@@ -150,7 +150,7 @@ impl<'a> Codegen<'a> {
                 let method = format!("{b:?}").to_ascii_lowercase();
                 format!("{}.{method}();", self.place_receiver(&args[0]))
             }
-            Seek => format!("{}.seek({});", self.place_receiver(&args[0]), self.expr(&args[1]).0),
+            Seek => format!("{}.seek({});", self.place_receiver(&args[0]), self.size_arg(&args[1], IntKind::LongInt)),
             FilePos => format!("{}.file_pos()", self.place_receiver(&args[0])),
             FileSize => format!("{}.file_size()", self.place_receiver(&args[0])),
             Eof | Eoln | SeekEof | SeekEoln => {
@@ -399,7 +399,7 @@ impl<'a> Codegen<'a> {
             FillChar if self.a.byte_moves.contains(&call_id) => {
                 let dest = self.view_arg(&args[0]);
                 let value = self.coerce(&args[2], &Type::Int(IntKind::Byte)).0;
-                format!("fill_bytes({dest}, {}, {value});", self.expr(&args[1]).0)
+                format!("fill_bytes({dest}, {}, {value});", self.size_arg(&args[1], IntKind::Word))
             }
             FillChar => self.fill_char(call_id, args),
             Mark | Release => {
@@ -438,7 +438,7 @@ impl<'a> Codegen<'a> {
                     source = format!("&{name}");
                 }
                 let dest = self.view_arg(&args[1]);
-                format!("move_bytes({source}, {dest}, {});", self.expr(&args[2]).0)
+                format!("move_bytes({source}, {dest}, {});", self.size_arg(&args[2], IntKind::Word))
             }
             // A whole variable to one of the same type: an assignment, with
             // what an assignment needs (`Move(p^.a, p^.b, 4)` reads `p^.a`
@@ -522,8 +522,12 @@ impl<'a> Codegen<'a> {
             // what `GetMem(p, n * SizeOf(T))` was used for: an array as long
             // as needed; past `n` is then a range error, not corruption.
             GetMem => match self.a.type_of(args[0].id).clone() {
-                Type::AnyPointer => format!("{} = AnyPtr::alloc({});", self.place(&args[0]), self.expr(&args[1]).0),
-                Type::PChar => format!("{} = PChar::alloc({});", self.place(&args[0]), self.expr(&args[1]).0),
+                Type::AnyPointer => {
+                    format!("{} = AnyPtr::alloc({});", self.place(&args[0]), self.size_arg(&args[1], IntKind::Word))
+                }
+                Type::PChar => {
+                    format!("{} = PChar::alloc({});", self.place(&args[0]), self.size_arg(&args[1], IntKind::Word))
+                }
                 ty => {
                     if self.first_time("getmem_typed") {
                         self.pending.push(
@@ -668,10 +672,10 @@ impl<'a> Codegen<'a> {
             _ if self.is_lent(value) => self.lent_pchar(value),
             // `SizeOf(Rec)`: `Rec::SERIALIZED_SIZE`, a `usize`, prints the same.
             _ if let Some((code, _)) = self.sizeof_code(value) => code,
-            // A constant sum of them, `SizeOf(Rec) - 2 * SizeOf(Point)`, in
-            // the integer type TP works it out in.
+            // A constant sum of them, `SizeOf(Rec) - 2 * SizeOf(Point)`, or
+            // `-SizeOf(Rec)`, in the integer type TP works it out in.
             Type::IntLit(_)
-                if matches!(value.kind, ExprKind::Binary { .. })
+                if matches!(value.kind, ExprKind::Binary { .. } | ExprKind::Unary { .. })
                     && self.uses_sizeof(value)
                     && !self.uses_array_bound(value) =>
             {
@@ -842,6 +846,18 @@ impl Codegen<'_> {
 }
 
 impl Codegen<'_> {
+    /// A count or size for a runtime routine (`BlockWrite`'s, `Seek`'s,
+    /// `GetMem`'s), which takes `impl Into<i32>`. A constant with a
+    /// `SizeOf` in it is written in TP's parameter type, `kind`, so it keeps
+    /// its name (`Rec::SERIALIZED_SIZE as u16`); anything else as it is.
+    fn size_arg(&mut self, e: &Expr, kind: IntKind) -> String {
+        if matches!(self.a.type_of(e.id), Type::IntLit(_)) && self.uses_sizeof(e) {
+            self.coerce(e, &Type::Int(kind)).0
+        } else {
+            self.expr(e).0
+        }
+    }
+
     /// `FillChar(x, count, value)`, in the cases sema allows.
     fn fill_char(&mut self, call_id: NodeId, args: &[Expr]) -> String {
         let (target, count, value) = (&args[0], &args[1], &args[2]);

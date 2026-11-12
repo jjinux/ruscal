@@ -96,7 +96,7 @@ fn pascal_main() {
     pwriteln!(wd(p.d(), 0, 1));
     s = (2 + 3) as f32;
     pwriteln!(wd(s, 0, 1), " ", TPun::SERIALIZED_SIZE);
-    s = (10 * 2) as f32;
+    s = f32::from(TPun::SERIALIZED_SIZE as i16 * 2);
     pwriteln!(wd(s, 0, 1));
 }
 
