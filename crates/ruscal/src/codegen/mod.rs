@@ -39,9 +39,9 @@ pub struct Input<'a> {
     pub io_unchecked: &'a [Span],
     /// The parts of the source compiled with `{$Q+}`.
     pub overflow_checked: &'a [Span],
-    /// The parts of the source compiled with `{$N+}`, where `Round` rounds
-    /// half to even.
-    pub rounds_to_even: &'a [Span],
+    /// The parts of the source compiled with `{$N+}`, for the 8087: where
+    /// `Round` rounds half to even, and reals print with 15 digits.
+    pub coprocessor: &'a [Span],
     /// The source's comments, carried into the Rust.
     pub comments: &'a [crate::lexer::Comment],
     /// The Rust files `{$L file.rs}` links, as (module, file name).
@@ -64,7 +64,7 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         map,
         io_unchecked,
         overflow_checked,
-        rounds_to_even,
+        coprocessor,
         comments,
         rust_modules,
         features,
@@ -78,6 +78,7 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         indent: 0,
         proc: MAIN,
         explained: Default::default(),
+        real_format_explained: HashSet::new(),
         end_comment: None,
         hoisted: HashMap::new(),
         file: 0,
@@ -98,7 +99,11 @@ pub fn generate(input: &Input) -> Vec<(String, String)> {
         loops: Vec::new(),
         io_unchecked,
         overflow_checked,
-        rounds_to_even,
+        coprocessor,
+        coprocessor_run: library.is_none() && {
+            let main_file = map.file(0);
+            coprocessor.iter().any(|r| r.start < main_file.base + main_file.text.len())
+        },
         rust_modules,
         features,
         self_expr: None,
@@ -144,6 +149,8 @@ struct Codegen<'a> {
     /// Teaching comments already written. Each explanation appears in full
     /// only the first time, so the output doesn't drown in them.
     explained: std::collections::HashSet<&'static str>,
+    /// The files (by index) whose reals' print format has been explained.
+    real_format_explained: HashSet<usize>,
     /// The comment after the `end` of an `if` or loop body (`end; {loop}`),
     /// for the line that closes the Rust block. See [`Codegen::line`].
     end_comment: Option<String>,
@@ -204,7 +211,10 @@ struct Codegen<'a> {
     /// to `IOResult` instead of stopping the program.
     io_unchecked: &'a [Span],
     overflow_checked: &'a [Span],
-    rounds_to_even: &'a [Span],
+    coprocessor: &'a [Span],
+    /// Whether the run prints reals the 8087's way: the program file's
+    /// `{$N+}` (`main` sets it). A unit compiled otherwise wraps its reals.
+    coprocessor_run: bool,
     /// The Rust files `{$L sound.rs}` names, as (module, file name):
     /// where the `external` routines are.
     rust_modules: &'a [(String, String)],
@@ -412,6 +422,11 @@ impl<'a> Codegen<'a> {
     /// unit's modules, its interface, and, if the units have variables, a
     /// struct holding them (`CounterContext`) whose methods are the unit's
     /// interface routines with the variables passed in.
+    /// Is `span` compiled with `{$N+}`?
+    pub(super) fn coprocessor_at(&self, span: Span) -> bool {
+        self.coprocessor.iter().any(|r| r.start <= span.start && span.start < r.end)
+    }
+
     fn library(&mut self, unit: &Unit) {
         self.file = self.map.file_index(unit.span.start);
         let main_module = crate::sema::names::snake_case(&unit.name.name);
@@ -673,10 +688,9 @@ impl<'a> Codegen<'a> {
         self.blank();
         self.line("fn main() {");
         // `{$N+}` holds for the whole program file (sema checks it's at the
-        // top), so it's a setting for the whole run.
-        let main_file = self.map.file(0);
-        let main_end = main_file.base + main_file.text.len();
-        if self.rounds_to_even.iter().any(|r| r.start < main_end) {
+        // top), so it's the run's setting; a unit compiled otherwise says so
+        // where it writes a real (`write_arg`).
+        if self.coprocessor_run {
             self.line("    // `{$N+}`: reals print as Turbo Pascal 7 printed them with the 8087,");
             self.line("    // with 15 digits (` 1.50000000000000E+0000`).");
             self.line("    ruscal_runtime::io::use_coprocessor_format();");

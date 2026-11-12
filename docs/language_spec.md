@@ -100,9 +100,10 @@ Numbers, characters and enumerations
   does (`Round(2.5)` is 2), where TP's default (`{$N-}`) and a constant
   round half away from zero (3). (Ruscal's `Real` is an `f64`, so under
   `{$N+}` it prints `0.1` as `1.00000000000000E-0001`, where TP's
-  6-byte `Real` showed `1.00000000000023E-0001`.) The print format
-  follows the program file's `{$N+}`: a unit compiled with a different
-  setting prints as the program does, where TP chose per call.
+  6-byte `Real` showed `1.00000000000023E-0001`.) As in TP 7, the
+  print format is each file's own: a unit compiled with a different
+  setting from the program's prints its reals its way (and a library,
+  `--lib`, with no program, prints a `{$N+}` unit's reals the 8087's way).
 - Enumerated types `(Red, Green, Blue)`; subranges `1..10`, `'A'..'Z'`,
   `Red..Blue`, an integer subrange stored in the smallest type that holds
   its bounds, as in TP (`1..12` is a byte, in `SizeOf` and in files).

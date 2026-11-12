@@ -244,6 +244,17 @@ via `run()` and `catch_unwind` (§17).
 Everything in the right column except primitive types lives in
 `ruscal_runtime` and is re-exported from `ruscal_runtime::prelude`.
 
+`{$N+}` also changes how reals print (15 digits and a 4-digit exponent,
+the 8087's way). In TP 7 that was decided per compiled file: each unit's
+`Write` called the 8087's routine or the software one. Ruscal keeps the
+common case plain: the program file's setting is the run's
+(`main` calls `use_coprocessor_format()`, a global flag), and only a
+unit compiled with the other setting wraps the reals it writes,
+`pwriteln!(coprocessor_format(x))` or `software_format(x)` (also in
+`Str`; not for `x:w:d`, which prints the same either way). A library
+(`--lib`) has no `main`, so its run is `{$N-}` and a `{$N+}` unit wraps
+its reals; a Rust program calling it needn't set anything.
+
 ## 7. Integers and overflow
 
 Decision: `Integer` is `i16`, and the generated `Cargo.toml` sets

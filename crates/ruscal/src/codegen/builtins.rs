@@ -488,9 +488,7 @@ impl<'a> Codegen<'a> {
                 // `round` does (3). (Checked in TP 7.)
                 // (Not a constant, `Round(2.5)`, which TP's compiler works
                 // out, half away from zero.)
-                let even = b == Round
-                    && !self.a.consts.contains_key(&args[0].id)
-                    && self.rounds_to_even.iter().any(|r| r.start <= span.start && span.start < r.end);
+                let even = b == Round && !self.a.consts.contains_key(&args[0].id) && self.coprocessor_at(span);
                 if even && self.first_time("round_even") {
                     self.pending.push(
                         "// `{$N+}`: the 8087 rounds half to even (`Round(2.5)` is 2), as `round_ties_even` does."
@@ -685,6 +683,28 @@ impl<'a> Codegen<'a> {
             // is: `pwriteln!(s)`, not `pwriteln!(*s)`.
             _ if let Some(name) = self.string_ref(value) => name,
             _ => self.expr(value).0,
+        };
+        // A real in a unit compiled with another `{$N+}` setting than the
+        // program prints its own way, as in TP 7, where each unit's code
+        // called the 8087's routine or the software one. (`x:w:d` prints
+        // the same either way.)
+        let code = if matches!(ty.concrete(), Type::Real(_))
+            && decimals.is_none()
+            && self.coprocessor_at(value.span) != self.coprocessor_run
+        {
+            let (wrapper, setting) =
+                if self.coprocessor_run { ("software_format", "`{$N-}`") } else { ("coprocessor_format", "`{$N+}`") };
+            // (Once in each unit's file: a reader opens one at a time.)
+            if self.real_format_explained.insert(self.file) {
+                self.pending.push(if self.root == "super" {
+                    "// A library has no program to set how reals print: this `{$N+}` unit's say so.".to_string()
+                } else {
+                    format!("// This unit is compiled with {setting}, unlike the program: its reals print its way.")
+                });
+            }
+            format!("{wrapper}({code})")
+        } else {
+            code
         };
         match (width, decimals) {
             (None, _) => code,

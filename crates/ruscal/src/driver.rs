@@ -237,7 +237,7 @@ fn transpile(
     let io_unchecked = io_unchecked_regions(&with_switches, &map);
     let overflow_checked = switch_regions(&with_switches, &map, "Q+", "Q-");
     // Under `{$N+}` the 8087 rounds: half to even (`Round(2.5)` is 2).
-    let rounds_to_even = switch_regions(&with_switches, &map, "N+", "N-");
+    let coprocessor = switch_regions(&with_switches, &map, "N+", "N-");
     let warnings = warnings.iter().map(|d| map.render(d)).collect();
     let units: Vec<Unit> = loaded.into_iter().map(|(_, unit)| unit).collect();
 
@@ -273,7 +273,7 @@ fn transpile(
         map: &map,
         io_unchecked: &io_unchecked,
         overflow_checked: &overflow_checked,
-        rounds_to_even: &rounds_to_even,
+        coprocessor: &coprocessor,
         comments: &comments,
         rust_modules: &modules,
         features: &features,
