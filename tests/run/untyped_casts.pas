@@ -1,7 +1,8 @@
 program UntypedCasts;
 { Writes through a typecast of an untyped parameter: an element of a Word
   array, a record's field, Inc of one, and a string[5] as a whole (which
-  takes 6 bytes, not a full string's 256). Output from fpc -Mtp. }
+  takes 6 bytes, not a full string's 256), and one passed on to a var
+  parameter, whole or a field. Output from fpc -Mtp. }
 type
    TWords = array[0..127] of Word;
    Rec = record a, b: Word; end;
@@ -24,6 +25,15 @@ procedure SetName(var Data; const s: string);
    begin
       TName(Data) := s;
    end;
+procedure Add1(var n: Word);
+   begin
+      n := n + 1;
+   end;
+procedure Bump(var Data);
+   begin
+      Add1(Word(Data));
+      Add1(Rec(Data).b);
+   end;
 begin
    r.a := 0; r.b := 0;
    SetWords(r);
@@ -33,4 +43,6 @@ begin
    nr.name := 'abc'; nr.n := 258;
    SetName(nr, 'xy');
    WriteLn(nr.name, ' ', nr.n);
+   Bump(r);
+   WriteLn(r.a, ' ', r.b);
 end.

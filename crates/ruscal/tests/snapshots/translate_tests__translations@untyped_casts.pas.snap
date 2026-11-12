@@ -18,7 +18,8 @@ use ruscal_runtime::prelude::*;
 
 // Writes through a typecast of an untyped parameter: an element of a Word
 // array, a record's field, Inc of one, and a string[5] as a whole (which
-// takes 6 bytes, not a full string's 256). Output from fpc -Mtp.
+// takes 6 bytes, not a full string's 256), and one passed on to a var
+// parameter, whole or a field. Output from fpc -Mtp.
 /// Pascal: `array[0..127] of Word`
 type TWords = PArray<u16, 0, 128>;
 
@@ -75,6 +76,22 @@ fn set_name(data: &mut dyn ByteView, s: &PString) {
     data.write_string(&*s, 5);
 }
 
+/// Pascal: `procedure Add1(var n: Word);`
+fn add1(n: &mut u16) {
+    *n += 1;
+}
+
+/// Pascal: `procedure Bump(var Data);`
+fn bump(data: &mut dyn ByteView) {
+    let mut data = Bytes::of(data);
+    let mut n = data.read::<u16>();
+    add1(&mut n);
+    data.write(&n);
+    let mut view = data.read::<Rec>();
+    add1(&mut view.b);
+    data.write(&view);
+}
+
 /// The main program: the `begin ... end.` block of `UntypedCasts`.
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
@@ -90,6 +107,8 @@ fn pascal_main() {
     nr.n = 258;
     set_name(&mut nr, &pstr("xy"));
     pwriteln!(nr.name, " ", nr.n);
+    bump(&mut r);
+    pwriteln!(r.a, " ", r.b);
 }
 
 fn main() {

@@ -2075,6 +2075,21 @@ impl<'a> Codegen<'a> {
                     }
                 };
                 parts.push(format!("&mut {name}{fields}"));
+            } else if is_var_arg && let Some(bytes) = self.view_cast_guard(arg) {
+                // An untyped parameter seen as a type, `Add1(Integer(X))`:
+                // its bytes are read into a variable, which the call changes,
+                // and written back after it.
+                let cast = self.a.type_of(arg.id).clone();
+                let (read, write) = match super::string_capacity(&cast) {
+                    Some(cap) => {
+                        (format!("read_string::<{}>({cap})", cast.rust()), format!("write_string(&{{}}, {cap})"))
+                    }
+                    None => (format!("read::<{}>()", cast.rust()), "write(&{})".to_string()),
+                };
+                let temp = self.temp_name(&self.a.sym(*param).rust_name.clone());
+                self.pending.push(format!("let mut {temp} = {bytes}.{read};"));
+                self.after.push(format!("{bytes}.{};", write.replace("{}", &temp)));
+                parts.push(format!("&mut {temp}"));
             } else if is_var_arg && !self.is_variable(arg) {
                 // A `const` one a method is called on, given a value
                 // (`Show(MakeShape)`): the method changes a copy.
