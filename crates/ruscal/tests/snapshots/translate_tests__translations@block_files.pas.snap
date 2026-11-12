@@ -78,10 +78,10 @@ fn pascal_main() {
     // a record, with the default record size
     r.name = pstr("pascal");
     r.n = 7;
-    f.rewrite_records(10);
+    f.rewrite_records(Rec::SERIALIZED_SIZE as u16);
     f.block_write(&r.to_bytes(), 1);
     f.close();
-    f.reset_records(10);
+    f.reset_records(Rec::SERIALIZED_SIZE as u16);
     f.block_read(&mut back, 1);
     pwriteln!(back.name, " ", back.n, " ", f.file_size(), " ", f.file_pos(), " ", f.eof());
     f.close();

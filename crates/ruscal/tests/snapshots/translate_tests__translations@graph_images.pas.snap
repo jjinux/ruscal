@@ -92,7 +92,7 @@ fn pascal_main() {
     size = image_size(0, 0, 9, 9);
     p = AnyPtr::alloc(size);
     get_image(0, 0, 9, 9, &mut p.bytes());
-    move_bytes(&p.bytes().to_bytes(), &mut head, 4);
+    move_bytes(&p.bytes().to_bytes(), &mut head, Header::SERIALIZED_SIZE as u16);
     check(&mut checks, &mut failures, head.width == 9 && head.height == 9, pstr("the header: width - 1, height - 1"));
     put_image(100, 50, &p.bytes().to_bytes(), NORMAL_PUT);
     check(
