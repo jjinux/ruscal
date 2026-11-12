@@ -424,15 +424,109 @@ macro_rules! impl_file_record_number {
 }
 impl_file_record_number!(i8, i16, i32, i64, u8, u16, u32, f32);
 
-/// `Real` is stored in Turbo Pascal's own 6-byte format (Ruscal's `Real`,
-/// `Single`, `Double` and `Extended` are all an `f64`, and TP's `Real` is
-/// what its programs' files hold). See [`real48`].
+/// An `f64` is a `Real`, stored in Turbo Pascal's own 6-byte format (see
+/// [`real48`]), unless its hint says it's a `Double` (8 bytes, as an
+/// `f64` is) or an `Extended` (10 bytes, see [`extended80`]). (A `Single`
+/// is an `f32`, 4 bytes.)
 impl FileRecord for f64 {
     fn encode(&self, out: &mut Vec<u8>) {
         out.extend_from_slice(&real48::from_f64(*self));
     }
     fn decode(input: &mut &[u8]) -> f64 {
         real48::to_f64(take(input, 6).try_into().unwrap())
+    }
+    fn encode_sized(&self, hint: Hint, out: &mut Vec<u8>) {
+        match hint.size {
+            8 => out.extend_from_slice(&self.to_le_bytes()),
+            10 => out.extend_from_slice(&extended80::from_f64(*self)),
+            _ => self.encode(out),
+        }
+    }
+    fn decode_sized(hint: Hint, input: &mut &[u8]) -> f64 {
+        match hint.size {
+            8 => f64::from_le_bytes(take(input, 8).try_into().unwrap()),
+            10 => extended80::to_f64(take(input, 10).try_into().unwrap()),
+            _ => Self::decode(input),
+        }
+    }
+}
+
+/// The 8087's 10-byte `Extended`: 8 bytes of mantissa, low byte first,
+/// with its leading 1 bit written out (an `f64` leaves it implied), then
+/// 2 bytes of exponent (biased by 16383) with the sign in the top bit.
+/// Ruscal computes an `Extended` as an `f64`, so writing one keeps its 53
+/// bits, and reading one rounds its 64 to 53.
+pub mod extended80 {
+    /// `x` in the 10-byte format.
+    pub fn from_f64(x: f64) -> [u8; 10] {
+        let bits = x.to_bits();
+        let sign = (bits >> 63) as u16;
+        let exponent = ((bits >> 52) & 0x7ff) as i32;
+        let fraction = bits & ((1 << 52) - 1);
+        let (exponent, mantissa) = match exponent {
+            0 if fraction == 0 => (0, 0),
+            // Too small for an `f64`'s normal form: shift the first 1 bit
+            // to the top, and lower the exponent to match.
+            0 => {
+                let shift = fraction.leading_zeros();
+                (-1074 + 63 - shift as i32 + 16383, fraction << shift)
+            }
+            // Infinity and NaN.
+            0x7ff => (0x7fff, 1 << 63 | fraction << 11),
+            _ => (exponent - 1023 + 16383, 1 << 63 | fraction << 11),
+        };
+        let mut out = [0; 10];
+        out[..8].copy_from_slice(&mantissa.to_le_bytes());
+        out[8..].copy_from_slice(&(sign << 15 | exponent as u16).to_le_bytes());
+        out
+    }
+
+    /// The 10 bytes as an `f64`, rounded to its 53 bits.
+    pub fn to_f64(bytes: [u8; 10]) -> f64 {
+        let mantissa = u64::from_le_bytes(bytes[..8].try_into().unwrap());
+        let top = u16::from_le_bytes([bytes[8], bytes[9]]);
+        let negative = top >> 15 == 1;
+        let exponent = i32::from(top & 0x7fff);
+        let magnitude = if exponent == 0x7fff {
+            if mantissa << 1 == 0 { f64::INFINITY } else { f64::NAN }
+        } else {
+            // The mantissa is a whole number worth 2^63 for 1.0. Converting
+            // it to an `f64` rounds it; scaling by a power of 2 is exact
+            // (but for the smallest values), done in steps that can't
+            // overflow on the way.
+            let mut value = mantissa as f64;
+            let mut power = exponent - 16383 - 63;
+            while power > 1000 {
+                value *= 2f64.powi(1000);
+                power -= 1000;
+            }
+            while power < -1000 {
+                value *= 2f64.powi(-1000);
+                power += 1000;
+            }
+            value * 2f64.powi(power)
+        };
+        if negative { -magnitude } else { magnitude }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn round_trips() {
+            for x in [0.0, 1.0, -1.0, 0.1, 1.5e300, -2.5e-300, 5e-324, f64::MAX, f64::INFINITY] {
+                assert_eq!(to_f64(from_f64(x)), x, "{x}");
+            }
+            assert!(to_f64(from_f64(f64::NAN)).is_nan());
+        }
+
+        #[test]
+        fn known_bytes() {
+            // 1.0: mantissa 0x8000000000000000, exponent 0x3FFF.
+            assert_eq!(from_f64(1.0), [0, 0, 0, 0, 0, 0, 0, 0x80, 0xff, 0x3f]);
+            assert_eq!(from_f64(-2.0), [0, 0, 0, 0, 0, 0, 0, 0x80, 0x00, 0xc0]);
+        }
     }
 }
 
@@ -789,6 +883,14 @@ macro_rules! file_record {
     };
     (@encode $value:expr, $out:ident, enum $bytes:literal) => {
         $crate::io::FileRecord::encode_sized(&$value, $crate::io::Hint::new($bytes, 0), $out)
+    };
+    // `real 8` is a `Double`, `real 10` an `Extended` (an `f64` is a 6-byte
+    // `Real` otherwise).
+    (@encode $value:expr, $out:ident, real $bytes:literal) => {
+        $crate::io::FileRecord::encode_sized(&$value, $crate::io::Hint::new($bytes, 0), $out)
+    };
+    (@decode $input:ident, real $bytes:literal) => {
+        $crate::io::FileRecord::decode_sized($crate::io::Hint::new($bytes, 0), $input)
     };
     (@decode $input:ident) => {
         $crate::io::FileRecord::decode($input)

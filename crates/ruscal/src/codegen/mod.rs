@@ -672,6 +672,15 @@ impl<'a> Codegen<'a> {
 
         self.blank();
         self.line("fn main() {");
+        // `{$N+}` holds for the whole program file (sema checks it's at the
+        // top), so it's a setting for the whole run.
+        let main_file = self.map.file(0);
+        let main_end = main_file.base + main_file.text.len();
+        if self.rounds_to_even.iter().any(|r| r.start < main_end) {
+            self.line("    // `{$N+}`: reals print as Turbo Pascal 7 printed them with the 8087,");
+            self.line("    // with 15 digits (` 1.50000000000000E+0000`).");
+            self.line("    ruscal_runtime::io::use_coprocessor_format();");
+        }
         self.line("    // `run` turns Pascal runtime errors into Turbo Pascal style messages and");
         self.line("    // exit codes.");
         self.line("    ruscal_runtime::run(pascal_main);");
@@ -3377,6 +3386,9 @@ fn file_record_field(field: &crate::sema::types::Field) -> String {
     if enum_in_one_byte(&field.ty) {
         return format!("{}: enum 1", field.rust_name);
     }
+    if let Some(bytes) = real_bytes(&field.ty) {
+        return format!("{}: real {bytes}", field.rust_name);
+    }
     match size_hint(&field.ty) {
         Some((bytes, 0)) => format!("{}: set {bytes}", field.rust_name),
         Some((bytes, first)) => format!("{}: set {bytes} from {first}", field.rust_name),
@@ -3398,7 +3410,20 @@ pub(super) fn size_hint(ty: &Type) -> Option<(usize, usize)> {
             (bytes < 32).then_some((bytes, first))
         }
         Type::Enum(e) if e.in_one_byte => Some((1, 0)),
+        Type::Real(_) => real_bytes(ty).map(|bytes| (bytes, 0)),
         Type::Array(a) => size_hint(&a.elem),
+        _ => None,
+    }
+}
+
+/// A `Double`'s 8 bytes or an `Extended`'s 10 (or an array's of them),
+/// which an `f64` (a 6-byte `Real` in a file) doesn't say.
+fn real_bytes(ty: &Type) -> Option<usize> {
+    use crate::sema::types::RealKind;
+    match ty {
+        Type::Real(RealKind::Double) => Some(8),
+        Type::Real(RealKind::Extended) => Some(10),
+        Type::Array(a) => real_bytes(&a.elem),
         _ => None,
     }
 }

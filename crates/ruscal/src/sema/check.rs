@@ -4640,7 +4640,19 @@ impl Checker {
                 }
                 Type::Void
             }
-            Abs | Sqr => self.unary_builtin(span, args, &name, |t| t.is_numeric(), |t| t.concrete()),
+            Abs => self.unary_builtin(span, args, &name, |t| t.is_numeric(), |t| t.concrete()),
+            // A real's square is worked out as an `f64`, a `Single`'s too (as
+            // the 8087 did, in extended precision).
+            Sqr => self.unary_builtin(
+                span,
+                args,
+                &name,
+                |t| t.is_numeric(),
+                |t| match t {
+                    Type::Real(_) => Type::REAL,
+                    t => t.concrete(),
+                },
+            ),
             Sqrt | Sin | Cos | ArcTan | Ln | Exp | Int | Frac => {
                 self.unary_builtin(span, args, &name, |t| t.is_numeric(), |_| Type::REAL)
             }
@@ -4903,7 +4915,8 @@ impl Checker {
 
 /// The type in which `l op r` is computed for `+`, `-` and `*`.
 pub fn numeric_common(l: &Type, r: &Type) -> Option<Type> {
-    if *l == Type::REAL && r.is_numeric() || *r == Type::REAL && l.is_numeric() {
+    // Real arithmetic is done in `f64`, a `Single`'s too.
+    if matches!(l, Type::Real(_)) && r.is_numeric() || matches!(r, Type::Real(_)) && l.is_numeric() {
         Some(Type::REAL)
     } else {
         int_common(l, r)

@@ -66,19 +66,25 @@ fn errors() {
     assert!(wrong_size.contains("2 bytes, which isn't a whole number of Item records (45 bytes each)"), "{wrong_size}");
     let unknown = json("tests/json/records.pas", "tests/json/raws.dat", Some("Nothing")).unwrap_err();
     assert!(unknown.contains("declares no type named `Nothing`"), "{unknown}");
+}
 
-    // A `Double` is 8 bytes in TP's files, but a `Real` (6) in Ruscal's.
-    let scratch = Path::new(env!("CARGO_TARGET_TMPDIR")).join("json_double");
+/// `Single`, `Double` and `Extended` fields take 4, 8 and 10 bytes, as in
+/// TP's files, and go to JSON as numbers and back.
+#[test]
+fn float_types() {
+    let scratch = Path::new(env!("CARGO_TARGET_TMPDIR")).join("json_floats");
     std::fs::create_dir_all(&scratch).unwrap();
     std::fs::write(
         scratch.join("prices.pas"),
-        "program Prices;\ntype\n   Price = record\n      Cost: Double;\n   end;\nvar\n   F: file of Price;\nbegin\nend.\n",
+        "{$N+}\nprogram Prices;\ntype\n   Price = record\n      S: Single;\n      D: Double;\n      E: Extended;\n   end;\nvar\n   F: file of Price;\nbegin\nend.\n",
     )
     .unwrap();
-    std::fs::write(scratch.join("prices.dat"), [0; 6]).unwrap();
-    let double =
-        to_json(&scratch.join("prices.pas"), &scratch.join("prices.dat"), None, &Options::default()).unwrap_err();
-    assert!(double.contains("[0].Cost is a Double"), "{double}");
+    let mut bytes = 0.1f32.to_le_bytes().to_vec();
+    bytes.extend_from_slice(&(-2.25f64).to_le_bytes());
+    bytes.extend_from_slice(&ruscal_runtime::io::extended80::from_f64(1.5e10));
+    std::fs::write(scratch.join("prices.dat"), &bytes).unwrap();
+    let prices = to_json(&scratch.join("prices.pas"), &scratch.join("prices.dat"), None, &Options::default()).unwrap();
+    assert_eq!(prices, "[\n  {\n    \"S\": 0.1,\n    \"D\": -2.25,\n    \"E\": 15000000000.0\n  }\n]\n");
 }
 
 /// `from-json` gives back the bytes `to-json` read: exactly, for files

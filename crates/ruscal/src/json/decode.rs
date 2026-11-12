@@ -23,11 +23,16 @@ pub fn value(analysis: &Analysis, ty: &Type, bytes: &[u8], path: &str) -> Result
             Value::String(bytes[1..=len].iter().map(|&b| cp437::to_char(b)).collect())
         }
         Type::Real(RealKind::Real) => real(bytes.try_into().expect("a Real is 6 bytes")),
-        Type::Real(kind) => {
-            return Err(format!(
-                "{path} is a {kind:?}: Ruscal reads only 6-byte `Real`s from files for now, not {kind:?}s"
-            ));
+        // A `Single` as its shortest decimal (`0.1`, not the `f64` nearest
+        // its bits, 0.10000000149011612).
+        Type::Real(RealKind::Single) => {
+            let x = f32::from_le_bytes(bytes.try_into().expect("a Single is 4 bytes"));
+            number(x.to_string().parse().unwrap_or(f64::NAN))
         }
+        Type::Real(RealKind::Extended) => {
+            number(ruscal_runtime::io::extended80::to_f64(bytes.try_into().expect("an Extended is 10 bytes")))
+        }
+        Type::Real(_) => number(f64::from_le_bytes(bytes.try_into().expect("a Double is 8 bytes"))),
         Type::Enum(e) => {
             let ordinal = integer(if bytes.len() == 1 { IntKind::Byte } else { IntKind::Word }, bytes);
             match e.pascal_names.get(ordinal as usize) {
@@ -84,6 +89,11 @@ fn real(bytes: [u8; 6]) -> Value {
         .find(|&x| real48::from_f64(x) == bytes)
         .unwrap_or(exact);
     Number::from_f64(shortest).map_or(Value::Null, Value::Number)
+}
+
+/// A JSON number (`null` for infinity or NaN, which JSON can't hold).
+fn number(x: f64) -> Value {
+    Number::from_f64(x).map_or(Value::Null, Value::Number)
 }
 
 /// A set: TP keeps a bit per possible element, in the bytes from its lowest
