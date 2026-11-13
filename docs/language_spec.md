@@ -89,7 +89,9 @@ Numbers, characters and enumerations
   `Double` or `Extended` for a `var Real` parameter (TP wants the same
   type; a `Single` is refused, as an `f32`). `Write` and `Read` on a
   typed file take a variable of exactly the file's type, as in TP
-  (`Write(F, Word(I))` counts as one for a `file of Word`); Ruscal also
+  (`Write(F, Word(I))`, of the same size, counts as one for a `file of
+  Word`; `Read(F, Word(I))` doesn't, as no typecast is a place to write
+  to here, though TP took it); Ruscal also
   takes a `const` parameter there, which TP refused. A constant too big
   for a `Single` (`S := 1E39`) is an error: TP stored an infinity, and
   Rust refuses the `f32` literal.

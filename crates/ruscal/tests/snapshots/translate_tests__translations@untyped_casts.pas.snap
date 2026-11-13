@@ -19,7 +19,8 @@ use ruscal_runtime::prelude::*;
 // Writes through a typecast of an untyped parameter: an element of a Word
 // array, a record's field, Inc of one, and a string[5] as a whole (which
 // takes 6 bytes, not a full string's 256), and one passed on to a var
-// parameter, whole or a field. Output from fpc -Mtp.
+// parameter, whole or a field (two in one statement too), or to Val or
+// Str. Output from fpc -Mtp.
 /// Pascal: `array[0..127] of Word`
 type TWords = PArray<u16, 0, 128>;
 
@@ -92,11 +93,48 @@ fn bump(data: &mut dyn ByteView) {
     data.write(&view);
 }
 
+/// Pascal: `function Next(var n: Word): Word;`
+fn next(n: &mut u16) -> u16 {
+    *n += 1;
+    *n
+}
+
+/// Pascal: `procedure BumpBoth(var a; var b; var Sum: Word);`
+fn bump_both(a: &mut dyn ByteView, b: &mut dyn ByteView, sum: &mut u16) {
+    let mut a = Bytes::of(a);
+    let mut b = Bytes::of(b);
+    let mut n = a.read::<u16>();
+    let mut n_2 = b.read::<u16>();
+    *sum = next(&mut n) + next(&mut n_2);
+    a.write(&n);
+    b.write(&n_2);
+}
+
+/// Pascal: `procedure Parse(var Data; const s: string);`
+fn parse(data: &mut dyn ByteView, s: &PString) {
+    let mut data = Bytes::of(data);
+    let mut code: i16 = 0;
+    let mut view = data.read::<u16>();
+    val(s, &mut view, &mut code);
+    data.write(&view);
+}
+
+/// Pascal: `procedure Show(var Data; n: Integer);`
+fn show(data: &mut dyn ByteView, n: i16) {
+    let mut data = Bytes::of(data);
+    let mut view = data.read_string::<PString>(5);
+    view = pas_str(n).truncated(5);
+    data.write_string(&view, 5);
+}
+
 /// The main program: the `begin ... end.` block of `UntypedCasts`.
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
     let mut r: Rec = Rec::default();
     let mut nr: NRec = NRec::default();
+    let mut w_: u16 = 0;
+    let mut x: u16 = 0;
+    let mut y: u16 = 0;
     r.a = 0;
     r.b = 0;
     set_words(&mut r);
@@ -109,6 +147,13 @@ fn pascal_main() {
     pwriteln!(nr.name, " ", nr.n);
     bump(&mut r);
     pwriteln!(r.a, " ", r.b);
+    x = 1;
+    y = 2;
+    bump_both(&mut x, &mut y, &mut w_);
+    pwriteln!(w_, " ", x, " ", y);
+    parse(&mut bytes_from(&mut r, 0), &pstr("77"));
+    show(&mut nr, 123);
+    pwriteln!(r.a, " ", nr.name, " ", nr.n);
 }
 
 fn main() {

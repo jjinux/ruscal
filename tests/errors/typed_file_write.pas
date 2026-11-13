@@ -2,7 +2,7 @@
   Turbo Pascal 7 ("Variable identifier expected", "Type mismatch"):
   not a value, and not a Single for a file of Real or a Double for a
   file of Single. Read likewise. A typecast variable is fine, a typecast
-  value isn't. }
+  value isn't, and neither is one of another size (Word(B) of a Byte). }
 {$N+}
 program TypedFileWrite;
 var
@@ -13,6 +13,7 @@ var
    FR: file of Real;
    FW: file of Word;
    I: Integer;
+   B: Byte;
 begin
    Write(FS, D);
    Write(FS, 3);
@@ -22,4 +23,5 @@ begin
    Write(FS, S);
    Write(FW, Word(I));
    Write(FW, Word(I + 1));
+   Write(FW, Word(B));
 end.

@@ -10,3 +10,11 @@ comp_type.pas:8:7: error: `Comp` (the 8087's 64-bit integer) isn't supported: us
 comp_type.pas:6:13: error: `Comp` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, or `Double`, which holds whole numbers exactly up to 2^53
    PComp = ^Comp;
             ^^^^
+
+comp_type.pas:11:9: error: `Comp` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, or `Double`, which holds whole numbers exactly up to 2^53
+   R := Comp(R);
+        ^^^^
+
+comp_type.pas:12:19: error: `Comp` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, or `Double`, which holds whole numbers exactly up to 2^53
+   WriteLn(SizeOf(Comp));
+                  ^^^^

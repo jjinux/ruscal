@@ -6,5 +6,8 @@ type
    PComp = ^Comp;
 var
    C: Comp;
+   R: Real;
 begin
+   R := Comp(R);
+   WriteLn(SizeOf(Comp));
 end.

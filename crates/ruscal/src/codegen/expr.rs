@@ -1214,6 +1214,9 @@ impl<'a> Codegen<'a> {
                 }
                 code
             }
+            // A typecast of an untyped parameter: its bytes, read into a
+            // variable by `view_for_place`.
+            ExprKind::Call { .. } if self.hoisted.contains_key(&e.id) => self.hoisted[&e.id].clone(),
             _ => unreachable!("sema rejects other assignment targets"),
         }
     }
@@ -1340,6 +1343,11 @@ impl<'a> Codegen<'a> {
     fn view_for_place(&mut self, e: &Expr) {
         let mut inner = e;
         let cast = loop {
+            // The cast itself, a standard routine's `var` argument
+            // (`Val(S, Word(Data), Code)`).
+            if std::ptr::eq(inner, e) && self.view_cast_guard(e).is_some() {
+                break e;
+            }
             match &inner.kind {
                 ExprKind::Field(base, _) | ExprKind::Index(base, _) => {
                     if self.view_cast_guard(base).is_some() {
@@ -1364,8 +1372,8 @@ impl<'a> Codegen<'a> {
         };
         let name = self.temp_name("view");
         if self.first_time("view_for_place") {
-            self.pending
-                .push(format!("// Part of an untyped parameter seen as a `{}`: its bytes are read into", ty.rust()));
+            let what = if std::ptr::eq(cast, e) { "An untyped parameter" } else { "Part of an untyped parameter" };
+            self.pending.push(format!("// {what} seen as a `{}`: its bytes are read into", ty.rust()));
             self.pending.push(format!("// `{name}`, which the statement changes, and written back after it."));
         }
         self.pending.push(format!("let mut {name} = {bytes}.{read};"));
@@ -2285,7 +2293,14 @@ impl<'a> Codegen<'a> {
         } else {
             base.to_string()
         };
-        let taken = |name: &str| self.pending.iter().any(|line| line.starts_with(&format!("let {name} = ")));
+        // (`let x = ...`, `let mut x = ...` or `let x: T = ...`.)
+        let taken = |name: &str| {
+            self.pending.iter().any(|line| {
+                let Some(rest) = line.strip_prefix("let ") else { return false };
+                let rest = rest.strip_prefix("mut ").unwrap_or(rest);
+                rest.strip_prefix(name).is_some_and(|after| after.starts_with([' ', ':']))
+            })
+        };
         let mut name = base.clone();
         let mut n = 1;
         while taken(&name) {

@@ -201,10 +201,19 @@ impl<'a> Codegen<'a> {
                 super::expr::cast(code, &from, &result).0
             }
             Chr => {
-                if let ExprKind::Int(n) = args[0].kind
-                    && (0..=255).contains(&n)
-                {
-                    return super::expr::char_literal(n as u8);
+                // A literal is a byte literal; past a byte, its low 8 bits,
+                // as TP 7 kept (`Chr(300)` is `','`, 44), since Rust refuses
+                // `300 as u8` of a literal.
+                let literal = match &args[0].kind {
+                    ExprKind::Int(n) => Some(*n),
+                    ExprKind::Unary { op: crate::ast::UnaryOp::Neg, operand } => match operand.kind {
+                        ExprKind::Int(n) => Some(-n),
+                        _ => None,
+                    },
+                    _ => None,
+                };
+                if let Some(n) = literal {
+                    return super::expr::char_literal(n.rem_euclid(256) as u8);
                 }
                 let from = ty(self, &args[0]).concrete();
                 let code = self.coerce(&args[0], &from);

@@ -1730,8 +1730,16 @@ impl Checker {
     /// `Write` to a typed file?
     fn is_variable_reference(&self, e: &Expr) -> bool {
         match &e.kind {
-            ExprKind::Call { callee, args } if self.typecast_target(callee, args).is_some() => {
-                self.is_variable_reference(&args[0])
+            // (Of the same size: `Word(B)` of a Byte is a value, TP's
+            // "Invalid variable reference".)
+            ExprKind::Call { callee, args } if let Some(target) = self.typecast_target(callee, args) => {
+                let size = super::types::serialized_size;
+                let inner = match &args[0].kind {
+                    ExprKind::Call { callee, args } => self.typecast_target(callee, args),
+                    _ => self.place_type(&args[0]),
+                };
+                let same_size = matches!((size(&target), inner.as_ref().and_then(size)), (Some(a), Some(b)) if a == b);
+                same_size && self.is_variable_reference(&args[0])
             }
             _ => is_place(e),
         }
@@ -4592,7 +4600,11 @@ impl Checker {
                     None => {
                         let wanted =
                             if b == SizeOf { "a variable or a type" } else { "an ordinal type, an array or a string" };
-                        self.error(args[0].span, format!("`{name}` needs {wanted}"));
+                        let message = match &args[0].kind {
+                            ExprKind::Name(id) => comp_message(&id.name),
+                            _ => None,
+                        };
+                        self.error(args[0].span, message.unwrap_or_else(|| format!("`{name}` needs {wanted}")));
                         Type::Error
                     }
                 }
@@ -5183,21 +5195,21 @@ fn byte_register_message(name: &str) -> String {
     )
 }
 
-/// Is a variable of type `ty` what a `file of elem` holds? The same type,
-/// and for reals the same kind: a `Double` isn't a `Real` in a file (they
-/// take 8 bytes and 6), though they're one type to sema otherwise.
 /// The error for a type name that isn't declared. `Comp`, the 8087's 64-bit
 /// integer, says what to use instead (it isn't planned: no program here
 /// used it).
 fn unknown_type(name: &str) -> String {
-    if name.eq_ignore_ascii_case("comp") {
+    comp_message(name).unwrap_or_else(|| format!("unknown type `{name}`"))
+}
+
+/// What to use instead of `Comp`, if `name` is it.
+fn comp_message(name: &str) -> Option<String> {
+    name.eq_ignore_ascii_case("comp").then(|| {
         format!(
             "`{name}` (the 8087's 64-bit integer) isn't supported: use `LongInt` if the values fit in 32 bits, \
              or `Double`, which holds whole numbers exactly up to 2^53"
         )
-    } else {
-        format!("unknown type `{name}`")
-    }
+    })
 }
 
 /// Is `e` a variable or a part of one (as opposed to a computed value)?
@@ -5205,6 +5217,9 @@ pub(crate) fn is_place(e: &Expr) -> bool {
     matches!(e.kind, ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) | ExprKind::Deref(_))
 }
 
+/// Is a variable of type `ty` what a `file of elem` holds? The same type,
+/// and for reals the same kind: a `Double` isn't a `Real` in a file (they
+/// take 8 bytes and 6), though they're one type to sema otherwise.
 fn same_file_type(ty: &Type, elem: &Type) -> bool {
     match (ty, elem) {
         (Type::Real(a), Type::Real(b)) => std::mem::discriminant(a) == std::mem::discriminant(b),
@@ -5219,6 +5234,6 @@ fn unknown_identifier(name: &str) -> String {
         "port" | "portw" | "mem" | "memw" | "meml" => {
             format!("{}; see \"Never supported\" in the README", crate::parser::DOS_ONLY_MEM)
         }
-        _ => format!("unknown identifier `{name}`"),
+        _ => comp_message(name).unwrap_or_else(|| format!("unknown identifier `{name}`")),
     }
 }

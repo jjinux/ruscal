@@ -3,26 +3,30 @@ source: crates/ruscal/tests/translate_tests.rs
 expression: error
 input_file: tests/errors/typed_file_write.pas
 ---
-typed_file_write.pas:17:14: error: this file holds Single values, not Double
+typed_file_write.pas:18:14: error: this file holds Single values, not Double
    Write(FS, D);
              ^
 
-typed_file_write.pas:18:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
+typed_file_write.pas:19:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
    Write(FS, 3);
              ^
 
-typed_file_write.pas:19:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
+typed_file_write.pas:20:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
    Write(FS, S * 2);
              ^^^^^
 
-typed_file_write.pas:20:14: error: this file holds Real values, not Single
+typed_file_write.pas:21:14: error: this file holds Real values, not Single
    Write(FR, S);
              ^
 
-typed_file_write.pas:21:13: error: this file holds Real values, not Double
+typed_file_write.pas:22:13: error: this file holds Real values, not Double
    Read(FR, D);
             ^
 
-typed_file_write.pas:24:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
+typed_file_write.pas:25:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
    Write(FW, Word(I + 1));
              ^^^^^^^^^^^
+
+typed_file_write.pas:26:14: error: `Write` to a typed file takes a variable of the file's type, not a value (as in Turbo Pascal)
+   Write(FW, Word(B));
+             ^^^^^^^
