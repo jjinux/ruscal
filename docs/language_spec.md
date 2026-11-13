@@ -192,8 +192,10 @@ own below.
   one that doesn't fit, `MaxLongInt + 1` or `-$80000000`, is an error, as
   is a real one too big for a Real, `1E300 * 1E300`; so is a constant
   out of range for where it goes, `B := 300` for a Byte, in an
-  assignment, a value argument or a typed constant, as TP's "Constant out
-  of range"), and
+  assignment, a value argument (also `Crt`'s Byte and Word ones,
+  `GotoXY(300, 1)`, and a single value for an open array) or a typed
+  constant, as TP's "Constant out of range"; not yet for a subrange,
+  which Ruscal checks against its host type), and
   kept in the Rust with their constants' names (`const M = K * 2 + 1` is
   `const M: i16 = K * 2 + 1;`), with TP 7's constant functions: `Abs`, `Chr`, `Hi`, `High`, `Length`,
   `Lo`, `Low`, `Odd`, `Ord`, `Pred`, `Round`, `SizeOf`, `Succ`, `Swap`,

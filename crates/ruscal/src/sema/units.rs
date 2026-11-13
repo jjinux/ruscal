@@ -14,6 +14,11 @@ pub enum Param {
     /// Any integer. Runtime functions take `impl Into<i32>`, so any integer
     /// type can be passed without a cast.
     Int,
+    /// An integer TP declares as a `Byte` or a `Word` (`GotoXY(X, Y: Byte)`):
+    /// passed as `Int` is, but a constant out of range is an error, as TP's
+    /// "Constant out of range".
+    Byte,
+    Word,
     Real,
     /// Anything string-like (`impl Into<PString>` in the runtime).
     Str,
@@ -293,19 +298,19 @@ pub static SYSTEM: &[UnitRoutine] = &[
 pub static CRT: &[UnitRoutine] = &[
     routine!("clrscr" => "clr_scr"()),
     routine!("clreol" => "clr_eol"()),
-    routine!("gotoxy" => "goto_xy"(Int, Int)),
+    routine!("gotoxy" => "goto_xy"(Byte, Byte)),
     routine!("wherex" => "where_x"() -> Byte),
     routine!("wherey" => "where_y"() -> Byte),
-    routine!("textcolor" => "text_color"(Int)),
-    routine!("textbackground" => "text_background"(Int)),
+    routine!("textcolor" => "text_color"(Byte)),
+    routine!("textbackground" => "text_background"(Byte)),
     routine!("highvideo" => "high_video"()),
     routine!("lowvideo" => "low_video"()),
     routine!("normvideo" => "norm_video"()),
-    routine!("window" => "window"(Int, Int, Int, Int)),
+    routine!("window" => "window"(Byte, Byte, Byte, Byte)),
     routine!("insline" => "ins_line"()),
     routine!("delline" => "del_line"()),
-    routine!("delay" => "delay"(Int)),
-    routine!("sound" => "sound"(Int)),
+    routine!("delay" => "delay"(Word)),
+    routine!("sound" => "sound"(Word)),
     routine!("nosound" => "no_sound"()),
     routine!("keypressed" => "key_pressed"() -> Bool),
     routine!("readkey" => "read_key"() -> Char),

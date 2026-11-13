@@ -1652,7 +1652,7 @@ impl<'a> Codegen<'a> {
                     .iter()
                     .zip(args)
                     .map(|(param, arg)| match param {
-                        Param::Int => self.expr(arg).0,
+                        Param::Int | Param::Byte | Param::Word => self.expr(arg).0,
                         Param::Real => self.coerce(arg, &Type::REAL).0,
                         Param::Str => self.string_arg(arg),
                         Param::Bool => self.expr(arg).0,
@@ -2276,7 +2276,8 @@ impl<'a> Codegen<'a> {
                 }
             }
             (_, true) => format!("OpenArray::single_mut({})", self.place_mut(arg)),
-            (_, false) => format!("OpenArray::single(&{})", self.coerce(arg, elem).0),
+            // (`&(i + 1)`: `&` binds tighter than the expression.)
+            (_, false) => format!("OpenArray::single(&{})", paren(self.coerce(arg, elem), prec::UNARY)),
         }
     }
 
