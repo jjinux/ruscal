@@ -25,7 +25,7 @@ fn pascal_main() {
     let mut c: u8 = 0;
     c = b',';
     pwriteln!(i16::from(c), " ", c);
-    pwriteln!(i16::from(b'\x00'), " ", i16::from(b'A'));
+    pwriteln!(i16::from(b'\x00'), " ", i16::from(b'A'), " ", i16::from(b'\x01'));
 }
 
 fn main() {

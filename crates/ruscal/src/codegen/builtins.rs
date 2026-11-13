@@ -204,14 +204,8 @@ impl<'a> Codegen<'a> {
                 // A literal is a byte literal; past a byte, its low 8 bits,
                 // as TP 7 kept (`Chr(300)` is `','`, 44), since Rust refuses
                 // `300 as u8` of a literal.
-                let literal = match &args[0].kind {
-                    ExprKind::Int(n) => Some(*n),
-                    ExprKind::Unary { op: crate::ast::UnaryOp::Neg, operand } => match operand.kind {
-                        ExprKind::Int(n) => Some(-n),
-                        _ => None,
-                    },
-                    _ => None,
-                };
+                // (Any constant made only of literals: `Chr(-1)`, `Chr(- -1)`.)
+                let literal = if self.literals_only(&args[0]) { self.constant_int(&args[0]) } else { None };
                 if let Some(n) = literal {
                     return super::expr::char_literal(n.rem_euclid(256) as u8);
                 }

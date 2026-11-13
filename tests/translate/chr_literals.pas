@@ -6,5 +6,5 @@ var
 begin
    C := Chr(300);
    WriteLn(Ord(C), ' ', C);
-   WriteLn(Ord(Chr(256)), ' ', Ord(Chr(65)));
+   WriteLn(Ord(Chr(256)), ' ', Ord(Chr(65)), ' ', Ord(Chr(- -1)));
 end.

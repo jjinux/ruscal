@@ -16,7 +16,21 @@ input_file: tests/translate/typed_file_cast.pas
 
 use ruscal_runtime::prelude::*;
 
-// Write to a typed file takes a typecast variable, as in Turbo Pascal 7.
+// Write to a typed file takes a typecast variable of the same size, as in
+// Turbo Pascal 7: an Integer, an untyped parameter, a string's
+// character.
+
+/// Pascal: `procedure WriteBytes(var Data);`
+///
+/// The global variables this procedure uses are passed in as parameters,
+/// because the globals are local variables of `pascal_main`.
+fn write_bytes(f: &mut PFile<u16>, data: &mut dyn ByteView) {
+    // An untyped parameter is the caller's variable as Turbo Pascal's bytes;
+    // `Bytes` copies them, and when it's dropped (at any `return`) it
+    // writes them back into the variable.
+    let data = Bytes::of(data);
+    f.write(&data.read::<u16>());
+}
 
 /// The main program: the `begin ... end.` block of `TypedFileCast`.
 /// Its local variables are the Pascal program's global variables.
@@ -24,6 +38,10 @@ fn pascal_main() {
     let mut f: PFile<u16> = PFile::default();
     let mut i: i16 = 0;
     let mut w_: u16 = 0;
+    let mut fb: PFile<u8> = PFile::default();
+    let mut s: PString = PString::new();
+    let mut b: u8 = 0;
+    let mut b2: u8 = 0;
     f.assign("tfcast.dat");
     f.rewrite();
     i = -1;
@@ -31,8 +49,25 @@ fn pascal_main() {
     f.reset();
     f.read(&mut w_);
     pwriteln!(w_, " ", f.file_size());
+    w_ = 40;
+    f.seek(0);
+    write_bytes(&mut f, &mut w_);
+    f.seek(0);
+    f.read(&mut w_);
+    pwriteln!(w_);
     f.close();
     f.erase();
+    fb.assign("tfcastb.dat");
+    fb.rewrite();
+    s = pstr("A");
+    fb.write(&s[1]);
+    fb.write(&s[0]);
+    fb.reset();
+    fb.read(&mut b);
+    fb.read(&mut b2);
+    pwriteln!(i16::from(b), " ", i16::from(b2));
+    fb.close();
+    fb.erase();
 }
 
 fn main() {

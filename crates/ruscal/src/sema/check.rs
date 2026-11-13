@@ -1738,8 +1738,10 @@ impl Checker {
                     ExprKind::Call { callee, args } => self.typecast_target(callee, args),
                     _ => self.place_type(&args[0]),
                 };
-                let same_size = matches!((size(&target), inner.as_ref().and_then(size)), (Some(a), Some(b)) if a == b);
-                same_size && self.is_variable_reference(&args[0])
+                // (Only when both sizes are known: an untyped parameter's
+                // bytes, `Word(Data)`, have none.)
+                let other_size = matches!((size(&target), inner.as_ref().and_then(size)), (Some(a), Some(b)) if a != b);
+                !other_size && self.is_variable_reference(&args[0])
             }
             _ => is_place(e),
         }
@@ -4925,6 +4927,8 @@ impl Checker {
                     ty = match ty {
                         Type::Array(a) => a.elem.clone(),
                         Type::OpenArray(elem) => (*elem).clone(),
+                        // `s[1]`: a string's character.
+                        Type::Str { .. } => Type::Char,
                         _ => return None,
                     };
                 }

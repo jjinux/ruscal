@@ -1366,19 +1366,44 @@ impl<'a> Codegen<'a> {
         }
         let bytes = self.view_cast_guard(cast).expect("a view cast");
         let ty = self.a.type_of(cast.id).clone();
-        let (read, write) = match super::string_capacity(&ty) {
-            Some(cap) => (format!("read_string::<{}>({cap})", ty.rust()), format!("write_string(&{{}}, {cap})")),
-            None => (format!("read::<{}>()", ty.rust()), "write(&{})".to_string()),
-        };
+        if let Some(name) = self.view_in_statement(&bytes, &ty) {
+            self.hoisted.insert(cast.id, name);
+            return;
+        }
         let name = self.temp_name("view");
         if self.first_time("view_for_place") {
             let what = if std::ptr::eq(cast, e) { "An untyped parameter" } else { "Part of an untyped parameter" };
             self.pending.push(format!("// {what} seen as a `{}`: its bytes are read into", ty.rust()));
             self.pending.push(format!("// `{name}`, which the statement changes, and written back after it."));
         }
-        self.pending.push(format!("let mut {name} = {bytes}.{read};"));
-        self.after.push(format!("{bytes}.{};", write.replace("{}", &name)));
+        self.new_view(&bytes, &ty, &name);
         self.hoisted.insert(cast.id, name);
+    }
+
+    /// How a view of an untyped parameter as `ty` is read and written back.
+    fn view_read_write(ty: &Type) -> (String, String) {
+        match super::string_capacity(ty) {
+            Some(cap) => (format!("read_string::<{}>({cap})", ty.rust()), format!("write_string(&{{}}, {cap})")),
+            None => (format!("read::<{}>()", ty.rust()), "write(&{})".to_string()),
+        }
+    }
+
+    /// The variable this statement already read the untyped parameter
+    /// `bytes` into as a `ty`, if it did. Every use of `Rec(Data)` in a
+    /// statement shares it, so one's change isn't undone by another's
+    /// write-back, and a later read sees it.
+    pub(super) fn view_in_statement(&self, bytes: &str, ty: &Type) -> Option<String> {
+        let (read, _) = Self::view_read_write(ty);
+        let tail = format!(" = {bytes}.{read};");
+        self.pending.iter().find_map(|line| line.strip_prefix("let mut ")?.strip_suffix(&tail).map(str::to_string))
+    }
+
+    /// Read the untyped parameter `bytes` into a new variable `name` as a
+    /// `ty`, written back after the statement.
+    pub(super) fn new_view(&mut self, bytes: &str, ty: &Type, name: &str) {
+        let (read, write) = Self::view_read_write(ty);
+        self.pending.push(format!("let mut {name} = {bytes}.{read};"));
+        self.after.push(format!("{bytes}.{};", write.replace("{}", name)));
     }
 
     pub(super) fn view_cast_guard(&self, e: &Expr) -> Option<String> {
@@ -1668,6 +1693,11 @@ impl<'a> Codegen<'a> {
             // `TRec(Data)`: an untyped parameter's bytes, read as a `TRec`.
             SymKind::TypeName(ty) if *self.a.type_of(args[0].id) == Type::Untyped => {
                 let bytes = self.untyped_name(&args[0]);
+                // (After a call in the same statement changed it, through a
+                // variable it was read into: that variable.)
+                if let Some(name) = self.view_in_statement(&bytes, ty) {
+                    return name;
+                }
                 match super::string_capacity(ty) {
                     Some(cap) => format!("{bytes}.read_string::<{}>({cap})", ty.rust()),
                     None => format!("{bytes}.read::<{}>()", ty.rust()),
@@ -1719,7 +1749,7 @@ impl<'a> Codegen<'a> {
     /// routines and types (`Integer(-1) shr 1`, `Ord('A')`, `SizeOf(LongInt)`)?
     /// Then its value says as much as it does; a name of the program's
     /// (`Ord(Blue)`, `High(TIndex)`, `K`) is worth keeping.
-    fn literals_only(&self, e: &Expr) -> bool {
+    pub(super) fn literals_only(&self, e: &Expr) -> bool {
         let standard_type = |name: &str| {
             matches!(
                 name.to_ascii_lowercase().as_str(),
@@ -2120,15 +2150,14 @@ impl<'a> Codegen<'a> {
                 // its bytes are read into a variable, which the call changes,
                 // and written back after it.
                 let cast = self.a.type_of(arg.id).clone();
-                let (read, write) = match super::string_capacity(&cast) {
-                    Some(cap) => {
-                        (format!("read_string::<{}>({cap})", cast.rust()), format!("write_string(&{{}}, {cap})"))
+                let temp = match self.view_in_statement(&bytes, &cast) {
+                    Some(temp) => temp,
+                    None => {
+                        let temp = self.temp_name(&self.a.sym(*param).rust_name.clone());
+                        self.new_view(&bytes, &cast, &temp);
+                        temp
                     }
-                    None => (format!("read::<{}>()", cast.rust()), "write(&{})".to_string()),
                 };
-                let temp = self.temp_name(&self.a.sym(*param).rust_name.clone());
-                self.pending.push(format!("let mut {temp} = {bytes}.{read};"));
-                self.after.push(format!("{bytes}.{};", write.replace("{}", &temp)));
                 parts.push(format!("&mut {temp}"));
             } else if is_var_arg && !self.is_variable(arg) {
                 // A `const` one a method is called on, given a value

@@ -19,8 +19,9 @@ use ruscal_runtime::prelude::*;
 // Writes through a typecast of an untyped parameter: an element of a Word
 // array, a record's field, Inc of one, and a string[5] as a whole (which
 // takes 6 bytes, not a full string's 256), and one passed on to a var
-// parameter, whole or a field (two in one statement too), or to Val or
-// Str. Output from fpc -Mtp.
+// parameter, whole or a field (two in one statement too, of different
+// parameters or of the same one), or to Val or Str; and read after a call
+// changed it in the same statement. Output from fpc -Mtp.
 /// Pascal: `array[0..127] of Word`
 type TWords = PArray<u16, 0, 128>;
 
@@ -110,6 +111,32 @@ fn bump_both(a: &mut dyn ByteView, b: &mut dyn ByteView, sum: &mut u16) {
     b.write(&n_2);
 }
 
+/// Pascal: `procedure Swap2(var x, y: Word);`
+fn swap2(x: &mut u16, y: &mut u16) {
+    let mut t: u16 = 0;
+    t = *x;
+    *x = *y;
+    *y = t;
+}
+
+/// Pascal: `procedure SwapBoth(var Data);`
+fn swap_both(data: &mut dyn ByteView) {
+    let mut data = Bytes::of(data);
+    let mut view = data.read::<Rec>();
+    swap2(&mut view.a, &mut view.b);
+    data.write(&view);
+}
+
+/// Pascal: `function NextThenRead(var Data): Word;`
+fn next_then_read(data: &mut dyn ByteView) -> u16 {
+    let mut data = Bytes::of(data);
+    let mut result: u16 = 0;
+    let mut n = data.read::<u16>();
+    result = next(&mut n) + n;
+    data.write(&n);
+    result
+}
+
 /// Pascal: `procedure Parse(var Data; const s: string);`
 fn parse(data: &mut dyn ByteView, s: &PString) {
     let mut data = Bytes::of(data);
@@ -154,6 +181,12 @@ fn pascal_main() {
     parse(&mut bytes_from(&mut r, 0), &pstr("77"));
     show(&mut nr, 123);
     pwriteln!(r.a, " ", nr.name, " ", nr.n);
+    r.a = 41;
+    r.b = 42;
+    swap_both(&mut r);
+    pwriteln!(r.a, " ", r.b);
+    x = 5;
+    pwriteln!(next_then_read(&mut x), " ", x);
 }
 
 fn main() {
