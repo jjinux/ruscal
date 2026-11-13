@@ -2276,7 +2276,8 @@ impl<'a> Codegen<'a> {
                 }
             }
             (_, true) => format!("OpenArray::single_mut({})", self.place_mut(arg)),
-            (_, false) => format!("OpenArray::single(&{})", self.coerce(arg, elem).0),
+            // (`&(i + 1)`: `&` binds tighter than the expression.)
+            (_, false) => format!("OpenArray::single(&{})", paren(self.coerce(arg, elem), prec::UNARY)),
         }
     }
 

@@ -17,5 +17,7 @@ begin
    { Fine: in range, and a variable is checked at run time if at all. }
    GotoXY(80, 25);
    Delay(65535);
+   Delay(1000 * 60);
+   TextColor(White + Blink);
    Show(255);
 end.
