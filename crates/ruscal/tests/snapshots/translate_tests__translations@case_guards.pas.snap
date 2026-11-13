@@ -29,10 +29,10 @@ fn pascal_main() {
     let mut c: u8 = 0;
     for i in 1_i16..=16 {
         match i {
-            value if value == 1 || value == K + 1 => pwrite!("a"),
-            value if (K * 2..=K * 3).contains(&value) => pwrite!("b"),
+            rsc_value if rsc_value == 1 || rsc_value == K + 1 => pwrite!("a"),
+            rsc_value if (K * 2..=K * 3).contains(&rsc_value) => pwrite!("b"),
             L => pwrite!("c"),
-            value if (K + 2..=L - 1).contains(&value) => pwrite!("d"),
+            rsc_value if (K + 2..=L - 1).contains(&rsc_value) => pwrite!("d"),
             _ => {
                 pwrite!(".");
             }
@@ -41,13 +41,13 @@ fn pascal_main() {
     pwriteln!();
     n = 5;
     match n {
-        value if value == i32::from(K) => pwriteln!("n K"),
-        value if value == i32::from(L) + 1 => pwriteln!("n L + 1"),
+        rsc_value if rsc_value == i32::from(K) => pwriteln!("n K"),
+        rsc_value if rsc_value == i32::from(L) + 1 => pwriteln!("n L + 1"),
         _ => {}
     }
     c = b'f';
     match c {
-        value if value == (i16::from(b'a') + K) as u8 => pwriteln!("f"),
+        rsc_value if rsc_value == (i16::from(b'a') + K) as u8 => pwriteln!("f"),
         _ => {}
     }
 }

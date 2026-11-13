@@ -68,8 +68,8 @@ fn pascal_main() {
     // `i` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for i_value in 0..=9 {
-        i = i_value;
+    for rsc_i in 0..=9 {
+        i = rsc_i;
         a.get_mut()[i] = i * i;
     }
     pwriteln!(a.get()[3]);

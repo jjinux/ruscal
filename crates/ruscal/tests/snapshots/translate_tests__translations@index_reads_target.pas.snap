@@ -28,25 +28,25 @@ fn pascal_main() {
     let mut a: PArray<u8, 0, 1001> = PArray::default();
     let mut b: PArray<i16, 1, 5> = PArray::default();
     let mut s: PString = PString::new();
-    let index = a.high();
-    a[index] = 1;
-    let index = a.high() - 1;
-    a[index] = 2;
-    let index = K + a.high() as i16 - 1000;
-    a[index] = 3;
-    let index = b.low();
-    b[index] = 7;
-    let index = b.high();
-    b[index] += 5;
-    let index = b.high();
-    b[index] += 1;
+    let rsc_index = a.high();
+    a[rsc_index] = 1;
+    let rsc_index = a.high() - 1;
+    a[rsc_index] = 2;
+    let rsc_index = K + a.high() as i16 - 1000;
+    a[rsc_index] = 3;
+    let rsc_index = b.low();
+    b[rsc_index] = 7;
+    let rsc_index = b.high();
+    b[rsc_index] += 5;
+    let rsc_index = b.high();
+    b[rsc_index] += 1;
     s = pstr("abc");
-    let index = s.length();
-    s[index] = b'z';
-    let index = a[1000];
-    a[index] = 9;
-    let index = b[1] - 6;
-    b[index] = 4;
+    let rsc_index = s.length();
+    s[rsc_index] = b'z';
+    let rsc_index = a[1000];
+    a[rsc_index] = 9;
+    let rsc_index = b[1] - 6;
+    b[rsc_index] = 4;
     pwriteln!(
         i16::from(a[1000]),
         i16::from(a[999]),

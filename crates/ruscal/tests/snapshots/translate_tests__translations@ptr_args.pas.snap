@@ -54,12 +54,12 @@ fn pascal_main() {
     head = Ptr::alloc();
     head.get_mut().value = 41;
     head.get_mut().next = Ptr::nil();
-    let old = head.get().value;
-    bump(&mut head, old);
+    let rsc_old = head.get().value;
+    bump(&mut head, rsc_old);
     pwriteln!("value is now ", head.get().value);
-    let n = head.get().clone();
-    let count = head.get().value;
-    free_and_show(&mut head, n, count);
+    let rsc_n = head.get().clone();
+    let rsc_count = head.get().value;
+    free_and_show(&mut head, rsc_n, rsc_count);
     pwriteln!("head is nil: ", head.is_nil());
 }
 

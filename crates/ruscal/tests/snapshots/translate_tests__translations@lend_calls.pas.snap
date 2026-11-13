@@ -29,9 +29,9 @@ fn fill(buf: &mut PArray<u8, 0, 16>) -> i16 {
     // A Char array used as a PChar: Rust can't point into the array, so
     // the statement gets a copy of its characters, copied back after it
     // if it may change them.
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("filled"));
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("filled"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     1
 }
 
@@ -48,49 +48,49 @@ fn direct(buf: &mut PArray<u8, 0, 16>) -> i16 {
 fn pascal_main() {
     let mut buf: PArray<u8, 0, 16> = PArray::default();
     let n: i16 = 0;
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("start"));
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("start"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     // `fill` may change an array this statement uses as a PChar, so it
     // runs before the array's characters are copied.
-    let fill_result = fill(&mut buf);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(fill_result, " ", str_pas(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("start"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let fill_result = fill(&mut buf);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(fill_result, " ", str_len(&str_upper(&buf_chars)));
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_fill_result = fill(&mut buf);
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(rsc_fill_result, " ", str_pas(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("start"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_fill_result = fill(&mut buf);
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(rsc_fill_result, " ", str_len(&str_upper(&rsc_buf_chars)));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     pwriteln!(buf);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("start"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let direct_result = direct(&mut buf);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(direct_result, " ", str_len(&str_upper(&buf_chars)));
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("start"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_direct_result = direct(&mut buf);
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(rsc_direct_result, " ", str_len(&str_upper(&rsc_buf_chars)));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     pwriteln!(buf);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("xyz"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("xyz"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
     pwriteln!(
         "22 ",
-        str_l_copy(&buf_chars, &PChar::literal("abcdef"), 2) == buf_chars,
+        str_l_copy(&rsc_buf_chars, &PChar::literal("abcdef"), 2) == rsc_buf_chars,
         " [",
-        buf_chars,
+        rsc_buf_chars,
         "] ",
-        buf_chars.get(1)
+        rsc_buf_chars.get(1)
     );
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("hi"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!("[", str_cat(&buf_chars, &PChar::literal("!")), "] [", w(&buf_chars, 5), "]");
-    buf_chars.copy_to(buf.as_mut_slice());
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("hi"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!("[", str_cat(&rsc_buf_chars, &PChar::literal("!")), "] [", w(&rsc_buf_chars, 5), "]");
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     pwriteln!(buf);
 }
 

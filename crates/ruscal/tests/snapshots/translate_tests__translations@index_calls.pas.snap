@@ -68,14 +68,14 @@ impl Bag {
 
     /// Pascal: `function Bag.Last: Char;`
     fn last(&mut self) -> u8 {
-        let index = self.count();
-        self.items[index]
+        let rsc_index = self.count();
+        self.items[rsc_index]
     }
 
     /// Pascal: `procedure Bag.Grow;`
     fn grow(&mut self) {
-        let index = self.count();
-        self.items[index] += 1;
+        let rsc_index = self.count();
+        self.items[rsc_index] += 1;
     }
 }
 
@@ -89,25 +89,25 @@ fn pascal_main() {
     arr[1] = 2;
     arr[2] = 0;
     arr[3] = 0;
-    let index = pick(arr);
-    arr[index] = 7;
+    let rsc_index = pick(arr);
+    arr[rsc_index] = 7;
     pwriteln!(arr[1], " ", arr[2], " ", arr[3]);
     counts[1] = 0;
     counts[2] = 0;
     counts[3] = 0;
     calls = 0;
-    let value = counts[next(&mut calls)] + 5;
-    let index = next(&mut calls);
-    counts[index] = value;
+    let rsc_value = counts[next(&mut calls)] + 5;
+    let rsc_index = next(&mut calls);
+    counts[rsc_index] = rsc_value;
     pwriteln!(counts[1], " ", counts[2], " ", counts[3], " ", calls);
     b.init();
     pwriteln!(b.last());
     b.grow();
     pwriteln!(b.last());
-    let index = pick(arr);
-    arr[index] += 1;
-    let index = pick(arr);
-    touch(&mut arr[index]);
+    let rsc_index = pick(arr);
+    arr[rsc_index] += 1;
+    let rsc_index = pick(arr);
+    touch(&mut arr[rsc_index]);
     pwriteln!(arr[1], " ", arr[2], " ", arr[3]);
 }
 

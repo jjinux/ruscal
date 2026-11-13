@@ -51,11 +51,11 @@ impl Counter {
 
     /// Pascal: `procedure Counter.ShowNext;`
     fn show_next(&mut self) {
-        let x = self.next();
-        self.show(x);
-        let x = self.next();
-        let x_2 = self.twice(x);
-        self.show(x_2);
+        let rsc_x = self.next();
+        self.show(rsc_x);
+        let rsc_x = self.next();
+        let rsc_x_2 = self.twice(rsc_x);
+        self.show(rsc_x_2);
     }
 }
 
@@ -64,10 +64,10 @@ impl Counter {
 fn pascal_main() {
     let mut c: Counter = Counter::default();
     c.init();
-    let x = c.next();
-    c.show(x);
-    let x = c.twice(5);
-    c.show(x);
+    let rsc_x = c.next();
+    c.show(rsc_x);
+    let rsc_x = c.twice(5);
+    c.show(rsc_x);
     c.show_next();
 }
 

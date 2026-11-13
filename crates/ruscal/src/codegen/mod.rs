@@ -331,7 +331,7 @@ impl<'a> Codegen<'a> {
             return code;
         }
         let after = std::mem::take(&mut self.after).join(" ");
-        format!("{{ let value = {code}; {after} value }}")
+        format!("{{ let rsc_value = {code}; {after} rsc_value }}")
     }
 
     fn blank(&mut self) {
@@ -2930,7 +2930,7 @@ impl<'a> Codegen<'a> {
             return format!("{{ {lets} {code} }}");
         }
         let after = std::mem::take(&mut self.after).join(" ");
-        format!("{{ {lets} let value = {code}; {after} value }}")
+        format!("{{ {lets} let rsc_value = {code}; {after} rsc_value }}")
     }
 
     /// `if`, with `else if` chains flattened the way a person would write
@@ -3027,9 +3027,9 @@ impl<'a> Codegen<'a> {
                 self.line("// a fresh loop variable.");
             }
             let label = self.loops.last().cloned().flatten().and_then(|l| l.loop_label).map(|l| format!("{l}: "));
-            // (`w_value`, not `w__value`, for a variable renamed `w_`: Rust
-            // warns about a double underscore.)
-            let value = format!("{}_value", name.trim_end_matches('_'));
+            // (`rsc_w`, not `rsc_w_`, for a variable renamed `w_`. The
+            // `rsc_` marks a name Ruscal added: see `temp_name`.)
+            let value = format!("rsc_{}", name.trim_end_matches('_'));
             self.line(format!("{}for {value} in {range} {{", label.unwrap_or_default()));
             self.line(format!("    {place} = {value};"));
             self.block_body(body);
@@ -3268,8 +3268,9 @@ impl<'a> Codegen<'a> {
             // is worked out first: the receiver may hold a guard on it.
             let value_code = self.coerce(value, &f.ty).0;
             let value_code = if expr::mentions(value, &expr::root_key(target)) && self.through_byte_field(base) {
-                self.pending.push(format!("let value = {value_code};"));
-                "value".to_string()
+                let name = self.temp_name("value");
+                self.pending.push(format!("let {name} = {value_code};"));
+                name
             } else {
                 value_code
             };

@@ -58,8 +58,8 @@ fn sum(mut list: NodePtr) -> i16 {
     total = 0;
     while !list.is_nil() {
         total += list.get().value;
-        let next = list.get().next.clone();
-        list = next;
+        let rsc_next = list.get().next.clone();
+        list = rsc_next;
     }
     total
 }
@@ -100,24 +100,24 @@ fn delete(root: &mut KeyPtr, item: Key, successful: &mut bool) {
     } else {
         temp = root.get().after.clone();
         while !temp.get().before.is_nil() {
-            let before = temp.get().before.clone();
-            temp = before;
+            let rsc_before = temp.get().before.clone();
+            temp = rsc_before;
         }
-        let value = temp.get().clone();
-        *root.get_mut() = value;
-        let item_arg = temp.get().clone();
-        delete(&mut root.get_mut().after, item_arg, successful);
+        let rsc_value = temp.get().clone();
+        *root.get_mut() = rsc_value;
+        let rsc_item = temp.get().clone();
+        delete(&mut root.get_mut().after, rsc_item, successful);
     }
 }
 
 /// Pascal: `procedure Traverse(root: KeyPtr);`
 fn traverse(root: KeyPtr) {
     if !root.is_nil() {
-        let root_arg = root.get().before.clone();
-        traverse(root_arg);
+        let rsc_root = root.get().before.clone();
+        traverse(rsc_root);
         pwrite!(root.get().id, " ");
-        let root_arg = root.get().after.clone();
-        traverse(root_arg);
+        let rsc_root = root.get().after.clone();
+        traverse(rsc_root);
     }
 }
 
@@ -135,8 +135,8 @@ fn pascal_main() {
     }
     pwriteln!("sum = ", sum(head.clone()));
     p = head.clone();
-    let next = p.get().next.clone();
-    p = next;
+    let rsc_next = p.get().next.clone();
+    p = rsc_next;
     pwriteln!("second = ", p.get().value);
     root = Ptr::nil();
     ok = true;

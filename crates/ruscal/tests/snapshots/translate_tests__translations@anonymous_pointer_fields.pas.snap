@@ -52,8 +52,8 @@ fn pascal_main() {
     p = e.n.clone();
     while !p.is_nil() {
         pwriteln!(p.get().value);
-        let next = p.get().next.clone();
-        p = next;
+        let rsc_next = p.get().next.clone();
+        p = rsc_next;
     }
 }
 

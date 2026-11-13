@@ -41,9 +41,9 @@ fn pascal_main() {
     // A Char array used as a PChar: Rust can't point into the array, so
     // the statement gets a copy of its characters, copied back after it
     // if it may change them.
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_l_copy(&buf_chars, &p, 2);
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_l_copy(&rsc_buf_chars, &p, 2);
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     pwriteln!(
         "[",
         buf,
@@ -52,12 +52,12 @@ fn pascal_main() {
         " ",
         str_l_i_comp(&p, &PChar::literal("XYZW"), 4)
     );
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("ab"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_l_cat(&buf_chars, &p, 4);
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("ab"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_l_cat(&rsc_buf_chars, &p, 4);
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     pwriteln!("[", buf, "]");
 }
 

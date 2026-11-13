@@ -112,24 +112,24 @@ fn pascal_main() {
     pwriteln!(s.center.x, " ", s.radius);
     local();
     q = Ptr::alloc();
-    q.with_mut(|point| set_two(&mut point.x, &mut point.y));
+    q.with_mut(|rsc_point| set_two(&mut rsc_point.x, &mut rsc_point.y));
     pwriteln!(q.get().x, " ", q.get().y);
-    if q.with_mut(|point| swapped(&mut point.x, &mut point.y)) {
+    if q.with_mut(|rsc_point| swapped(&mut rsc_point.x, &mut rsc_point.y)) {
         pwriteln!(q.get().x, " ", q.get().y);
     }
     q.dispose();
     // `k` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for k_value in 1..=3 {
-        k = k_value;
+    for rsc_k in 1..=3 {
+        k = rsc_k;
         points[k] = Ptr::alloc();
     }
     k = 2;
-    points[k].with_mut(|point| set_two(&mut point.x, &mut point.y));
+    points[k].with_mut(|rsc_point| set_two(&mut rsc_point.x, &mut rsc_point.y));
     pwriteln!(points[2].get().x, " ", points[2].get().y);
     pair = Ptr::alloc();
-    pair.with_mut(|rec| set_two(&mut rec.a[1], &mut rec.y));
+    pair.with_mut(|rsc_rec| set_two(&mut rsc_rec.a[1], &mut rsc_rec.y));
     pwriteln!(pair.get().a[1], " ", pair.get().y);
 }
 

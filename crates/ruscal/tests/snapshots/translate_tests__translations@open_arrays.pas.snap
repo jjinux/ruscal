@@ -83,8 +83,8 @@ fn count(c: &OpenArray<u8>) {
 
 /// Pascal: `procedure Clear(var R: array of TRec);`
 fn clear(r: &mut OpenArray<TRec>) {
-    let size = (r.len() * TRec::SERIALIZED_SIZE) as i16;
-    fill_bytes(&mut open_bytes(r), size, 0);
+    let rsc_size = (r.len() * TRec::SERIALIZED_SIZE) as i16;
+    fill_bytes(&mut open_bytes(r), rsc_size, 0);
 }
 
 /// The main program: the `begin ... end.` block of `OpenArrays`.

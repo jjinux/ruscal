@@ -117,8 +117,8 @@ fn pascal_main() {
     // `c` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for c_value in b'a'..=b'z' {
-        c = c_value;
+    for rsc_c in b'a'..=b'z' {
+        c = rsc_c;
         if VOWELS.contains(c) && !matches!(c, b'i' | b'o') {
             found.include(c);
         }
@@ -140,8 +140,8 @@ fn pascal_main() {
     c = b'k';
     pwriteln!(matches!(c, b'a'..=b'm'), " ", letters.contains(c), " ", letters.contains(b'e'));
     d = PSet::new();
-    for i_value in 1..=12 {
-        i = i_value;
+    for rsc_i in 1..=12 {
+        i = rsc_i;
         if i % 3 == 0 {
             add_digit(&mut d, i);
         }
@@ -160,8 +160,8 @@ fn pascal_main() {
         PRIMARY.contains(Color::Yellow)
     );
     i = 0;
-    for c_value in b'a'..=b'z' {
-        c = c_value;
+    for rsc_c in b'a'..=b'z' {
+        c = rsc_c;
         if (VOWELS | pset![b'y']).contains(c) {
             i += 1;
         }

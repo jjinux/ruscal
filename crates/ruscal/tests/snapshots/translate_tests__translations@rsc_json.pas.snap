@@ -348,8 +348,8 @@ fn pascal_main() {
     doc = json_new_array().clone();
     p = json_new_string(&PString::new());
     for i in 1_i16..=150 {
-        let value = p.get().str + "\"";
-        p.get_mut().str = value;
+        let rsc_value = p.get().str + "\"";
+        p.get_mut().str = rsc_value;
     }
     json_add(doc.clone(), p.clone());
     json_save(&mut to_string, &mut output2, hex, &pstr("rsc_json.json"), doc.clone(), 0);
@@ -572,16 +572,16 @@ pub fn json_set(obj: PJsonValue, key: &PString, v: PJsonValue) {
     member = obj.get().first.clone();
     while !member.is_nil() && member.get().key != *key {
         before = member.clone();
-        let next = member.get().next.clone();
-        member = next;
+        let rsc_next = member.get().next.clone();
+        member = rsc_next;
     }
     if member.is_nil() {
         append(obj.clone(), v.clone());
         return;
     }
     // Replace Member with V where it is.
-    let next = member.get().next.clone();
-    v.get_mut().next = next;
+    let rsc_next = member.get().next.clone();
+    v.get_mut().next = rsc_next;
     if before.is_nil() {
         obj.get_mut().first = v.clone();
     } else {
@@ -624,8 +624,8 @@ pub fn json_item(v: PJsonValue, mut index: i16) -> PJsonValue {
     if !v.is_nil() && index >= 0 {
         member = v.get().first.clone();
         while !member.is_nil() && index > 0 {
-            let next = member.get().next.clone();
-            member = next;
+            let rsc_next = member.get().next.clone();
+            member = rsc_next;
             index -= 1;
         }
     }
@@ -639,8 +639,8 @@ pub fn json_get(v: PJsonValue, key: &PString) -> PJsonValue {
     if !v.is_nil() && v.get().kind == TJsonKind::JkObject {
         member = v.get().first.clone();
         while !member.is_nil() && member.get().key != *key {
-            let next = member.get().next.clone();
-            member = next;
+            let rsc_next = member.get().next.clone();
+            member = rsc_next;
         }
     }
     member.clone()
@@ -1256,13 +1256,13 @@ pub fn write_value(
             }
         }
         TJsonKind::JkNumber => {
-            let x = v.get().number;
-            let s = number_text(x);
-            put(to_string, output2, f, &s);
+            let rsc_x = v.get().number;
+            let rsc_s = number_text(rsc_x);
+            put(to_string, output2, f, &rsc_s);
         }
         TJsonKind::JkString => {
-            let s = v.get().str;
-            put_quoted(to_string, output2, hex, f, &s);
+            let rsc_s = v.get().str;
+            put_quoted(to_string, output2, hex, f, &rsc_s);
         }
         TJsonKind::JkArray | TJsonKind::JkObject => {
             if v.get().kind == TJsonKind::JkArray {
@@ -1274,8 +1274,8 @@ pub fn write_value(
             while !member.is_nil() {
                 new_line(to_string, output2, f, indent, depth + 1);
                 if v.get().kind == TJsonKind::JkObject {
-                    let s = member.get().key;
-                    put_quoted(to_string, output2, hex, f, &s);
+                    let rsc_s = member.get().key;
+                    put_quoted(to_string, output2, hex, f, &rsc_s);
                     if indent > 0 {
                         put(to_string, output2, f, &pstr(": "));
                     } else {
@@ -1283,8 +1283,8 @@ pub fn write_value(
                     }
                 }
                 write_value(to_string, output2, hex, f, member.clone(), indent, depth + 1);
-                let next = member.get().next.clone();
-                member = next;
+                let rsc_next = member.get().next.clone();
+                member = rsc_next;
                 if !member.is_nil() {
                     put(to_string, output2, f, &pstr(","));
                 }

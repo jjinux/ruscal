@@ -591,13 +591,13 @@ pub struct Ptr<T>(Option<Rc<RefCell<T>>>);
 
   A zero-based `Char` array can't be pointed into (it's an ordinary
   `PArray` value), so where it's used as a `PChar` the statement is lent a
-  copy: `let buf_chars = PChar::copy_of(buf.as_slice());` before it and,
+  copy: `let rsc_buf_chars = PChar::copy_of(buf.as_slice());` before it and,
   if the statement may write through it (a `Strings` destination, a
-  routine of the program, `P[i] :=`), `buf_chars.copy_to(buf.as_mut_slice());`
+  routine of the program, `P[i] :=`), `rsc_buf_chars.copy_to(buf.as_mut_slice());`
   after it. Each array gets one copy per statement (so `StrEnd(A) - A`
   works), and a condition or a `for`/`case` header that needs the copy
-  back computes its value in a block first (`{ let value = ...; copy back;
-  value }`). That's only right if no `PChar` into the copy outlives the
+  back computes its value in a block first (`{ let rsc_value = ...; copy back;
+  rsc_value }`). That's only right if no `PChar` into the copy outlives the
   statement, which `sema/pchar.rs` proves: the checker records each place
   a `PChar` is stored or passed to the program's own routines, and a fixed
   point over the routines works out which keep a `PChar` parameter (store
@@ -1386,6 +1386,12 @@ sense; only what can't be real is faked.
   generated enum and traits (`AnyShape_`, `TShapeMethods_`). The examples declare a procedure
   named `Exit` and a type named `ShortString`; sema's scoping handles both
   (user declarations shadow builtins, as in TP).
+- A temporary Ruscal adds to the Rust starts with `rsc_` (the user,
+  2026-11-12): `let rsc_index = a.high(); a[rsc_index] = 1;`, a view of
+  an untyped parameter `rsc_view`, a `for` loop's own variable `rsc_i`. So
+  it can't clash with a name from the Pascal (a function `Index`), and a
+  reader can tell the program's names from Ruscal's (`codegen::expr`'s
+  `temp_name`).
 - Every generated declaration carries a `///` comment with the original
   Pascal header line.
 - The program's own comments are carried across as `//` comments

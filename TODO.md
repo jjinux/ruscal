@@ -356,7 +356,7 @@ Last: raw bytes and C strings
   - [ ] A view of an untyped parameter passed `var` on the right of `and`/`or` doesn't compile (its `let` goes in the block, its write-back outside).
   - [ ] Two elements of one view as `var` arguments (`Swap2(TWords(Data)[0], TWords(Data)[1])`) is a rustc error (E0499), not Ruscal's "passed by `var` more than once".
   - [ ] An untyped `var` argument whose index reads the array (`Zap(B[B[3]], 2)`) doesn't compile: that path doesn't hoist.
-  - [ ] The temp `index` can shadow a Pascal function named `Index` (`temp_name` avoids variables only).
+  - [x] The temp `index` can shadow a Pascal function named `Index` (`temp_name` avoids variables only). Done: every temporary starts with `rsc_` (the user's idea, 2026-11-12).
   - [ ] `High(TWords(Data))` is refused; FPC takes it.
   - [ ] `case SizeOf(Rec) of` is `match 2`, losing the name; `case 3000000000 of` passes sema and fails in rustc.
   - [ ] `with Rec(Data) do` writes the view back after the body: an `Exit` or `goto` out of the body skips it.

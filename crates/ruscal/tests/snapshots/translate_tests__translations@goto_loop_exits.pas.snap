@@ -31,8 +31,8 @@ fn pascal_main() {
     // `i` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    'for_loop: for i_value in 1..=5 {
-        i = i_value;
+    'for_loop: for rsc_i in 1..=5 {
+        i = rsc_i;
         // `goto Next` jumps forward: Rust can't jump, but it can leave a block
         // early, so the statements it skips are in the block `'next`, and the
         // jump is `break 'next`.

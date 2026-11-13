@@ -63,42 +63,42 @@ fn pascal_main() {
     // A Char array used as a PChar: Rust can't point into the array, so
     // the statement gets a copy of its characters, copied back after it
     // if it may change them.
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_p_copy(&buf_chars, "hello, world");
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(buf_chars.get(0), buf_chars.get(5), " ", str_len(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    show(buf_chars.clone());
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_cat(&buf_chars, &PChar::literal("!"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    show(buf_chars.clone());
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(str_pas(&str_scan(&buf_chars, b',')));
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(str_end(&buf_chars).diff(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(str_pos(&buf_chars, &PChar::literal("world")).diff(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(count_char(buf_chars.clone(), b'o'));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    shout(buf_chars.clone());
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(str_pas(&buf_chars));
-    let name_chars = PChar::copy_of(name.as_slice());
-    str_copy(&name_chars, &PChar::literal("Ada"));
-    name_chars.copy_to(name.as_mut_slice());
-    let name_chars = PChar::copy_of(name.as_slice());
-    str_l_cat(&name_chars, &PChar::literal(" Lovelace and more"), 10);
-    name_chars.copy_to(name.as_mut_slice());
-    let name_chars = PChar::copy_of(name.as_slice());
-    pwriteln!("[", str_pas(&name_chars), "]");
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_p_copy(&rsc_buf_chars, "hello, world");
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(rsc_buf_chars.get(0), rsc_buf_chars.get(5), " ", str_len(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    show(rsc_buf_chars.clone());
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_cat(&rsc_buf_chars, &PChar::literal("!"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    show(rsc_buf_chars.clone());
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(str_pas(&str_scan(&rsc_buf_chars, b',')));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(str_end(&rsc_buf_chars).diff(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(str_pos(&rsc_buf_chars, &PChar::literal("world")).diff(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(count_char(rsc_buf_chars.clone(), b'o'));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    shout(rsc_buf_chars.clone());
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(str_pas(&rsc_buf_chars));
+    let rsc_name_chars = PChar::copy_of(name.as_slice());
+    str_copy(&rsc_name_chars, &PChar::literal("Ada"));
+    rsc_name_chars.copy_to(name.as_mut_slice());
+    let rsc_name_chars = PChar::copy_of(name.as_slice());
+    str_l_cat(&rsc_name_chars, &PChar::literal(" Lovelace and more"), 10);
+    rsc_name_chars.copy_to(name.as_mut_slice());
+    let rsc_name_chars = PChar::copy_of(name.as_slice());
+    pwriteln!("[", str_pas(&rsc_name_chars), "]");
     pwriteln!(
         str_comp(&PChar::literal("abc"), &PChar::literal("abd")) < 0,
         " ",
@@ -106,8 +106,8 @@ fn pascal_main() {
         " ",
         str_l_comp(&PChar::literal("abcx"), &PChar::literal("abcy"), 3)
     );
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    h = str_new(&buf_chars);
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    h = str_new(&rsc_buf_chars);
     q = h.plus(7);
     pwriteln!(q);
     q.set(0, b'w');
@@ -131,66 +131,66 @@ fn pascal_main() {
     p.free();
     p = PChar::nil();
     pwriteln!(p.is_nil(), " ", str_pas(&str_new(&PChar::literal(""))) == "");
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_lower(&str_copy(&buf_chars, &PChar::literal("MiXeD")));
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_lower(&str_copy(&rsc_buf_chars, &PChar::literal("MiXeD")));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     pwriteln!(buf[0], buf[1], buf[2]);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    n = str_len(&str_e_copy(&str_e_copy(&buf_chars, &PChar::literal("one")), &PChar::literal("two")));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(str_pas(&buf_chars), " ", n);
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal(""));
-    buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    n = str_len(&str_e_copy(&str_e_copy(&rsc_buf_chars, &PChar::literal("one")), &PChar::literal("two")));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(str_pas(&rsc_buf_chars), " ", n);
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal(""));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
     while {
-        let buf_chars = PChar::copy_of(buf.as_slice());
-        let value = str_len(&str_cat(&buf_chars, &PChar::literal("ab"))) < 7;
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+        let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+        let rsc_value = str_len(&str_cat(&rsc_buf_chars, &PChar::literal("ab"))) < 7;
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
         pwrite!(".");
     }
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(" ", str_pas(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(" ", str_pas(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
     if {
-        let value = str_comp(&str_upper(&buf_chars), &PChar::literal("ABABABAB")) == 0;
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+        let rsc_value = str_comp(&str_upper(&rsc_buf_chars), &PChar::literal("ABABABAB")) == 0;
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
-        let buf_chars = PChar::copy_of(buf.as_slice());
-        pwriteln!("upper ", str_pas(&buf_chars));
+        let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+        pwriteln!("upper ", str_pas(&rsc_buf_chars));
     } else {
-        let buf_chars = PChar::copy_of(buf.as_slice());
-        pwriteln!("not ", str_pas(&buf_chars));
+        let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+        pwriteln!("not ", str_pas(&rsc_buf_chars));
     }
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("ab"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("ab"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
     // `i` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for i_value in {
-        let value = 1..=str_len(&str_cat(&buf_chars, &PChar::literal("cd"))) as i16;
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+    for rsc_i in {
+        let rsc_value = 1..=str_len(&str_cat(&rsc_buf_chars, &PChar::literal("cd"))) as i16;
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
-        i = i_value;
+        i = rsc_i;
         pwrite!(i);
     }
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(" ", str_pas(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(" ", str_pas(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
     match {
-        let value = str_len(&str_cat(&buf_chars, &PChar::literal("e")));
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+        let rsc_value = str_len(&str_cat(&rsc_buf_chars, &PChar::literal("e")));
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
         5 => {
-            let buf_chars = PChar::copy_of(buf.as_slice());
-            pwriteln!("five ", str_pas(&buf_chars));
+            let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+            pwriteln!("five ", str_pas(&rsc_buf_chars));
         }
         _ => {
             pwriteln!("other");

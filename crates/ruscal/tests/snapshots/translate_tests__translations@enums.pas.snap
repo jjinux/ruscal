@@ -97,13 +97,13 @@ fn pascal_main() {
     // `a` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for a_value in enum_range(Choice::Paper, Choice::Rock) {
-        a = a_value;
-        for b_value in enum_range(Choice::Paper, Choice::Rock) {
-            b = b_value;
-            let value = results[play(a, b)] + 1;
-            let index = play(a, b);
-            results[index] = value;
+    for rsc_a in enum_range(Choice::Paper, Choice::Rock) {
+        a = rsc_a;
+        for rsc_b in enum_range(Choice::Paper, Choice::Rock) {
+            b = rsc_b;
+            let rsc_value = results[play(a, b)] + 1;
+            let rsc_index = play(a, b);
+            results[rsc_index] = rsc_value;
         }
     }
     pwriteln!(results[Outcome::Win], " ", results[Outcome::Lose], " ", results[Outcome::Tie]);

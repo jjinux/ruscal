@@ -71,7 +71,7 @@ fn pascal_main() {
         1 => pwriteln!("one"),
         K => pwriteln!("K"),
         6..=L => pwriteln!("6..L"),
-        value if value == K + 10 => pwriteln!("K + 10"),
+        rsc_value if rsc_value == K + 10 => pwriteln!("K + 10"),
         _ => {}
     }
     match i16::from(b) {
@@ -90,8 +90,8 @@ fn pascal_main() {
         _ => {}
     }
     match n {
-        value if value == i32::from(BIG) => pwriteln!("Big"),
-        value if value == i32::from(K) => pwriteln!("n K"),
+        rsc_value if rsc_value == i32::from(BIG) => pwriteln!("Big"),
+        rsc_value if rsc_value == i32::from(K) => pwriteln!("n K"),
         _ => {}
     }
     match i {

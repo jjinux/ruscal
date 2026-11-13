@@ -55,8 +55,8 @@ fn pascal_main() {
     // `n` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for n_value in 1..=200 {
-        n = n_value;
+    for rsc_n in 1..=200 {
+        n = rsc_n;
         big = i32::from(random_word(60000));
         if big < 0 || big >= 60000 {
             negative += 1;

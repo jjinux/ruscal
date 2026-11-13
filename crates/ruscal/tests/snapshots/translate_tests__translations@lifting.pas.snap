@@ -33,8 +33,8 @@ fn outer(count: &mut i16, log: &mut PString, total: &mut i16, step: i16) {
     // `i` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for i_value in 1..=3 {
-        i = i_value;
+    for rsc_i in 1..=3 {
+        i = rsc_i;
         outer_middle(count, log, total, step, i);
     }
 }

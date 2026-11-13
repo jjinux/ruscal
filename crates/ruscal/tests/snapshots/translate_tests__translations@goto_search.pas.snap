@@ -31,10 +31,10 @@ fn pascal_main() {
     // `row` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for row_value in 1..=SIZE {
-        row = row_value;
-        for col_value in 1..=SIZE {
-            col = col_value;
+    for rsc_row in 1..=SIZE {
+        row = rsc_row;
+        for rsc_col in 1..=SIZE {
+            col = rsc_col;
             grid[row][col] = row * 10 + col;
         }
     }
@@ -48,10 +48,10 @@ fn pascal_main() {
         // and the jump is `continue 'again`. Otherwise the loop runs once.
         'again: loop {
             tries += 1;
-            for row_value in 1..=SIZE {
-                row = row_value;
-                for col_value in 1..=SIZE {
-                    col = col_value;
+            for rsc_row in 1..=SIZE {
+                row = rsc_row;
+                for rsc_col in 1..=SIZE {
+                    col = rsc_col;
                     if grid[row][col] == target {
                         break 'found;
                     }

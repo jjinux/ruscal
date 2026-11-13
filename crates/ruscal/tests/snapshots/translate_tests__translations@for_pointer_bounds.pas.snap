@@ -41,21 +41,21 @@ fn pascal_main() {
     p.get_mut().count = 3;
     // Worked out before the loop: a `for` range reading through a pointer
     // would keep it borrowed for the whole loop.
-    let count = p.get().count;
-    for i in 1..=count {
+    let rsc_count = p.get().count;
+    for i in 1..=rsc_count {
         p.get_mut().items[i] = i * 2;
         p.get_mut().count = 1;
     }
     pwriteln!(p.get().items[3], " ", p.get().count);
-    let first = p.get().items.low() as i16;
-    let last = p.get().items.high() as i16;
-    for i in first..=last {
+    let rsc_first = p.get().items.low() as i16;
+    let rsc_last = p.get().items.high() as i16;
+    for i in rsc_first..=rsc_last {
         p.get_mut().items[i] = i;
     }
     pwriteln!(p.get().items[5]);
     p.get_mut().count = 4;
-    let count = p.get().count;
-    for i in (1..=count).rev() {
+    let rsc_count = p.get().count;
+    for i in (1..=rsc_count).rev() {
         p.get_mut().items[i] += 10;
     }
     pwriteln!(p.get().items[1], " ", p.get().items[4], " ", p.get().items[5]);

@@ -313,13 +313,13 @@ fn pascal_main() {
     while !p.is_nil() {
         p.get_mut().draw();
         p.get_mut().show();
-        let next = p.get().as_t_shape().next.clone();
-        p = next;
+        let rsc_next = p.get().as_t_shape().next.clone();
+        p = rsc_next;
     }
     while !list.is_nil() {
         p = list.clone();
-        let next = list.get().as_t_shape().next.clone();
-        list = next;
+        let rsc_next = list.get().as_t_shape().next.clone();
+        list = rsc_next;
         p.get_mut().done(&mut freed);
         p.dispose();
     }

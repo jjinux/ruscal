@@ -83,8 +83,8 @@ fn pascal_main() {
     p = Ptr::alloc();
     p.get_mut().value = 1;
     // Release(heap) does nothing: records are freed when nothing points to them.
-    let ok = p.get().value == 1;
-    check(&mut checks, &mut failures, ok, pstr("Release frees nothing"));
+    let rsc_ok = p.get().value == 1;
+    check(&mut checks, &mut failures, rsc_ok, pstr("Release frees nothing"));
     f.assign("misc.tmp");
     // SetTextBuf(f, ...) does nothing: files are buffered already.
     f.rewrite();

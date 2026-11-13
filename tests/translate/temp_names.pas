@@ -1,33 +1,23 @@
+{ Ruscal's temporaries start with rsc_, so a function named Index or
+  Value doesn't clash with them. Output from fpc -Mtp. }
 program TempNames;
-{ Temporaries that Ruscal introduces mustn't clash with each other or
-  with the program's own variables. }
-type
-   NodePtr = ^Node;
-   Node = record
-      value: integer;
-      next: NodePtr;
-   end;
 var
-   p, q, next: NodePtr;
-   total: integer;
+   A: array[0..9] of Integer;
+   I: Integer;
 
-function Double(n: integer): integer;
+function Index(N: Integer): Integer;
    begin
-      Double := n * 2;
+      Index := N + 1;
+   end;
+
+function Value(N: Integer): Integer;
+   begin
+      Value := N * 10;
    end;
 
 begin
-   new(p);
-   new(q);
-   p^.value := 1;
-   q^.value := 100;
-   total := Double(p^.value) + Double(q^.value);
-   writeln(total);
-   total := total + Double(p^.value);
-   writeln(total);
-   new(next);
-   next^.value := 7;
-   p^.next := nil;
-   p := p^.next;
-   writeln(p = nil, ' ', next^.value);
+   for I := 0 to 9 do
+      A[I] := I;
+   A[A[Index(0)]] := A[Index(1)] + Value(4);
+   WriteLn(A[1], ' ', A[2]);
 end.

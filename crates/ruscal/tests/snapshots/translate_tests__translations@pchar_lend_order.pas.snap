@@ -28,45 +28,46 @@ fn pascal_main() {
     // A Char array used as a PChar: Rust can't point into the array, so
     // the statement gets a copy of its characters, copied back after it
     // if it may change them.
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("ab"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    i = (str_len(&buf_chars) + str_len(&str_cat(&buf_chars, &PChar::literal("q")))) as i16;
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(i, " ", str_pas(&buf_chars));
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    str_copy(&buf_chars, &PChar::literal("xxx"));
-    buf_chars.copy_to(buf.as_mut_slice());
-    let buf_chars = PChar::copy_of(buf.as_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("ab"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    i = (str_len(&rsc_buf_chars) + str_len(&str_cat(&rsc_buf_chars, &PChar::literal("q")))) as i16;
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(i, " ", str_pas(&rsc_buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    str_copy(&rsc_buf_chars, &PChar::literal("xxx"));
+    rsc_buf_chars.copy_to(buf.as_mut_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
     if {
-        let value = str_len(&buf_chars) == 3 && str_comp(&str_upper(&buf_chars), &PChar::literal("XXX")) == 0;
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+        let rsc_value =
+            str_len(&rsc_buf_chars) == 3 && str_comp(&str_upper(&rsc_buf_chars), &PChar::literal("XXX")) == 0;
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
-        let buf_chars = PChar::copy_of(buf.as_slice());
-        pwriteln!("and ", str_pas(&buf_chars));
+        let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+        pwriteln!("and ", str_pas(&rsc_buf_chars));
     }
-    let buf_chars = PChar::copy_of(buf.as_slice());
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
     if {
-        let value = str_len(&buf_chars) == 0 || str_len(&str_cat(&buf_chars, &PChar::literal("y"))) == 4;
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+        let rsc_value = str_len(&rsc_buf_chars) == 0 || str_len(&str_cat(&rsc_buf_chars, &PChar::literal("y"))) == 4;
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
-        let buf_chars = PChar::copy_of(buf.as_slice());
-        pwriteln!("or ", str_pas(&buf_chars));
+        let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+        pwriteln!("or ", str_pas(&rsc_buf_chars));
     }
     while {
-        let buf_chars = PChar::copy_of(buf.as_slice());
-        let value = str_len(&buf_chars) < 6 && str_len(&str_cat(&buf_chars, &PChar::literal("z"))) > 0;
-        buf_chars.copy_to(buf.as_mut_slice());
-        value
+        let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+        let rsc_value = str_len(&rsc_buf_chars) < 6 && str_len(&str_cat(&rsc_buf_chars, &PChar::literal("z"))) > 0;
+        rsc_buf_chars.copy_to(buf.as_mut_slice());
+        rsc_value
     } {
         pwrite!(".");
     }
-    let buf_chars = PChar::copy_of(buf.as_slice());
-    pwriteln!(" ", str_pas(&buf_chars));
+    let rsc_buf_chars = PChar::copy_of(buf.as_slice());
+    pwriteln!(" ", str_pas(&rsc_buf_chars));
 }
 
 fn main() {

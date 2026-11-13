@@ -43,8 +43,8 @@ fn pascal_main() {
     // `c` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
-    for c_value in LOW_LET..=TOP_LET {
-        c = c_value;
+    for rsc_c in LOW_LET..=TOP_LET {
+        c = rsc_c;
         pwrite!(c);
     }
     pwriteln!();

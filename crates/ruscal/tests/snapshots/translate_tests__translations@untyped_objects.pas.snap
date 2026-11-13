@@ -58,13 +58,13 @@ fn twice(data: &mut dyn ByteView) {
     // writes them back into the variable.
     let mut data = Bytes::of(data);
     // Part of an untyped parameter seen as a `TCounter`: its bytes are read into
-    // `view`, which the statement changes, and written back after it.
-    let mut view = data.read::<TCounter>();
-    view.bump();
-    data.write(&view);
-    let mut view = data.read::<TCounter>();
-    view.bump();
-    data.write(&view);
+    // `rsc_view`, which the statement changes, and written back after it.
+    let mut rsc_view = data.read::<TCounter>();
+    rsc_view.bump();
+    data.write(&rsc_view);
+    let mut rsc_view = data.read::<TCounter>();
+    rsc_view.bump();
+    data.write(&rsc_view);
     pwriteln!(data.read::<TCounter>().n);
 }
 

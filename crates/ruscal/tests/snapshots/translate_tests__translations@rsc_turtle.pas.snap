@@ -335,9 +335,9 @@ pub fn move_turtle(turtle: &mut TTurtleContext, mut to_x: f64, mut to_y: f64) {
         } else {
             t = ty;
         }
-        let to_x_arg = turtle.pos_x + t * dx;
-        let to_y_arg = turtle.pos_y + t * dy;
-        draw_to(turtle, to_x_arg, to_y_arg);
+        let rsc_to_x = turtle.pos_x + t * dx;
+        let rsc_to_y = turtle.pos_y + t * dy;
+        draw_to(turtle, rsc_to_x, rsc_to_y);
         // Come back in on the other side (of an edge it moves across).
         if t == tx && dx != 0.0 {
             if dx > 0.0 {
@@ -369,9 +369,9 @@ pub fn forwd(turtle: &mut TTurtleContext, dist: i16) {
         draw_turtle(*turtle);
     }
     a = turtle.dir * ::std::f64::consts::PI / 180.0;
-    let to_x = turtle.pos_x + f64::from(dist) * a.sin();
-    let to_y = turtle.pos_y + f64::from(dist) * a.cos();
-    move_turtle(turtle, to_x, to_y);
+    let rsc_to_x = turtle.pos_x + f64::from(dist) * a.sin();
+    let rsc_to_y = turtle.pos_y + f64::from(dist) * a.cos();
+    move_turtle(turtle, rsc_to_x, rsc_to_y);
     if turtle.shown {
         draw_turtle(*turtle);
     }
@@ -431,8 +431,8 @@ pub fn turn_right(turtle: &mut TTurtleContext, angle: i16) {
 ///
 /// Uses globals, which are passed in as parameters.
 pub fn set_heading(turtle: &mut TTurtleContext, angle: i16) {
-    let angle_arg = normal(f64::from(angle)) - turtle.dir;
-    turn(turtle, angle_arg);
+    let rsc_angle = normal(f64::from(angle)) - turtle.dir;
+    turn(turtle, rsc_angle);
 }
 
 /// Pascal: `function Heading: Integer;`

@@ -2312,10 +2312,16 @@ impl<'a> Codegen<'a> {
     }
 
     /// A name for a temporary, based on `base` (a parameter's or field's
-    /// name): `base` itself, unless that would shadow one of the caller's
-    /// variables (then `base_arg`) or another temporary already made for the
-    /// same statement (then `base_2`, `base_3`, ...).
+    /// name): `rsc_base`, unless that would shadow one of the caller's
+    /// variables (then `rsc_base_arg`) or another temporary already made for
+    /// the same statement (then `rsc_base_2`, `rsc_base_3`, ...).
     pub(super) fn temp_name(&self, base: &str) -> String {
+        // Every temporary Ruscal adds starts with `rsc_` (`rsc_index`), so it
+        // can't clash with a name from the Pascal (a function `Index`), and
+        // a reader can tell it from the program's own names.
+        // (`rsc_w`, not `rsc_w_`, for a variable renamed `w_`: the prefix
+        // keeps it from being a Rust keyword already.)
+        let base = &format!("rsc_{}", base.trim_end_matches('_'));
         let info = &self.a.procs[self.proc];
         let visible = info.locals.iter().chain(&info.params).chain(info.captures.iter().map(|c| &c.sym));
         let base = if visible.into_iter().any(|sym| self.a.var_name(self.proc, *sym) == base) {

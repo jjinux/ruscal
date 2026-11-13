@@ -43,8 +43,8 @@ fn pascal_main() {
         p.get_mut().a[i] = i as u8;
         p.get_mut().b[i] = 0;
     }
-    let a = p.get().a;
-    p.get_mut().b = a;
+    let rsc_a = p.get().a;
+    p.get_mut().b = rsc_a;
     for i in 1_i16..=4 {
         pwrite!(i16::from(p.get().b[i]), " ");
     }

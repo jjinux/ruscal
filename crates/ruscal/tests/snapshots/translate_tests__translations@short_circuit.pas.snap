@@ -44,30 +44,30 @@ fn pascal_main() {
     let mut p: PNode = Ptr::nil();
     p = Ptr::nil();
     if !p.is_nil() && {
-        let x = p.get().value;
-        show(x) > 0
+        let rsc_x = p.get().value;
+        show(rsc_x) > 0
     } {
         pwriteln!("yes");
     } else {
         pwriteln!("no");
     }
     if p.is_nil() || {
-        let x = p.get().value;
-        show(x) > 0
+        let rsc_x = p.get().value;
+        show(rsc_x) > 0
     } {
         pwriteln!("nil or positive");
     }
     p = Ptr::alloc();
     p.get_mut().value = 4;
     if !p.is_nil() && {
-        let x = p.get().value;
-        show(x) > 0
+        let rsc_x = p.get().value;
+        show(rsc_x) > 0
     } {
         pwriteln!("yes");
     }
     while !p.is_nil() && {
-        let x = p.get().value;
-        show(x) > 0
+        let rsc_x = p.get().value;
+        show(rsc_x) > 0
     } {
         p.get_mut().value -= 2;
     }

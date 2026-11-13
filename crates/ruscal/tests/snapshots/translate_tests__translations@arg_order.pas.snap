@@ -59,9 +59,9 @@ fn pascal_main() {
     head.get_mut().value = 5;
     show(bump(&head), &mut head.get_mut().value);
     head.get_mut().value = 5;
-    let a = bump(&head);
-    let b = head.get().value;
-    show_v(a, b);
+    let rsc_a = bump(&head);
+    let rsc_b = head.get().value;
+    show_v(rsc_a, rsc_b);
 }
 
 fn main() {

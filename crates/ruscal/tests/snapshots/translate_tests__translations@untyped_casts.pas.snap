@@ -53,24 +53,24 @@ fn set_words(data: &mut dyn ByteView) {
     // writes them back into the variable.
     let mut data = Bytes::of(data);
     // Part of an untyped parameter seen as a `TWords`: its bytes are read into
-    // `view`, which the statement changes, and written back after it.
-    let mut view = data.read::<TWords>();
-    view[0] = 1;
-    data.write(&view);
-    let mut view = data.read::<TWords>();
-    view[1] = 2;
-    data.write(&view);
+    // `rsc_view`, which the statement changes, and written back after it.
+    let mut rsc_view = data.read::<TWords>();
+    rsc_view[0] = 1;
+    data.write(&rsc_view);
+    let mut rsc_view = data.read::<TWords>();
+    rsc_view[1] = 2;
+    data.write(&rsc_view);
 }
 
 /// Pascal: `procedure SetField(var Data);`
 fn set_field(data: &mut dyn ByteView) {
     let mut data = Bytes::of(data);
-    let mut view = data.read::<Rec>();
-    view.b = 77;
-    data.write(&view);
-    let mut view = data.read::<Rec>();
-    view.a += 10;
-    data.write(&view);
+    let mut rsc_view = data.read::<Rec>();
+    rsc_view.b = 77;
+    data.write(&rsc_view);
+    let mut rsc_view = data.read::<Rec>();
+    rsc_view.a += 10;
+    data.write(&rsc_view);
 }
 
 /// Pascal: `procedure SetName(var Data; const s: string);`
@@ -87,12 +87,12 @@ fn add1(n: &mut u16) {
 /// Pascal: `procedure Bump(var Data);`
 fn bump(data: &mut dyn ByteView) {
     let mut data = Bytes::of(data);
-    let mut n = data.read::<u16>();
-    add1(&mut n);
-    data.write(&n);
-    let mut view = data.read::<Rec>();
-    add1(&mut view.b);
-    data.write(&view);
+    let mut rsc_n = data.read::<u16>();
+    add1(&mut rsc_n);
+    data.write(&rsc_n);
+    let mut rsc_view = data.read::<Rec>();
+    add1(&mut rsc_view.b);
+    data.write(&rsc_view);
 }
 
 /// Pascal: `function Next(var n: Word): Word;`
@@ -105,11 +105,11 @@ fn next(n: &mut u16) -> u16 {
 fn bump_both(a: &mut dyn ByteView, b: &mut dyn ByteView, sum: &mut u16) {
     let mut a = Bytes::of(a);
     let mut b = Bytes::of(b);
-    let mut n = a.read::<u16>();
-    let mut n_2 = b.read::<u16>();
-    *sum = next(&mut n) + next(&mut n_2);
-    a.write(&n);
-    b.write(&n_2);
+    let mut rsc_n = a.read::<u16>();
+    let mut rsc_n_2 = b.read::<u16>();
+    *sum = next(&mut rsc_n) + next(&mut rsc_n_2);
+    a.write(&rsc_n);
+    b.write(&rsc_n_2);
 }
 
 /// Pascal: `procedure Swap2(var x, y: Word);`
@@ -123,18 +123,18 @@ fn swap2(x: &mut u16, y: &mut u16) {
 /// Pascal: `procedure SwapBoth(var Data);`
 fn swap_both(data: &mut dyn ByteView) {
     let mut data = Bytes::of(data);
-    let mut view = data.read::<Rec>();
-    swap2(&mut view.a, &mut view.b);
-    data.write(&view);
+    let mut rsc_view = data.read::<Rec>();
+    swap2(&mut rsc_view.a, &mut rsc_view.b);
+    data.write(&rsc_view);
 }
 
 /// Pascal: `function NextThenRead(var Data): Word;`
 fn next_then_read(data: &mut dyn ByteView) -> u16 {
     let mut data = Bytes::of(data);
     let mut result: u16 = 0;
-    let mut n = data.read::<u16>();
-    result = next(&mut n) + n;
-    data.write(&n);
+    let mut rsc_n = data.read::<u16>();
+    result = next(&mut rsc_n) + rsc_n;
+    data.write(&rsc_n);
     result
 }
 
@@ -142,42 +142,42 @@ fn next_then_read(data: &mut dyn ByteView) -> u16 {
 fn with_both(data: &mut dyn ByteView) {
     let mut data = Bytes::of(data);
     // `with` an untyped parameter seen as a `Rec`: its bytes are read into
-    // `view` for the body, and written back after it.
-    let mut view = data.read::<Rec>();
+    // `rsc_view` for the body, and written back after it.
+    let mut rsc_view = data.read::<Rec>();
     // Pascal `with`: Rust has no equivalent, so each field is written out in full.
-    next(&mut view.a);
-    next(&mut view.b);
-    view.b += 10;
-    data.write(&view);
+    next(&mut rsc_view.a);
+    next(&mut rsc_view.b);
+    rsc_view.b += 10;
+    data.write(&rsc_view);
 }
 
 /// Pascal: `procedure SelfIndex(var Data);`
 fn self_index(data: &mut dyn ByteView) {
     let mut data = Bytes::of(data);
-    let mut n = data.read::<u16>();
-    n = data.read::<u16>() + next(&mut n);
-    data.write(&n);
-    let index = data.read::<TWords>()[0] - 10;
-    let mut view = data.read::<TWords>();
-    view[index] = 9;
-    data.write(&view);
+    let mut rsc_n = data.read::<u16>();
+    rsc_n = data.read::<u16>() + next(&mut rsc_n);
+    data.write(&rsc_n);
+    let rsc_index = data.read::<TWords>()[0] - 10;
+    let mut rsc_view = data.read::<TWords>();
+    rsc_view[rsc_index] = 9;
+    data.write(&rsc_view);
 }
 
 /// Pascal: `procedure Parse(var Data; const s: string);`
 fn parse(data: &mut dyn ByteView, s: &PString) {
     let mut data = Bytes::of(data);
     let mut code: i16 = 0;
-    let mut view = data.read::<u16>();
-    val(s, &mut view, &mut code);
-    data.write(&view);
+    let mut rsc_view = data.read::<u16>();
+    val(s, &mut rsc_view, &mut code);
+    data.write(&rsc_view);
 }
 
 /// Pascal: `procedure Show(var Data; n: Integer);`
 fn show(data: &mut dyn ByteView, n: i16) {
     let mut data = Bytes::of(data);
-    let mut view = data.read_string::<PString>(5);
-    view = pas_str(n).truncated(5);
-    data.write_string(&view, 5);
+    let mut rsc_view = data.read_string::<PString>(5);
+    rsc_view = pas_str(n).truncated(5);
+    data.write_string(&rsc_view, 5);
 }
 
 /// The main program: the `begin ... end.` block of `UntypedCasts`.

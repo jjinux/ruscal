@@ -40,12 +40,12 @@ fn pascal_main() {
     let mut code: i16 = 0;
     p = Ptr::alloc();
     p.get_mut().v = 7;
-    let text = w(p.get().v, 2);
-    p.get_mut().name = pas_str(text).truncated(4);
+    let rsc_text = w(p.get().v, 2);
+    p.get_mut().name = pas_str(rsc_text).truncated(4);
     pwriteln!("[", p.get().name, "]");
     p.get_mut().name = pstr("42");
-    let text = p.get().name;
-    val(text, &mut p.get_mut().v, &mut code);
+    let rsc_text = p.get().name;
+    val(rsc_text, &mut p.get_mut().v, &mut code);
     pwriteln!(p.get().v, " ", code);
     p.dispose();
 }

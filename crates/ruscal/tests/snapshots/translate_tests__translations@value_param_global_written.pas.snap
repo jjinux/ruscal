@@ -41,8 +41,8 @@ fn v(g6: &mut R6, x: R6) {
 fn pascal_main() {
     let mut g6: R6 = R6::default();
     g6.a = 1;
-    let x = g6;
-    v(&mut g6, x);
+    let rsc_x = g6;
+    v(&mut g6, rsc_x);
 }
 
 fn main() {
