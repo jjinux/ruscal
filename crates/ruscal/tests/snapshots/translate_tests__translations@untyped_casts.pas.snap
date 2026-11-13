@@ -21,7 +21,8 @@ use ruscal_runtime::prelude::*;
 // takes 6 bytes, not a full string's 256), and one passed on to a var
 // parameter, whole or a field (two in one statement too, of different
 // parameters or of the same one), or to Val or Str; and read after a call
-// changed it in the same statement. Output from fpc -Mtp.
+// changed it in the same statement; a with over one, and an index that
+// reads the same view. Output from fpc -Mtp.
 /// Pascal: `array[0..127] of Word`
 type TWords = PArray<u16, 0, 128>;
 
@@ -137,6 +138,31 @@ fn next_then_read(data: &mut dyn ByteView) -> u16 {
     result
 }
 
+/// Pascal: `procedure WithBoth(var Data);`
+fn with_both(data: &mut dyn ByteView) {
+    let mut data = Bytes::of(data);
+    // `with` an untyped parameter seen as a `Rec`: its bytes are read into
+    // `view` for the body, and written back after it.
+    let mut view = data.read::<Rec>();
+    // Pascal `with`: Rust has no equivalent, so each field is written out in full.
+    next(&mut view.a);
+    next(&mut view.b);
+    view.b += 10;
+    data.write(&view);
+}
+
+/// Pascal: `procedure SelfIndex(var Data);`
+fn self_index(data: &mut dyn ByteView) {
+    let mut data = Bytes::of(data);
+    let mut n = data.read::<u16>();
+    n = data.read::<u16>() + next(&mut n);
+    data.write(&n);
+    let index = data.read::<TWords>()[0] - 10;
+    let mut view = data.read::<TWords>();
+    view[index] = 9;
+    data.write(&view);
+}
+
 /// Pascal: `procedure Parse(var Data; const s: string);`
 fn parse(data: &mut dyn ByteView, s: &PString) {
     let mut data = Bytes::of(data);
@@ -187,6 +213,14 @@ fn pascal_main() {
     pwriteln!(r.a, " ", r.b);
     x = 5;
     pwriteln!(next_then_read(&mut x), " ", x);
+    r.a = 1;
+    r.b = 4;
+    with_both(&mut r);
+    pwriteln!(r.a, " ", r.b);
+    r.a = 5;
+    r.b = 0;
+    self_index(&mut r);
+    pwriteln!(r.a, " ", r.b);
 }
 
 fn main() {

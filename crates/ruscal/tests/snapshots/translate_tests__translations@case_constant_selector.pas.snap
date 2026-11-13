@@ -16,10 +16,11 @@ input_file: tests/translate/case_constant_selector.pas
 
 use ruscal_runtime::prelude::*;
 
-// A case whose selector is a constant (case 2 of, case SizeOf(Rec) of)
-// takes labels of its integer type. Output from fpc -Mtp.
+// A case whose selector is a constant (case 2 of, case SizeOf(Rec) of,
+// case 'a' of) takes labels of its integer type, or Char. Output from
+// fpc -Mtp.
 
-/// Pascal: `record N: Integer; end`
+/// Pascal: `record n: Integer; end`
 #[derive(Clone, Copy, Debug, Default)]
 struct Rec {
     n: i16,
@@ -46,6 +47,11 @@ fn pascal_main() {
         _ => {
             pwriteln!("other");
         }
+    }
+    match b'b' {
+        b'a' => pwriteln!("a"),
+        b'b'..=b'z' => pwriteln!("a letter"),
+        _ => {}
     }
 }
 

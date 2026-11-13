@@ -101,8 +101,9 @@ fn pascal_main() {
         a = a_value;
         for b_value in enum_range(Choice::Paper, Choice::Rock) {
             b = b_value;
+            let value = results[play(a, b)] + 1;
             let index = play(a, b);
-            results[index] = results[play(a, b)] + 1;
+            results[index] = value;
         }
     }
     pwriteln!(results[Outcome::Win], " ", results[Outcome::Lose], " ", results[Outcome::Tie]);

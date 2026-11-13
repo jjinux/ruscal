@@ -4,7 +4,8 @@ program UntypedCasts;
   takes 6 bytes, not a full string's 256), and one passed on to a var
   parameter, whole or a field (two in one statement too, of different
   parameters or of the same one), or to Val or Str; and read after a call
-  changed it in the same statement. Output from fpc -Mtp. }
+  changed it in the same statement; a with over one, and an index that
+  reads the same view. Output from fpc -Mtp. }
 type
    TWords = array[0..127] of Word;
    Rec = record a, b: Word; end;
@@ -62,6 +63,20 @@ function NextThenRead(var Data): Word;
    begin
       NextThenRead := Next(Word(Data)) + Word(Data);
    end;
+procedure WithBoth(var Data);
+   begin
+      with Rec(Data) do
+      begin
+         Next(a);
+         Next(b);
+         b := b + 10;
+      end;
+   end;
+procedure SelfIndex(var Data);
+   begin
+      Word(Data) := Word(Data) + Next(Word(Data));
+      TWords(Data)[TWords(Data)[0] - 10] := 9;
+   end;
 procedure Parse(var Data; const s: string);
    var
       Code: Integer;
@@ -94,4 +109,10 @@ begin
    WriteLn(r.a, ' ', r.b);
    x := 5;
    WriteLn(NextThenRead(x), ' ', x);
+   r.a := 1; r.b := 4;
+   WithBoth(r);
+   WriteLn(r.a, ' ', r.b);
+   r.a := 5; r.b := 0;
+   SelfIndex(r);
+   WriteLn(r.a, ' ', r.b);
 end.

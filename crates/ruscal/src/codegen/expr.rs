@@ -476,7 +476,7 @@ impl<'a> Codegen<'a> {
     /// `High(a)` or `Low(a)` of an array with an integer index: the
     /// array's bound, `a.high()` (or `TArr::HIGH` for a type), so it
     /// follows the array's declaration rather than being a number.
-    fn array_bound(&mut self, e: &Expr) -> Option<Code> {
+    pub(super) fn array_bound(&mut self, e: &Expr) -> Option<Code> {
         let ExprKind::Call { callee, args } = &e.kind else { return None };
         let [arg] = args.as_slice() else { return None };
         let high = match self.a.sym(*self.a.refs.get(&callee.id)?).kind {
@@ -1381,7 +1381,7 @@ impl<'a> Codegen<'a> {
     }
 
     /// How a view of an untyped parameter as `ty` is read and written back.
-    fn view_read_write(ty: &Type) -> (String, String) {
+    pub(super) fn view_read_write(ty: &Type) -> (String, String) {
         match super::string_capacity(ty) {
             Some(cap) => (format!("read_string::<{}>({cap})", ty.rust()), format!("write_string(&{{}}, {cap})")),
             None => (format!("read::<{}>()", ty.rust()), "write(&{})".to_string()),

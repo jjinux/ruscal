@@ -219,7 +219,8 @@ own below.
   any ordinal type), `case ... of` with lists and ranges (of numbers,
   chars, enums and Booleans) and `else`. As in TP, a label may repeat or
   overlap an earlier one, and the first wins; a label the value can never
-  equal (300 for a `Byte`, a range like `5..1`) is an error
+  equal (300 for a `Byte`, a range like `5..1`) is an error. The selector
+  may be a constant (`case 2 of`, `case 'a' of`)
 - `Break`, `Continue` (TP 7; `Continue` in `repeat` still runs the `until`
   test)
 - Procedure calls; `Exit`; `Halt` / `Halt(n)`

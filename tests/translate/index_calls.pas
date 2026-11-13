@@ -1,7 +1,8 @@
 program IndexCalls;
 { An index that calls a function: in an assignment's target it's worked
   out first (Pick reads the array the target indexes), on both sides it
-  runs twice, as in TP and Free Pascal, and in a method an index that
+  runs twice, the value's call first, as in Turbo Pascal 7 (checked in
+  DOSBox; Free Pascal calls the target's first), and in a method an index that
   calls a method reads fine. The same goes for other places that are
   written: Inc, and a var argument. }
 type

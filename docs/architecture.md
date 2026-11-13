@@ -1150,11 +1150,17 @@ window meanwhile (§19).
   calls first. Otherwise (`total := total + Price(i)`) it's `+=`. A target
   through a pointer keeps the long form whenever the right side calls
   anything, since another pointer may reach the same record. An index
-  that calls a function, in any place that's written (`a[Pick] := ...`,
-  `Inc(a[Pick])`, a `var` argument), is worked out into a `let` first, as
-  Free Pascal works out the target's index before the value; and the
-  `let`s the right side of `and`/`or` needs go inside it, in a block, so
-  they only run when that side does. Arguments run left to right, as TP
+  in a place that's written (`a[Pick] := ...`, `Inc(a[Pick])`, a `var`
+  argument) is worked out into a `let` first when it calls a function or
+  reads what the place borrows to change it (`A[High(A)]`, `A[A[1]]`,
+  `S[Length(S)]`, `P^.A[P^.N]`; not `St.Items[St.Top]`, whose two fields
+  Rust borrows apart). TP 7 works an assignment's value out before the
+  target's index (`R.A[R.N] := SetN(R)` uses the `N` that `SetN` left;
+  checked in DOSBox, `c/RUSCAL/IDXORDER.PAS`), which Rust does too for
+  `a[i] = v`; so when such an index goes into a `let` and either side
+  calls something, the value goes into a `let` before it. The `let`s the
+  right side of `and`/`or` needs go inside it, in a block, so they only
+  run when that side does. Arguments run left to right, as TP
   pushed them, even when some go into `let`s first. A read through a
   pointer next to a call (`p^.n + F`, `Add(p^.n, F)`) is done into a `let`
   before the call, so its borrow has ended when `F` changes the record.

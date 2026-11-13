@@ -2336,28 +2336,56 @@ impl<'a> Codegen<'a> {
                     None => self.line(format!("goto {};", label.name)),
                 }
             }
-            StmtKind::With { body, .. } => {
-                // `self.a` is a plain shared reference, so copying it out lets
-                // us borrow the rewritten body while `self` is borrowed mutably.
-                let a = self.a;
-                let rewritten = &a.with_bodies[&s.span.start];
-                // Sema puts the pointer copies (`with p^ do`) and the body in a
-                // `begin ... end` the size of the whole `with`.
-                let (copies, rewritten_body) = match &rewritten.kind {
-                    StmtKind::Compound(stmts) if rewritten.span == s.span => (stmts.len() - 1, stmts.last().unwrap()),
-                    _ => (0, rewritten),
-                };
-                if copies > 0 && self.first_time("with_pointer") {
-                    self.line("// TP finds a `with` record once, before the body runs: the pointer is");
-                    self.line("// copied first, so the body means that record even if it changes the pointer.");
+            StmtKind::With { records, body } => {
+                // `with Rec(Data) do`: the untyped parameter's bytes are read
+                // into a variable for the whole body, and written back after
+                // it (not after each statement, which would lose the later
+                // statements' changes).
+                let mut write_backs = Vec::new();
+                for record in records {
+                    if let Some(bytes) = self.view_cast_guard(record) {
+                        let ty = self.a.type_of(record.id).clone();
+                        let name = self.temp_name("view");
+                        self.line(format!(
+                            "// `with` an untyped parameter seen as a `{}`: its bytes are read into",
+                            ty.rust()
+                        ));
+                        self.line(format!("// `{name}` for the body, and written back after it."));
+                        let (read, write) = Self::view_read_write(&ty);
+                        self.line(format!("let mut {name} = {bytes}.{read};"));
+                        write_backs.push(format!("{bytes}.{};", write.replace("{}", &name)));
+                        self.hoisted.insert(record.id, name);
+                    }
                 }
-                // (Nothing to say when the body uses no field: `with r do goto L`.)
-                if rewritten_body != &**body && self.first_time("with") {
-                    self.line("// Pascal `with`: Rust has no equivalent, so each field is written out in full.");
+                self.with_body(s, body);
+                for line in write_backs {
+                    self.line(line);
                 }
-                self.stmt(rewritten);
             }
         }
+    }
+
+    /// The body of a `with`, as sema rewrote it (each field written out).
+    fn with_body(&mut self, s: &Stmt, body: &Stmt) {
+        // `self.a` is a plain shared reference, so copying it out lets
+        // us borrow the rewritten body while `self` is borrowed mutably.
+        let a = self.a;
+        let rewritten = &a.with_bodies[&s.span.start];
+        // Sema puts the pointer copies (`with p^ do`) and the body in a
+        // `begin ... end` the size of the whole `with`.
+        let (copies, rewritten_body) = match &rewritten.kind {
+            StmtKind::Compound(stmts) if rewritten.span == s.span => (stmts.len() - 1, stmts.last().unwrap()),
+            _ => (0, rewritten),
+        };
+        if copies > 0 && self.first_time("with_pointer") {
+            self.line("// TP finds a `with` record once, before the body runs: the pointer is");
+            self.line("// copied first, so the body means that record even if it changes the pointer.");
+        }
+        // (Nothing to say when the body uses no field: `with r do goto L`.)
+        if rewritten_body != body && self.first_time("with") {
+            self.line("// Pascal `with`: Rust has no equivalent, so each field is written out in full.");
+        }
+        self.stmt(rewritten);
     }
 
     /// The label a `while` or `for` loop needs when a goto block inside it
@@ -2484,7 +2512,11 @@ impl<'a> Codegen<'a> {
 
     /// `case` becomes `match`.
     fn case(&mut self, span: Span, scrutinee: &Expr, arms: &[CaseArm], else_body: Option<&[Stmt]>) {
-        let scrutinee_ty = self.a.type_of(scrutinee.id).concrete();
+        // (`case 'a' of`: a one-character constant is a `Char`, `b'a'`.)
+        let scrutinee_ty = match self.a.type_of(scrutinee.id) {
+            Type::StrLit(1) => Type::Char,
+            ty => ty.concrete(),
+        };
         // A label that names a constant stays its name (`ESC =>`, not
         // `b'\x1b' =>`), so the Rust still says where the value comes from.
         // A pattern's constant must have the scrutinee's type: a Byte
@@ -2499,6 +2531,7 @@ impl<'a> Codegen<'a> {
                 let code = self.coerce(scrutinee, &Type::Int(kind));
                 code.0
             }
+            None if scrutinee_ty == Type::Char => self.coerce(scrutinee, &Type::Char).0,
             None => self.expr(scrutinee).0,
         };
         let scrutinee_code = self.with_after(scrutinee_code);
@@ -3034,20 +3067,8 @@ impl<'a> Codegen<'a> {
         match &target.kind {
             ExprKind::Index(base, indexes) => {
                 self.hoist_target_indexes(base);
-                // `p.B[p.B[0]] := 9`: the place holds `p.b_mut()`'s guard,
-                // so an index reading `p` is worked out first too.
-                let guarded = self.through_byte_field(base);
                 for index in indexes {
-                    let reads_guarded = guarded && expr::mentions(index, &expr::root_key(base));
-                    // An index that reads the variable being changed,
-                    // `A[High(A)] := 1` or `S[Length(S)] := 'z'`: `a[a.high()]
-                    // = 1` would borrow `a` to read it while it's borrowed to
-                    // be changed, which Rust refuses.
-                    // (`High(A)` is a constant to Pascal, but `a.high()` reads `a`.)
-                    let reads_target = expr::mentions(index, &expr::root_key(base))
-                        && (!self.is_constant(index) || self.uses_array_bound(index));
-                    if (self.has_call(index) || reads_guarded || reads_target) && !self.hoisted.contains_key(&index.id)
-                    {
+                    if self.index_hoists(base, index) && !self.hoisted.contains_key(&index.id) {
                         let code = self.expr(index).0;
                         let name = self.temp_name("index");
                         self.pending.push(format!("let {name} = {code};"));
@@ -3057,6 +3078,104 @@ impl<'a> Codegen<'a> {
             }
             ExprKind::Field(base, _) | ExprKind::Deref(base) => self.hoist_target_indexes(base),
             _ => {}
+        }
+    }
+
+    /// Does the place `target` work an index out into a `let` first
+    /// ([`Self::hoist_target_indexes`])?
+    pub(super) fn target_hoists(&mut self, target: &Expr) -> bool {
+        match &target.kind {
+            ExprKind::Index(base, indexes) => {
+                self.target_hoists(base) || indexes.iter().any(|index| self.index_hoists(base, index))
+            }
+            ExprKind::Field(base, _) | ExprKind::Deref(base) => self.target_hoists(base),
+            _ => false,
+        }
+    }
+
+    /// Is `index`, an index into `base` in a place that's written, worked
+    /// out into a `let` first? When it calls a function, or when it reads
+    /// what the place borrows to change it: `A[High(A)] := 1` or
+    /// `S[Length(S)] := 'z'` (`a[a.high()] = 1` would borrow `a` to read it
+    /// while it's borrowed to be changed, which Rust refuses), `A[A[1]]`, an
+    /// index of a variant part's bytes (`p.B[p.B[0]]`, whose guard holds the
+    /// record), a place through a pointer or an array element (`P^.A[P^.N]`,
+    /// `S[1].A[S[1].N]`), or a view of an untyped parameter. Not one that
+    /// reads another field of the same record (`St.Items[St.Top]`): Rust
+    /// borrows the two fields apart.
+    fn index_hoists(&mut self, base: &Expr, index: &Expr) -> bool {
+        if self.has_call(index) {
+            return true;
+        }
+        // (`High(A)` is a constant to Pascal, but `a.high()` reads `a`, also
+        // inside another call: `Succ(Low(A))`.)
+        if self.is_constant(index) && !self.reads_array_bound(index) {
+            return false;
+        }
+        if let Some(bytes) = self.view_root(base) {
+            return self.reads_view(index, &bytes);
+        }
+        let root = expr::root_key(base);
+        match field_path(base) {
+            Some(path) if !self.through_byte_field(base) && !self.is_with_or_self(base) => reads_related(index, &path),
+            _ => expr::mentions(index, &root),
+        }
+    }
+
+    /// Does `e` use an array's `High`/`Low` (`a.high()`), anywhere in it?
+    fn reads_array_bound(&mut self, e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Call { args, .. } => {
+                self.array_bound(e).is_some() || args.iter().any(|a| self.reads_array_bound(a))
+            }
+            ExprKind::Unary { operand, .. } => self.reads_array_bound(operand),
+            ExprKind::Binary { lhs, rhs, .. } => self.reads_array_bound(lhs) || self.reads_array_bound(rhs),
+            _ => false,
+        }
+    }
+
+    /// Does an index along the place `target` call a function?
+    fn calls_in_target(&self, target: &Expr) -> bool {
+        match &target.kind {
+            ExprKind::Index(base, indexes) => self.calls_in_target(base) || indexes.iter().any(|i| self.has_call(i)),
+            ExprKind::Field(base, _) | ExprKind::Deref(base) => self.calls_in_target(base),
+            _ => false,
+        }
+    }
+
+    /// Is the name a place starts from a field reached through `with` or
+    /// `Self`, whose path isn't written in the Pascal?
+    fn is_with_or_self(&self, e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Name(_) => self.a.self_fields.contains_key(&e.id) || !self.a.refs.contains_key(&e.id),
+            ExprKind::Field(base, _) => self.a.self_fields.contains_key(&e.id) || self.is_with_or_self(base),
+            _ => true,
+        }
+    }
+
+    /// The untyped parameter a place is a view of (`TWords(Data)[1]`), if it is.
+    fn view_root(&self, e: &Expr) -> Option<String> {
+        match &e.kind {
+            ExprKind::Field(base, _) | ExprKind::Index(base, _) => self.view_root(base),
+            ExprKind::Call { .. } => self.view_cast_guard(e),
+            _ => None,
+        }
+    }
+
+    /// Does `e` read a view of the untyped parameter `bytes`?
+    fn reads_view(&self, e: &Expr, bytes: &str) -> bool {
+        if self.view_cast_guard(e).as_deref() == Some(bytes) {
+            return true;
+        }
+        match &e.kind {
+            ExprKind::Field(base, _) | ExprKind::Deref(base) => self.reads_view(base, bytes),
+            ExprKind::Index(base, indexes) => {
+                self.reads_view(base, bytes) || indexes.iter().any(|i| self.reads_view(i, bytes))
+            }
+            ExprKind::Call { args, .. } => args.iter().any(|a| self.reads_view(a, bytes)),
+            ExprKind::Unary { operand, .. } => self.reads_view(operand, bytes),
+            ExprKind::Binary { lhs, rhs, .. } => self.reads_view(lhs, bytes) || self.reads_view(rhs, bytes),
+            _ => false,
         }
     }
 
@@ -3104,12 +3223,36 @@ impl<'a> Codegen<'a> {
     }
 
     pub(super) fn assignment(&mut self, target: &Expr, value: &Expr) -> String {
+        // TP works the value out before the target's index: in
+        // `R.A[R.N] := SetN(R)`, `SetN` changes `R.N` first, and in
+        // `A[Bump(I)] := A[I]` the value reads `I` before `Bump` changes it
+        // (checked in TP 7). So when an index goes into a `let` and either
+        // side calls something, the value goes into one before it.
+        // (Otherwise Rust does the same itself: `r.a[r.n] = set_n(&mut r)`
+        // calls `set_n` first.)
+        if (self.has_call(value) || self.calls_in_target(target))
+            && !self.is_constant(value)
+            && !self.hoisted.contains_key(&value.id)
+            && self.target_hoists(target)
+        {
+            let code = self.expr(value).0;
+            let name = self.temp_name("value");
+            self.pending.push(format!("let {name} = {code};"));
+            self.hoisted.insert(value.id, name);
+        }
         self.hoist_target_indexes(target);
         let target_ty = self.a.type_of(target.id).clone();
         // `TRec(Data) := r`: an untyped parameter's bytes, set from a `TRec`.
         if let Some(bytes) = self.view_cast_guard(target) {
+            let code = self.coerce(value, &target_ty);
+            // The value read them into a variable for a call
+            // (`Word(Data) := Word(Data) + Next(Word(Data))`): that variable,
+            // which is written back after the statement.
+            if let Some(view) = self.view_in_statement(&bytes, &target_ty) {
+                return format!("{view} = {};", code.0);
+            }
             // `&(t + "z")`: the borrow is of the whole value.
-            let value = expr::paren(self.coerce(value, &target_ty), expr::prec::UNARY);
+            let value = expr::paren(code, expr::prec::UNARY);
             return match string_capacity(&target_ty) {
                 Some(cap) => format!("{bytes}.write_string(&{value}, {cap});"),
                 None => format!("{bytes}.write(&{value});"),
@@ -3670,4 +3813,35 @@ fn is_literal(code: &str) -> bool {
     code.parse::<i64>().is_ok()
         || code.strip_prefix("0x").is_some_and(|hex| i64::from_str_radix(hex, 16).is_ok())
         || code.starts_with("b'") && code.ends_with('\'')
+}
+
+/// A place written as a variable and its fields only (`St.Items`), as the
+/// names along it (`["st", "items"]`); `None` through an index or a pointer.
+fn field_path(e: &Expr) -> Option<Vec<String>> {
+    match &e.kind {
+        ExprKind::Name(id) => Some(vec![id.key()]),
+        ExprKind::Field(base, field) => {
+            let mut path = field_path(base)?;
+            path.push(field.key());
+            Some(path)
+        }
+        _ => None,
+    }
+}
+
+/// Does `e` read the place at `path`, a part of it, or something it's part
+/// of (`A` or `A[1]` for `A`; `St` but not `St.Top` for `St.Items`)?
+fn reads_related(e: &Expr, path: &[String]) -> bool {
+    if let Some(other) = field_path(e) {
+        return other.starts_with(path) || path.starts_with(&other);
+    }
+    match &e.kind {
+        ExprKind::Field(base, _) | ExprKind::Deref(base) => reads_related(base, path),
+        ExprKind::Index(base, indexes) => reads_related(base, path) || indexes.iter().any(|i| reads_related(i, path)),
+        ExprKind::Call { args, .. } => args.iter().any(|a| reads_related(a, path)),
+        ExprKind::Unary { operand, .. } => reads_related(operand, path),
+        ExprKind::Binary { lhs, rhs, .. } => reads_related(lhs, path) || reads_related(rhs, path),
+        ExprKind::Format { value, .. } => reads_related(value, path),
+        _ => false,
+    }
 }
