@@ -3670,6 +3670,11 @@ impl Checker {
         for (param, arg) in r.params.iter().zip(args) {
             match param {
                 Param::Int => self.int_arg(arg),
+                Param::Byte | Param::Word => {
+                    self.int_arg(arg);
+                    let kind = if *param == Param::Byte { IntKind::Byte } else { IntKind::Word };
+                    self.check_constant_range(&Type::Int(kind), arg);
+                }
                 Param::Str => self.string_arg(arg),
                 Param::Real => {
                     let ty = self.expr(arg);
@@ -4053,8 +4058,14 @@ impl Checker {
                 } else if !ty.accepts(&arg_ty) {
                     self.error(arg.span, format!("expected {} argument, found {arg_ty}", a(&ty)));
                 } else {
-                    // `P(300)` for a Byte, `P(1E39)` for a Single.
-                    self.check_constant_range(&ty, arg);
+                    // `P(300)` for a Byte, `P(1E39)` for a Single, and a single
+                    // value for an open array of them (which TP refused
+                    // outright; Ruscal takes it as a one-element array).
+                    let target = match &ty {
+                        Type::OpenArray(elem) => &**elem,
+                        _ => &ty,
+                    };
+                    self.check_constant_range(target, arg);
                 }
                 // The routine may write through a `PChar`, or keep it.
                 if matches!(ty, Type::PChar | Type::AnyPointer) {

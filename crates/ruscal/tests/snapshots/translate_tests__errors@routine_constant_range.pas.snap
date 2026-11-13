@@ -1,0 +1,24 @@
+---
+source: crates/ruscal/tests/translate_tests.rs
+expression: error
+input_file: tests/errors/routine_constant_range.pas
+---
+routine_constant_range.pas:12:11: error: the constant 300 is out of range for Byte
+   GotoXY(300, 1);
+          ^^^
+
+routine_constant_range.pas:13:14: error: the constant -1 is out of range for Byte
+   TextColor(-1);
+             ^^
+
+routine_constant_range.pas:14:10: error: the constant 70000 is out of range for Word
+   Delay(70000);
+         ^^^^^
+
+routine_constant_range.pas:15:21: error: the constant 256 is out of range for Byte
+   Window(1, 1, 80, 256);
+                    ^^^
+
+routine_constant_range.pas:16:9: error: the constant 300 is out of range for Byte
+   Show(300);
+        ^^^
