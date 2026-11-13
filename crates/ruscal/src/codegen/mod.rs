@@ -3039,7 +3039,15 @@ impl<'a> Codegen<'a> {
                 let guarded = self.through_byte_field(base);
                 for index in indexes {
                     let reads_guarded = guarded && expr::mentions(index, &expr::root_key(base));
-                    if (self.has_call(index) || reads_guarded) && !self.hoisted.contains_key(&index.id) {
+                    // An index that reads the variable being changed,
+                    // `A[High(A)] := 1` or `S[Length(S)] := 'z'`: `a[a.high()]
+                    // = 1` would borrow `a` to read it while it's borrowed to
+                    // be changed, which Rust refuses.
+                    // (`High(A)` is a constant to Pascal, but `a.high()` reads `a`.)
+                    let reads_target = expr::mentions(index, &expr::root_key(base))
+                        && (!self.is_constant(index) || self.uses_array_bound(index));
+                    if (self.has_call(index) || reads_guarded || reads_target) && !self.hoisted.contains_key(&index.id)
+                    {
                         let code = self.expr(index).0;
                         let name = self.temp_name("index");
                         self.pending.push(format!("let {name} = {code};"));

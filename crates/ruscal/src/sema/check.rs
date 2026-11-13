@@ -2079,7 +2079,12 @@ impl Checker {
                 self.active_for_vars.pop();
             }
             StmtKind::Case { scrutinee, arms, else_body } => {
-                let ty = self.expr(scrutinee);
+                // A constant selector (`case 2 of`, `case SizeOf(Rec) of`)
+                // is typed like a literal: its labels are of its integer type.
+                let ty = match self.expr(scrutinee) {
+                    ty @ Type::IntLit(_) => ty.concrete(),
+                    ty => ty,
+                };
                 if !ty.is_ordinal() && ty != Type::Error {
                     self.error(scrutinee.span, format!("`case` needs an ordinal value, found {ty}"));
                 }
