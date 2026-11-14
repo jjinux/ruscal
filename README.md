@@ -96,14 +96,27 @@ Old sources with DOS (`\r\n`) line endings are fine everywhere: the
 transpiler, `Readln` on standard input and text files, and `fmt` (which
 writes UNIX line endings, or DOS ones with `--crlf`).
 
-Or install the tools once with `cargo install --path crates/ruscal`, which
-puts `ruscal` and `tpc` (below) in `~/.cargo/bin` (put it on your `PATH`
-if it isn't already), and use
-`ruscal run foo.pas`. The installed `ruscal` still needs this checkout:
-each generated project depends on `crates/ruscal_runtime` by path, so keep
-the clone where it is, or point `RUSCAL_RUNTIME` at the
-`crates/ruscal_runtime` of a copy of the whole checkout (the crate takes
-its edition and version from the workspace around it).
+Or install the tools once, which puts `ruscal` and `tpc` (below) in
+`~/.cargo/bin` (put it on your `PATH` if it isn't already), and use
+`ruscal run foo.pas`. There are two ways:
+
+```sh
+# From your clone. The installed `ruscal` still needs the clone: each
+# generated project depends on its `crates/ruscal_runtime` by path, so keep
+# the clone where it is.
+cargo install --path crates/ruscal
+
+# Straight from GitHub, without a clone (the latest `main`; run it again
+# with `--force` to update). Generated projects then depend on the copy of
+# the runtime in Cargo's download cache (`~/.cargo/git/checkouts`), which
+# Cargo may clean up after it's gone unused for a while; if a build can't
+# find `ruscal_runtime`, run the install again with `--force`.
+cargo install --git https://github.com/jjinux/ruscal ruscal
+```
+
+Either way, `RUSCAL_RUNTIME` can point at the `crates/ruscal_runtime` of
+another copy of the whole checkout instead (the crate takes its edition
+and version from the workspace around it).
 
 ## Examples
 
