@@ -602,11 +602,19 @@ fn runtime_variable() -> Option<PathBuf> {
 /// has moved, or (after `cargo install --git`) Cargo has cleaned up its
 /// copy, about a month on.
 pub fn check_runtime() -> Result<(), String> {
-    let RuntimeSource::Path(runtime) = runtime_source() else { return Ok(()) };
+    match runtime_source() {
+        RuntimeSource::Path(runtime) => runtime_problem(&runtime, runtime_variable().is_some()),
+        RuntimeSource::Version(_) => Ok(()),
+    }
+}
+
+/// What's wrong with a runtime used by path at `runtime`, if anything
+/// (`from_variable`: `RUSCAL_RUNTIME` named it).
+fn runtime_problem(runtime: &Path, from_variable: bool) -> Result<(), String> {
     if runtime.join("Cargo.toml").is_file() {
         return Ok(());
     }
-    if runtime_variable().is_some() {
+    if from_variable {
         return Err(format!("RUSCAL_RUNTIME is {}, which has no Cargo.toml", runtime.display()));
     }
     Err(format!(
@@ -735,6 +743,19 @@ mod tests {
         let toml = cargo_toml_from("game", &features, &[], &RuntimeSource::Version("0.7.0"));
         assert!(toml.contains("\nruscal_runtime = { version = \"=0.7.0\", features = [\"crt\"] }\n"), "{toml}");
         assert!(!toml.contains("path ="), "{toml}");
+    }
+
+    /// A runtime path that's gone gets advice that fits why: a wrong
+    /// `RUSCAL_RUNTIME`, or a moved clone (or a cleaned Cargo cache).
+    #[test]
+    fn a_missing_runtime_path_gets_advice() {
+        let gone = Path::new("/nonexistent/crates/ruscal_runtime");
+        let variable = runtime_problem(gone, true).unwrap_err();
+        assert!(variable.starts_with("RUSCAL_RUNTIME is /nonexistent"), "{variable}");
+        let moved = runtime_problem(gone, false).unwrap_err();
+        assert!(moved.contains("isn't at /nonexistent") && moved.contains("build Ruscal again"), "{moved}");
+        let here = Path::new(env!("CARGO_MANIFEST_DIR")).join("../ruscal_runtime");
+        assert_eq!(runtime_problem(&here, false), Ok(()));
     }
 
     /// Built from this checkout (as the tests are), it uses the checkout's

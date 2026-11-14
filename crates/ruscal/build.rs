@@ -25,7 +25,9 @@ fn main() {
     if checkout {
         let runtime = runtime.canonicalize().unwrap_or(runtime);
         // Decide again if the checkout moves (with its `target/`): Cargo
-        // reruns this script when a file it names is gone or changed.
+        // reruns this script when a file it names is gone or changed. (A
+        // copy of a checkout with its `target/`, the original left in
+        // place, isn't noticed: it needs `cargo clean -p ruscal`.)
         println!("cargo:rerun-if-changed={}", runtime.join("Cargo.toml").display());
         // `cargo:rustc-env` sets an environment variable for compiling the
         // crate, which `option_env!` reads.
