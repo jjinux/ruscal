@@ -148,8 +148,10 @@ nothing is committed straight to `main`.
    If `git worktree remove` refuses, look at what's left before using
    `--force`. For stacked PRs, merge the bottom one first, then retarget
    the next (`gh pr edit <next> --base main`) before deleting the merged
-   branch. Don't rewrite a pushed branch (rebase,
-   force-push): add commits, or merge `main` into it. A change that needs
+   branch. Rebase a branch freely before pushing it. Once it's pushed,
+   rebasing it means `git push --force-with-lease`, which Claude's
+   safety checks block unless the user has allowed it: otherwise add
+   commits, or merge `main` into the branch. A change that needs
    the user (publishing, a decision) waits for them.
 
 Every commit on `main` must be covered by a Fable review. (Before the
