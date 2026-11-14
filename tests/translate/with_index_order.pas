@@ -1,7 +1,9 @@
 { The order in which TP 7 works out a with record: the calls in its
   indexes first, from right to left (the last index of the last array
   first), and only then the pointer, so a call that changes the pointer
-  (Swap) changes the record chosen. Free Pascal goes left to right.
+  (Swap) changes the record chosen. A variable index is read in its turn
+  too: B[Bump, I] reads I before Bump changes it. Free Pascal goes left
+  to right.
   Output from TP 7 (c/RUSCAL/WITHORD.PAS). }
 program WithIndexOrder;
 type
@@ -14,11 +16,11 @@ type
       Arr: array[1..3] of TRec;
    end;
 var
-   M: array[1..3, 1..3] of TRec;
+   M, B: array[1..3, 1..3] of TRec;
    Ps: array[1..3] of PBox;
    N1, N2, P: PBox;
    Order: string;
-   K: Integer;
+   I, J, K: Integer;
 
 function One: Integer;
    begin
@@ -42,6 +44,12 @@ function Pick: PBox;
    begin
       Order := Order + 'P';
       Pick := Ps[1];
+   end;
+
+function Bump: Integer;
+   begin
+      I := I + 1;
+      Bump := 1;
    end;
 
 function Swap: Integer;
@@ -103,4 +111,11 @@ begin
          Y := 8;
    end;
    WriteLn(N1^.Arr[2].X, ' ', N2^.Arr[2].X);
+   for K := 1 to 3 do
+      for J := 1 to 3 do
+         B[K, J].X := 0;
+   I := 1;
+   with B[Bump, I] do
+      X := 9;
+   WriteLn(B[1, 1].X, ' ', B[1, 2].X);
 end.

@@ -2165,7 +2165,10 @@ impl Checker {
             // first, and only then finds the pointer (checked in DOSBox:
             // `with Pick^.Arr[Two] do` calls `Two`, then `Pick`;
             // c/RUSCAL/WITHORD.PAS).
-            record = self.with_index_copies(&record, &mut prelude, s.span);
+            // (With a call among them, every index is worked out then,
+            // a variable too: `B[Bump, I]` reads `I` before `Bump` runs.)
+            let every_index = self.calls_function(&record);
+            record = self.with_index_copies(&record, every_index, &mut prelude, s.span);
             if let Some(pointer) = last_deref_base(&record)
                 && (!matches!(pointer.kind, ExprKind::Name(_))
                     || mentions_name(body, pointer)
@@ -2210,27 +2213,31 @@ impl Checker {
         self.a.with_bodies.insert(s.span.start, rewritten);
     }
 
-    /// `record` with each array index that calls a function (`A[Slot]`)
-    /// replaced by a new variable, assigned in `prelude` before the body:
-    /// `rsc_index := Slot; ... A[rsc_index].x ...`. They're assigned from
-    /// right to left, as TP 7 works them out: the last index of the last
-    /// array first.
-    fn with_index_copies(&mut self, record: &Expr, prelude: &mut Vec<Stmt>, span: Span) -> Expr {
+    /// `record` with each array index that calls a function (`A[Slot]`),
+    /// or (`every`) each one that isn't a constant, replaced by a new
+    /// variable, assigned in `prelude` before the body: `rsc_index := Slot;
+    /// ... A[rsc_index].x ...`. They're assigned from right to left, as
+    /// TP 7 works them out: the last index of the last array first
+    /// (checked in DOSBox, c/RUSCAL/WITHORD.PAS).
+    fn with_index_copies(&mut self, record: &Expr, every: bool, prelude: &mut Vec<Stmt>, span: Span) -> Expr {
         let kind = match &record.kind {
             ExprKind::Field(base, field) => {
-                ExprKind::Field(Box::new(self.with_index_copies(base, prelude, span)), field.clone())
+                ExprKind::Field(Box::new(self.with_index_copies(base, every, prelude, span)), field.clone())
             }
-            ExprKind::Deref(base) => ExprKind::Deref(Box::new(self.with_index_copies(base, prelude, span))),
+            ExprKind::Deref(base) => ExprKind::Deref(Box::new(self.with_index_copies(base, every, prelude, span))),
             ExprKind::Index(base, indexes) => {
                 // (The indexes right to left, then the array they index.)
                 let mut indexes: Vec<Expr> = indexes
                     .iter()
                     .rev()
                     .map(|index| {
-                        if !self.calls_function(index) {
+                        if !(self.calls_function(index) || every) {
                             return index.clone();
                         }
                         let ty = self.expr(index).concrete();
+                        if self.a.consts.contains_key(&index.id) {
+                            return index.clone();
+                        }
                         let name = self.with_copy_var(ty, "rsc_index".to_string(), span);
                         self.next_synthetic_id -= 1;
                         let copy = Expr { id: self.next_synthetic_id, kind: ExprKind::Name(name), span: index.span };
@@ -2242,7 +2249,7 @@ impl Checker {
                     })
                     .collect();
                 indexes.reverse();
-                let base = Box::new(self.with_index_copies(base, prelude, span));
+                let base = Box::new(self.with_index_copies(base, every, prelude, span));
                 ExprKind::Index(base, indexes)
             }
             _ => return record.clone(),

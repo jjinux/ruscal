@@ -1086,7 +1086,10 @@ window meanwhile (§19).
     (checked in DOSBox, `c/RUSCAL/WITHORD.PAS`): the indexes' calls from
     right to left, the last index of the last array first, and only then
     the pointer, so `with Pick^.Arr[Two] do` calls `Two` before `Pick`,
-    and a call that changes the pointer changes the record chosen.
+    and a call that changes the pointer changes the record chosen. With a
+    call among them, every index that isn't a constant gets a variable,
+    so each is read in its turn: `with B[Bump, I] do` reads `I` before
+    `Bump` changes it.
   - An array index the body changes (`with a[i] do ... i := 2`) is an
     error. (A procedure the body calls that changes `i` as a global isn't
     caught.)

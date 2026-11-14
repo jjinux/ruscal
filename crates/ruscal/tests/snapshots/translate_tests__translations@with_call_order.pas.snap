@@ -60,6 +60,7 @@ fn pascal_main() {
     let mut i: i16 = 0;
     let mut rsc_index: i16 = 0;
     let mut rsc_index_2: i16 = 0;
+    let mut rsc_index_3: i16 = 0;
     b1 = Ptr::alloc();
     b2 = Ptr::alloc();
     for k in 1_i16..=3 {
@@ -83,8 +84,9 @@ fn pascal_main() {
     pwriteln!(b1.get().arr[2].x, " ", b1.get().arr[2].y, " ", b2.get().arr[2].x, " ", b2.get().arr[2].y);
     i = 1;
     rsc_index_2 = swap(&b2, &mut p, &mut i);
-    m[i][rsc_index_2].x = 7;
-    m[i][rsc_index_2].y = 8;
+    rsc_index_3 = i;
+    m[rsc_index_3][rsc_index_2].x = 7;
+    m[rsc_index_3][rsc_index_2].y = 8;
     pwriteln!(m[1][2].x, " ", m[1][2].y, " ", m[3][2].x, " ", m[3][2].y);
 }
 

@@ -19,7 +19,9 @@ use ruscal_runtime::prelude::*;
 // The order in which TP 7 works out a with record: the calls in its
 // indexes first, from right to left (the last index of the last array
 // first), and only then the pointer, so a call that changes the pointer
-// (Swap) changes the record chosen. Free Pascal goes left to right.
+// (Swap) changes the record chosen. A variable index is read in its turn
+// too: B[Bump, I] reads I before Bump changes it. Free Pascal goes left
+// to right.
 // Output from TP 7 (c/RUSCAL/WITHORD.PAS).
 
 /// Pascal: `record X, Y: Integer; end`
@@ -76,6 +78,14 @@ fn pick(ps: &PArray<PBox, 1, 3>, order: &mut PString) -> PBox {
     ps[1].clone()
 }
 
+/// Pascal: `function Bump: Integer;`
+///
+/// Uses globals, which are passed in as parameters.
+fn bump(i: &mut i16) -> i16 {
+    *i += 1;
+    1
+}
+
 /// Pascal: `function Swap: Integer;`
 ///
 /// Uses globals, which are passed in as parameters.
@@ -96,11 +106,13 @@ fn clear(q: PBox) {
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
     let mut m: PArray<PArray<TRec, 1, 3>, 1, 3> = PArray::default();
+    let mut b: PArray<PArray<TRec, 1, 3>, 1, 3> = PArray::default();
     let mut ps: PArray<PBox, 1, 3> = PArray::default();
     let mut n1: PBox = Ptr::nil();
     let mut n2: PBox = Ptr::nil();
     let mut p: PBox = Ptr::nil();
     let mut order: PString = PString::new();
+    let mut i: i16 = 0;
     let mut rsc_index: i16 = 0;
     let mut rsc_index_2: i16 = 0;
     let mut rsc_index_3: i16 = 0;
@@ -117,6 +129,8 @@ fn pascal_main() {
     let mut t_box_4: PBox = Ptr::nil();
     let mut rsc_index_11: i16 = 0;
     let mut t_box_5: PBox = Ptr::nil();
+    let mut rsc_index_12: i16 = 0;
+    let mut rsc_index_13: i16 = 0;
     for k in 1_i16..=3 {
         ps[k] = Ptr::alloc();
     }
@@ -172,6 +186,16 @@ fn pascal_main() {
         t_box_5.get_mut().arr[rsc_index_11].y = 8;
     }
     pwriteln!(n1.get().arr[2].x, " ", n2.get().arr[2].x);
+    for k in 1_i16..=3 {
+        for j in 1_i16..=3 {
+            b[k][j].x = 0;
+        }
+    }
+    i = 1;
+    rsc_index_12 = i;
+    rsc_index_13 = bump(&mut i);
+    b[rsc_index_13][rsc_index_12].x = 9;
+    pwriteln!(b[1][1].x, " ", b[1][2].x);
 }
 
 fn main() {
