@@ -42,11 +42,11 @@ dependencies = [
 
 [[package]]
 name = "ruscal"
-version = "0.1.0"
+version = "0.7.0"
 
 [[package]]
 name = "ruscal_runtime"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "ref-cast",
 ]

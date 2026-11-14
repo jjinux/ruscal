@@ -396,7 +396,7 @@ file. The standard units `Crt`, `Dos` and `Graph` are built into the runtime.
 
 ## Status, bugs and contributing
 
-Ruscal is version 0.1: it runs every program it was built for and has
+Ruscal is version 0.7: it runs every program it was built for and has
 a large test suite, but it's young. If a program doesn't translate, or
 runs differently than it did in Turbo Pascal, please
 [open an issue](https://github.com/jjinux/ruscal/issues) with the `.pas`
