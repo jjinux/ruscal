@@ -2147,10 +2147,12 @@ impl Checker {
     ///
     /// Turbo Pascal works out which record `with p^ do` means once, before
     /// the body runs. Writing `p^.x` at every use would look again, so if
-    /// the body might change `p` (it mentions `p`), or the pointer is a
-    /// longer path like `p^.next`, we copy the pointer into a new variable
-    /// first: `node := p; ... node^.x ...`. (Copying a `Ptr` only copies
-    /// the handle; both point to the same record.)
+    /// the body might change `p` (it mentions `p`), the pointer is a
+    /// longer path like `p^.next`, or it calls a function (`with Pick^ do`),
+    /// we copy the pointer into a new variable first: `node := p; ...
+    /// node^.x ...`. (Copying a `Ptr` only copies the handle; both point to
+    /// the same record.) An index that calls a function (`with A[Slot] do`)
+    /// goes into a new variable the same way, so `Slot` runs once.
     fn with_statement(&mut self, s: &Stmt, records: &[Expr], body: &Stmt) {
         let mut prelude = Vec::new();
         let mut selectors = HashSet::new();
@@ -2159,8 +2161,11 @@ impl Checker {
             // A later record may itself use the fields of an earlier one:
             // `with list, head^ do`.
             let mut record = self.rewrite_expr(record);
+            record = self.with_index_copies(&record, &mut prelude, s.span);
             if let Some(pointer) = last_deref_base(&record)
-                && (!matches!(pointer.kind, ExprKind::Name(_)) || mentions_name(body, pointer))
+                && (!matches!(pointer.kind, ExprKind::Name(_))
+                    || mentions_name(body, pointer)
+                    || self.calls_function(pointer))
             {
                 let pointer = pointer.clone();
                 let name = self.with_pointer_copy(&pointer, s.span);
@@ -2175,6 +2180,15 @@ impl Checker {
                 self.error(record.span, format!("`with` needs a record or object, found {ty}"));
             }
             self.index_variables(&record, &mut selectors);
+            // (The copies made above are set once, before the body, and
+            // nothing else can name them.)
+            for stmt in &prelude {
+                if let StmtKind::Assign { target: Expr { kind: ExprKind::Name(copy), .. }, .. } = &stmt.kind
+                    && let Some(sym) = self.lookup(&copy.key())
+                {
+                    selectors.remove(&sym);
+                }
+            }
             self.with_records.push((record, ty));
         }
         self.check_with_for_loops(body);
@@ -2190,6 +2204,59 @@ impl Checker {
         self.with_selectors.pop();
         self.with_records.truncate(depth);
         self.a.with_bodies.insert(s.span.start, rewritten);
+    }
+
+    /// `record` with each array index that calls a function (`A[Slot]`)
+    /// replaced by a new variable, assigned in `prelude` before the body:
+    /// `rsc_index := Slot; ... A[rsc_index].x ...`.
+    fn with_index_copies(&mut self, record: &Expr, prelude: &mut Vec<Stmt>, span: Span) -> Expr {
+        let kind = match &record.kind {
+            ExprKind::Field(base, field) => {
+                ExprKind::Field(Box::new(self.with_index_copies(base, prelude, span)), field.clone())
+            }
+            ExprKind::Deref(base) => ExprKind::Deref(Box::new(self.with_index_copies(base, prelude, span))),
+            ExprKind::Index(base, indexes) => {
+                let base = Box::new(self.with_index_copies(base, prelude, span));
+                let indexes = indexes
+                    .iter()
+                    .map(|index| {
+                        if !self.calls_function(index) {
+                            return index.clone();
+                        }
+                        let ty = self.expr(index).concrete();
+                        let name = self.with_copy_var(ty, "rsc_index".to_string(), span);
+                        self.next_synthetic_id -= 1;
+                        let copy = Expr { id: self.next_synthetic_id, kind: ExprKind::Name(name), span: index.span };
+                        prelude.push(Stmt {
+                            kind: StmtKind::Assign { target: copy.clone(), value: index.clone() },
+                            span: index.span,
+                        });
+                        copy
+                    })
+                    .collect();
+                ExprKind::Index(base, indexes)
+            }
+            _ => return record.clone(),
+        };
+        Expr { id: record.id, kind, span: record.span }
+    }
+
+    /// Does `e` call a function: a call, or the name of a function that
+    /// takes no arguments (`Slot`, a method `Next` inside its object)?
+    fn calls_function(&self, e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Call { .. } => true,
+            ExprKind::Name(ident) => match self.resolve(&ident.key()) {
+                Some(Resolved::Sym(sym)) => matches!(self.a.sym(sym).kind, SymKind::Proc(_)),
+                Some(Resolved::SelfMethod { .. }) => true,
+                _ => false,
+            },
+            _ => {
+                let mut found = false;
+                each_child(e, |child| found |= self.calls_function(child));
+                found
+            }
+        }
     }
 
     /// A new local variable for `New(PCircle, Init(2))` to make the record
@@ -2236,7 +2303,11 @@ impl Checker {
     /// reached through, named after the record's type (`node`). Its name
     /// isn't a Pascal identifier, so no Pascal code can refer to it.
     fn with_pointer_copy(&mut self, pointer: &Expr, span: Span) -> Ident {
-        let ty = self.place_type(pointer).unwrap_or(Type::Error);
+        // (A function's result, `Pick`, isn't a place.)
+        let ty = match self.place_type(pointer) {
+            Some(ty) => ty,
+            None => self.expr(pointer),
+        };
         let base = match &ty {
             Type::Pointer(p) => match p.target() {
                 Type::Record(r) => snake_case(&r.rust_name),
@@ -2245,6 +2316,12 @@ impl Checker {
             },
             _ => "record".to_string(),
         };
+        self.with_copy_var(ty, base, span)
+    }
+
+    /// A new local variable of type `ty` for a `with` statement to hold
+    /// its record's pointer or index in, named `base` (made unique).
+    fn with_copy_var(&mut self, ty: Type, base: String, span: Span) -> Ident {
         let owner = self.cur();
         let rust_name = self.unique_var_name(owner, base);
         let key = format!("with#{}", self.a.symbols.len());

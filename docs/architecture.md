@@ -1079,6 +1079,10 @@ window meanwhile (§19).
     (`node = p.clone();`, which copies the `Rc` handle) when the body
     mentions `p` or the pointer is a longer path (`head^.next^`). So
     `with p^ do begin ...; p := next end` keeps meaning the first record.
+    A pointer from a function (`with Pick^ do`) is copied the same way.
+  - An index that calls a function (`with A[Slot] do`) goes into a new
+    variable first (`rsc_index = slot(&mut g);`), so the function runs
+    once, as in TP, however many statements the body has.
   - An array index the body changes (`with a[i] do ... i := 2`) is an
     error. (A procedure the body calls that changes `i` as a global isn't
     caught.)

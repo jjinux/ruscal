@@ -151,8 +151,9 @@ fn pascal_main() {
     p = Ptr::alloc();
     q = Ptr::alloc();
     q.get_mut().x = 7;
-    // TP finds a `with` record once, before the body runs: the pointer is
-    // copied first, so the body means that record even if it changes the pointer.
+    // TP finds a `with` record once, before the body runs: its pointer (or an
+    // index that calls a function) is worked out first, so the body means that
+    // record even if it changes the pointer, and the function runs once.
     t_rec = p.clone();
     p = q.clone();
     pwriteln!(p.get().x);

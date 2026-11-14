@@ -20,7 +20,9 @@ use ruscal_runtime::prelude::*;
 // in Turbo Pascal 7 (checked in DOSBox), also when the index goes into a
 // let first; and an index that reads another field of the record, the
 // stack idiom St.Items[St.Top], needs no let. A constant value needs no
-// let either, and a value through a pointer gets just one.
+// let either, and a value through a pointer gets just one. A procedural
+// variable as the value is worked out first too (TP 7 prints 20 there:
+// c/RUSCAL/IDXPROC.PAS).
 
 /// Pascal: `array[1..5] of Integer`
 type TArr = PArray<i16, 1, 5>;
@@ -38,6 +40,13 @@ struct TRec {
 /// heap record (an `Rc<RefCell<...>>` inside): using `nil` or a disposed
 /// record is a runtime error instead of undefined behaviour.
 type PRec = Ptr<TRec>;
+
+/// Pascal: `function(N: Integer): Integer`
+///
+/// A procedural type is a function pointer that may be nil. Every routine
+/// kept in one has this Rust signature, so the globals any of them uses are
+/// parameters of them all (and of every call through one).
+type TFn = ProcVar<fn(i16) -> i16>;
 
 /// Pascal: `record Top: Integer; Items: array[1..10] of Char; end`
 #[derive(Clone, Copy, Debug, Default)]
@@ -58,10 +67,29 @@ fn bump(x: &mut i16) -> i16 {
     *x
 }
 
-/// Pascal: `procedure Show;`
+/// Pascal: `function Twice(N: Integer): Integer;`
+fn twice(n: i16) -> i16 {
+    n * 2
+}
+
+/// Pascal: `function Thrice(N: Integer): Integer;`
+fn thrice(n: i16) -> i16 {
+    n * 3
+}
+
+/// Pascal: `function Switch(var N: Integer): Integer;`
 ///
 /// The global variables this procedure uses are passed in as parameters,
 /// because the globals are local variables of `pascal_main`.
+fn switch(fv: &mut TFn, n: &mut i16) -> i16 {
+    *n += 1;
+    *fv = TFn::of(thrice, "Thrice");
+    *n
+}
+
+/// Pascal: `procedure Show;`
+///
+/// Uses globals, which are passed in as parameters.
 fn show(a: TArr) {
     for k in 1_i16..=5 {
         pwrite!(a[k], " ");
@@ -78,6 +106,8 @@ fn pascal_main() {
     let mut i: i16 = 0;
     let mut p: PRec = Ptr::nil();
     let mut chars: PArray<u8, 1, 4> = PArray::default();
+    let mut funcs: PArray<TFn, 1, 3> = PArray::default();
+    let mut fv: TFn = TFn::nil();
     // `i` is also used outside this loop (Pascal leaves it holding the
     // last value), so the loop updates it on every pass instead of declaring
     // a fresh loop variable.
@@ -126,6 +156,12 @@ fn pascal_main() {
     p.get_mut().a[rsc_index] = rsc_value;
     pwriteln!(p.get().a[1], " ", p.get().a[2], " ", p.get().n);
     p.dispose();
+    fv = TFn::of(twice, "Twice");
+    i = 0;
+    let rsc_value = fv;
+    let rsc_index = switch(&mut fv, &mut i);
+    funcs[rsc_index] = rsc_value;
+    pwriteln!(funcs[1].get()(10));
 }
 
 fn main() {
