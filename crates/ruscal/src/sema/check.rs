@@ -2157,6 +2157,10 @@ impl Checker {
         let mut prelude = Vec::new();
         let mut selectors = HashSet::new();
         let depth = self.with_records.len();
+        // With a call in any of the records, every index and pointer is
+        // worked out before the body, each in its turn (records left to
+        // right): `with A[1, I], B[Bump, 1] do` reads `I` before `Bump`.
+        let with_call = records.iter().any(|record| self.calls_function(record));
         for record in records {
             // A later record may itself use the fields of an earlier one:
             // `with list, head^ do`.
@@ -2165,12 +2169,10 @@ impl Checker {
             // first, and only then finds the pointer (checked in DOSBox:
             // `with Pick^.Arr[Two] do` calls `Two`, then `Pick`;
             // c/RUSCAL/WITHORD.PAS).
-            // (With a call among them, every index is worked out then,
-            // a variable too: `B[Bump, I]` reads `I` before `Bump` runs.)
-            let every_index = self.calls_function(&record);
-            record = self.with_index_copies(&record, every_index, &mut prelude, s.span);
+            record = self.with_index_copies(&record, with_call, &mut prelude, s.span);
             if let Some(pointer) = last_deref_base(&record)
-                && (!matches!(pointer.kind, ExprKind::Name(_))
+                && (with_call
+                    || !matches!(pointer.kind, ExprKind::Name(_))
                     || mentions_name(body, pointer)
                     || self.calls_function(pointer))
             {

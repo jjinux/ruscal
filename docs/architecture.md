@@ -1087,9 +1087,10 @@ window meanwhile (§19).
     right to left, the last index of the last array first, and only then
     the pointer, so `with Pick^.Arr[Two] do` calls `Two` before `Pick`,
     and a call that changes the pointer changes the record chosen. With a
-    call among them, every index that isn't a constant gets a variable,
-    so each is read in its turn: `with B[Bump, I] do` reads `I` before
-    `Bump` changes it.
+    call in any of a `with`'s records, every index that isn't a constant
+    and every pointer gets a variable, records left to right, so each is
+    read in its turn: `with B[Bump, I] do` reads `I` before `Bump`
+    changes it, and so does `with A[1, I], B[Bump, 1] do`.
   - An array index the body changes (`with a[i] do ... i := 2`) is an
     error. (A procedure the body calls that changes `i` as a global isn't
     caught.)

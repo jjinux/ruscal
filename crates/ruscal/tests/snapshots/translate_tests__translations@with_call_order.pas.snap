@@ -59,6 +59,7 @@ fn pascal_main() {
     let mut m: PArray<PArray<TRec, 1, 3>, 1, 3> = PArray::default();
     let mut i: i16 = 0;
     let mut rsc_index: i16 = 0;
+    let mut t_box: PBox = Ptr::nil();
     let mut rsc_index_2: i16 = 0;
     let mut rsc_index_3: i16 = 0;
     b1 = Ptr::alloc();
@@ -79,8 +80,9 @@ fn pascal_main() {
     // record even if it changes the pointer, and the function runs once.
     // Pascal `with`: Rust has no equivalent, so each field is written out in full.
     rsc_index = swap(&b2, &mut p, &mut i);
-    p.get_mut().arr[rsc_index].x = 5;
-    p.get_mut().arr[rsc_index].y = 6;
+    t_box = p.clone();
+    t_box.get_mut().arr[rsc_index].x = 5;
+    t_box.get_mut().arr[rsc_index].y = 6;
     pwriteln!(b1.get().arr[2].x, " ", b1.get().arr[2].y, " ", b2.get().arr[2].x, " ", b2.get().arr[2].y);
     i = 1;
     rsc_index_2 = swap(&b2, &mut p, &mut i);

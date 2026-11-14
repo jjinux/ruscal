@@ -2,13 +2,16 @@
   its indexes first, from right to left (the last index of the last
   array first), and only then the pointer, so a call that changes the
   pointer (Swap) changes the record chosen; a variable index is read in
-  its turn (B[Bump, I] reads I before Bump). (Calls inside one index
-  expression, Two + Three, follow TP's own expression order, which
-  Ruscal doesn't: see TODO.md.) }
+  its turn (B[Bump, I] reads I before Bump); several records go left to
+  right. (Calls inside one index expression, Two + Three, follow TP's own
+  expression order, which Ruscal doesn't: see TODO.md.) }
 program WithOrd;
 type
    TRec = record
       X, Y: Integer;
+   end;
+   TOther = record
+      Z: Integer;
    end;
    PBox = ^TBox;
    TBox = record
@@ -16,7 +19,8 @@ type
       Arr: array[1..3] of TRec;
    end;
 var
-   M, B: array[1..3, 1..3] of TRec;
+   M, B, C: array[1..3, 1..3] of TRec;
+   D: array[1..3, 1..3] of TOther;
    Ps: array[1..3] of PBox;
    N1, N2, P: PBox;
    Order: string;
@@ -118,4 +122,24 @@ begin
    with B[Bump, I] do
       X := 9;
    WriteLn(B[1, 1].X, ' ', B[1, 2].X);
+   for K := 1 to 3 do
+      for J := 1 to 3 do
+      begin
+         C[K, J].Y := 0;
+         D[K, J].Z := 0;
+      end;
+   I := 1;
+   with B[1, I], D[Bump, 1] do
+   begin
+      X := 4;
+      Z := 3;
+   end;
+   WriteLn(B[1, 1].X, ' ', B[1, 2].X, ' ', D[1, 1].Z);
+   P := N1;
+   with P^, C[Swap, 3] do
+   begin
+      Next := nil;
+      Y := 2;
+   end;
+   WriteLn(N1^.Next = nil, ' ', N2^.Next = nil, ' ', C[2, 3].Y);
 end.
