@@ -583,8 +583,8 @@ pub enum RuntimeSource {
 /// decides, and `option_env!` reads what it said *at compile time*), else
 /// crates.io.
 pub fn runtime_source() -> RuntimeSource {
-    if let Some(path) = std::env::var_os("RUSCAL_RUNTIME") {
-        return RuntimeSource::Path(PathBuf::from(path));
+    if let Some(path) = runtime_variable() {
+        return RuntimeSource::Path(path);
     }
     match option_env!("RUSCAL_CHECKOUT_RUNTIME") {
         Some(path) => RuntimeSource::Path(PathBuf::from(path)),
@@ -592,19 +592,29 @@ pub fn runtime_source() -> RuntimeSource {
     }
 }
 
+/// `RUSCAL_RUNTIME`, if it's set and not empty.
+fn runtime_variable() -> Option<PathBuf> {
+    std::env::var_os("RUSCAL_RUNTIME").filter(|path| !path.is_empty()).map(PathBuf::from)
+}
+
 /// Check that a runtime used by path is still there, with advice if it
-/// isn't: the checkout `ruscal` was built from has moved, or (after
-/// `cargo install --git`) Cargo has cleaned up its copy, about a month on.
+/// isn't: `RUSCAL_RUNTIME` is wrong, the checkout `ruscal` was built from
+/// has moved, or (after `cargo install --git`) Cargo has cleaned up its
+/// copy, about a month on.
 pub fn check_runtime() -> Result<(), String> {
     let RuntimeSource::Path(runtime) = runtime_source() else { return Ok(()) };
     if runtime.join("Cargo.toml").is_file() {
         return Ok(());
     }
+    if runtime_variable().is_some() {
+        return Err(format!("RUSCAL_RUNTIME is {}, which has no Cargo.toml", runtime.display()));
+    }
     Err(format!(
-        "Ruscal's runtime isn't at {} any more (the clone Ruscal was installed \
-         from has moved, or Cargo cleaned up its copy): install Ruscal again \
-         (`cargo install ruscal`), or set RUSCAL_RUNTIME to the \
-         crates/ruscal_runtime of a clone",
+        "Ruscal's runtime isn't at {} any more (the clone Ruscal was built \
+         from has moved, or Cargo cleaned up its copy): build Ruscal again \
+         (in a clone, `cargo install --path crates/ruscal`, or \
+         `cargo clean -p ruscal` before `cargo run`), or install it from \
+         crates.io (`cargo install ruscal`)",
         runtime.display()
     ))
 }
@@ -628,7 +638,8 @@ pub fn cargo_toml_from(name: &str, features: &[String], dependencies: &[String],
         RuntimeSource::Path(path) => {
             let path = path.canonicalize().unwrap_or(path.clone());
             format!(
-                "# The runtime of the Ruscal checkout that translated this program.\n\
+                "# The Ruscal runtime, from the checkout that translated this program\n\
+                 # (or RUSCAL_RUNTIME).\n\
                  ruscal_runtime = {{ path = \"{}\", features = [{features}] }}",
                 path.display()
             )

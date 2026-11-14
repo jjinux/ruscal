@@ -24,6 +24,9 @@ fn main() {
     let checkout = runtime.join("Cargo.toml").is_file() && !dir.join("Cargo.toml.orig").exists();
     if checkout {
         let runtime = runtime.canonicalize().unwrap_or(runtime);
+        // Decide again if the checkout moves (with its `target/`): Cargo
+        // reruns this script when a file it names is gone or changed.
+        println!("cargo:rerun-if-changed={}", runtime.join("Cargo.toml").display());
         // `cargo:rustc-env` sets an environment variable for compiling the
         // crate, which `option_env!` reads.
         println!("cargo:rustc-env=RUSCAL_CHECKOUT_RUNTIME={}", runtime.display());

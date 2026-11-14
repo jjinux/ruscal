@@ -109,10 +109,9 @@ Or install the tools once, which puts `ruscal` and `tpc` (below) in
 
 ```sh
 # To use Ruscal: from crates.io. Generated projects depend on the
-# `ruscal_runtime` of the same version, from crates.io too (so their
-# first build needs the network; Cargo keeps a copy after that). Run it
-# again to update; projects you generated before keep the version they
-# were made with.
+# `ruscal_runtime` of the same version, from crates.io too, so building
+# one needs the network unless Cargo has it already. Run it again to
+# update; `ruscal run` then moves a project to the new version.
 cargo install ruscal
 
 # To work on Ruscal itself: from your clone, so the installed `ruscal` has

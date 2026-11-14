@@ -30,21 +30,31 @@ asks for exactly that runtime version.
    - the `=X.Y.Z` in `docs/embedding.md`, `README.md` and the comment in
      `examples/ruscal/rust_calls_pascal/Cargo.toml` (`docs_tests` checks
      these match the workspace version), and "Ruscal is version X.Y" in
-     the README.
+     the README;
+   - the two `Cargo.lock` files that name it (the workspace's, and
+     `examples/ruscal/rust_calls_pascal`'s): a build updates them.
 3. Run everything: `cargo test --workspace`, `cargo fmt --all --check`,
-   `cargo clippy --workspace --all-targets -- -D warnings`.
-4. Check the packages: `cargo publish --workspace --dry-run`. It builds
-   `ruscal` against the packaged runtime, nothing is uploaded.
-5. Commit ("Version X.Y.Z"), push, and wait for CI.
+   `cargo clippy --workspace --all-targets -- -D warnings`, and
+   `tests/packaged_install.sh` (a `ruscal` installed from the packages
+   writes projects that take the runtime from crates.io).
+4. Commit ("Version X.Y.Z"), push, and wait for CI.
+5. Check the packages: `cargo publish --workspace --dry-run` (it wants a
+   clean working tree, hence after the commit). It builds `ruscal`
+   against the packaged runtime; nothing is uploaded.
 6. Publish: `cargo publish --workspace` (the runtime first, then `ruscal`;
-   Cargo does the order). This can't be undone.
+   Cargo does the order). This can't be undone. If the runtime goes up and
+   `ruscal` then fails, fix the cause and `cargo publish -p ruscal`: the
+   same version, not a new one.
 7. Tag it: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 8. Check it as a user would, in an empty directory outside any clone:
    `cargo install ruscal --force`, then `ruscal run` a program that uses
-   `Crt`, and `tpc` one.
+   `Crt`, and `tpc` one; and a small Rust project with the two `=X.Y.Z`
+   lines from docs/embedding.md and a `build.rs` translating a unit.
 
 ## The first time
 
+- The names `ruscal` and `ruscal_runtime` were free on crates.io
+  (checked 2026-11-13); whoever publishes first owns them.
 - An account on crates.io (log in with GitHub), with a verified email.
 - An API token (Account Settings → API Tokens), and `cargo login` with it,
   which saves it in `~/.cargo/credentials.toml`.

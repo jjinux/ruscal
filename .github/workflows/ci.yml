@@ -21,3 +21,6 @@ jobs:
       # The crates as crates.io would get them: `ruscal` is built against
       # the packaged runtime (docs/releasing.md).
       - run: cargo package --workspace
+      # And a `ruscal` installed from them writes projects that take the
+      # runtime from crates.io, not from a path.
+      - run: tests/packaged_install.sh
