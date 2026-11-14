@@ -730,6 +730,8 @@ impl<'a> Codegen<'a> {
             let params = self.signature_params(init);
             self.line(format!("pub fn {}({params}) {{", self.a.procs[init].rust_name));
             self.indent += 1;
+            // (No `var` of its own, but a `with` in it can make one.)
+            self.locals(init);
             self.stmts(&unit.init);
             let end_comment = self.block_end_comments(unit.end);
             self.indent -= 1;

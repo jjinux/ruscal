@@ -2161,7 +2161,6 @@ impl Checker {
             // A later record may itself use the fields of an earlier one:
             // `with list, head^ do`.
             let mut record = self.rewrite_expr(record);
-            record = self.with_index_copies(&record, &mut prelude, s.span);
             if let Some(pointer) = last_deref_base(&record)
                 && (!matches!(pointer.kind, ExprKind::Name(_))
                     || mentions_name(body, pointer)
@@ -2175,6 +2174,8 @@ impl Checker {
                     .push(Stmt { kind: StmtKind::Assign { target: copy.clone(), value: pointer }, span: record.span });
                 record = replace_last_deref_base(&record, copy);
             }
+            // (After the pointer, as TP goes left to right: `Pick^.A[Slot]`.)
+            record = self.with_index_copies(&record, &mut prelude, s.span);
             let ty = self.place(&record, false);
             if !matches!(ty, Type::Record(_) | Type::Object(_) | Type::Error) {
                 self.error(record.span, format!("`with` needs a record or object, found {ty}"));
@@ -2241,16 +2242,27 @@ impl Checker {
         Expr { id: record.id, kind, span: record.span }
     }
 
-    /// Does `e` call a function: a call, or the name of a function that
-    /// takes no arguments (`Slot`, a method `Next` inside its object)?
+    /// Does `e` call a function: a call, or something called without
+    /// parentheses: a function (`Slot`, a method `Next` inside its object),
+    /// a standard one (`IOResult`, `ReadKey`), or a procedural variable or
+    /// field whose function takes no arguments (`FV`, `H.Fn`)?
     fn calls_function(&self, e: &Expr) -> bool {
+        let no_argument_function = |ty: &Type| matches!(ty, Type::Proc(p) if p.params.is_empty() && p.ret.is_some());
         match &e.kind {
             ExprKind::Call { .. } => true,
             ExprKind::Name(ident) => match self.resolve(&ident.key()) {
-                Some(Resolved::Sym(sym)) => matches!(self.a.sym(sym).kind, SymKind::Proc(_)),
+                Some(Resolved::Sym(sym)) => match &self.a.sym(sym).kind {
+                    SymKind::Proc(_) | SymKind::Builtin(_) | SymKind::UnitRoutine(_) => true,
+                    SymKind::Var(var) => no_argument_function(&var.ty),
+                    _ => false,
+                },
                 Some(Resolved::SelfMethod { .. }) => true,
-                _ => false,
+                Some(Resolved::SelfField { ty, .. }) => no_argument_function(&ty),
+                None => false,
             },
+            ExprKind::Field(base, _) => {
+                self.calls_function(base) || self.place_type(e).is_some_and(|ty| no_argument_function(&ty))
+            }
             _ => {
                 let mut found = false;
                 each_child(e, |child| found |= self.calls_function(child));
