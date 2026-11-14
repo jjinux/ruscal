@@ -97,7 +97,8 @@ transpiler, `Readln` on standard input and text files, and `fmt` (which
 writes UNIX line endings, or DOS ones with `--crlf`).
 
 Or install the tools once with `cargo install --path crates/ruscal`, which
-puts `ruscal` and `tpc` (below) on your `PATH`, and use
+puts `ruscal` and `tpc` (below) in `~/.cargo/bin` (put it on your `PATH`
+if it isn't already), and use
 `ruscal run foo.pas`. The installed `ruscal` still needs this checkout:
 each generated project depends on `crates/ruscal_runtime` by path, so keep
 the clone where it is, or point `RUSCAL_RUNTIME` at the
@@ -151,6 +152,7 @@ command (and to the program it runs).
 # the last screen:
 #   printf 'xxx' | RUSCAL_GRAPH=headless RUSCAL_GRAPH_SAVE=screen.bmp \
 #     cargo run -p ruscal -- run examples/ruscal/turtles.pas
+# It prints nothing; open screen.bmp to see the spiral.
 cargo run -p ruscal -- run examples/ruscal/turtles.pas
 
 # Turbo Pascal calling Rust: calls_rust.pas links calls_rust.rs with {$L},
@@ -164,18 +166,22 @@ cargo run -p ruscal -- run examples/ruscal/calls_rust.pas
 cargo run --manifest-path examples/ruscal/rust_calls_pascal/Cargo.toml
 ```
 
-To start a project of your own from one of them, copy it anywhere:
+To start a project of your own from one of them, install `ruscal` (see
+above) and copy the example anywhere:
 
-- `turtles.pas` on its own: units whose names start with `Rsc` are built
-  into Ruscal, so there's nothing else to copy.
-- `calls_rust.pas` with `calls_rust.rs` beside it.
-- The whole `rust_calls_pascal` directory, changing the two `path`
-  dependencies in its `Cargo.toml` to Ruscal's repository, as the comment
-  at its top shows (`git = "https://github.com/jjinux/ruscal", branch =
-  "main"`; see [Calling Turbo Pascal from Rust](docs/embedding.md)).
+- `turtles.pas` on its own, run with `ruscal run turtles.pas`: units whose
+  names start with `Rsc` are built into Ruscal, so there's nothing else
+  to copy.
+- `calls_rust.pas` with `calls_rust.rs` beside it, run with
+  `ruscal run calls_rust.pas`.
+- The whole `rust_calls_pascal` directory, run with `cargo run`, changing
+  the two `path` dependencies in its `Cargo.toml` to Ruscal's repository,
+  as the comment at its top shows (`git = "https://github.com/jjinux/ruscal",
+  branch = "main"`; see [Calling Turbo Pascal from Rust](docs/embedding.md)).
 
 `ruscal run` and `build` put the Cargo project in `out/` in the directory
-you run them from, so add `out/` to your `.gitignore`.
+you run them from, so add `out/` to your `.gitignore` (and `target/` for
+a Rust project like `rust_calls_pascal`).
 
 ## What's supported
 
