@@ -2,10 +2,10 @@
 # Install `ruscal` as crates.io would give it, and check the projects it
 # writes get the runtime from crates.io, at its own version, not by path.
 # The runtime isn't fetched from crates.io: a `[patch.crates-io]` puts the
-# packaged one in its place. Run by CI after `cargo package --workspace`;
-# see docs/releasing.md.
+# packaged one in its place. Run by CI; it packages the workspace itself
+# (see docs/releasing.md).
 #
-# Usage: tests/packaged_install.sh   (from the repository root)
+# Usage: tests/packaged_install.sh   (from anywhere)
 set -eu
 cd "$(dirname "$0")/.."
 version=$(cargo pkgid -p ruscal | sed 's/.*[#@]//')
