@@ -13,18 +13,18 @@ Rust](calling_rust.md).)
 a binary search tree written in 1997
 (`cargo run --manifest-path examples/ruscal/rust_calls_pascal/Cargo.toml`).
 To start a project of your own from it, copy the directory and change its
-two `path` dependencies to the `git` ones below. It needs three things:
+two `path` dependencies to the crates.io ones below. It needs three things:
 
 ```toml
 # Cargo.toml
 [dependencies]
-ruscal_runtime = { git = "https://github.com/jjinux/ruscal", branch = "main" }
+ruscal_runtime = "=0.7.0"
 
 [build-dependencies]
-# Written the same way as the runtime, so both come from the same commit.
-# Without the default features, it's just the translator, without the
-# command-line tools.
-ruscal = { git = "https://github.com/jjinux/ruscal", branch = "main", default-features = false }
+# The same version as the runtime, exactly: the code the translator
+# writes calls that runtime. Without the default features, it's just the
+# translator, without the command-line tools.
+ruscal = { version = "=0.7.0", default-features = false }
 
 # Turbo Pascal's integer arithmetic wraps around (32767 + 1 is -32768);
 # Rust's stops with an error in a debug build unless this is off.
@@ -47,11 +47,13 @@ use bstunit::{Bst, BstUnitContext, PeopleKey};
 use ruscal_runtime::{RuntimeError, call};
 ```
 
-- `Cargo.lock` keeps the commit of `main` the first build used, until
-  `cargo update` moves to the latest. To pin a commit yourself, write
-  `rev = "<commit>"` (`git rev-parse HEAD` in a clone) instead of
-  `branch = "main"`, in both lines: a translator and a runtime from
-  different commits may not fit together.
+- To move to a newer Ruscal, change both versions together: a translator
+  and a runtime of different versions may not fit, and the build then
+  fails in the generated code. For a fix not yet on crates.io, both can
+  come from GitHub instead, written the same way so they're the same
+  commit: `git = "https://github.com/jjinux/ruscal", branch = "main"`
+  (`Cargo.lock` keeps the commit until `cargo update`; `rev = "..."`
+  pins one).
 - `ruscal::build::library` translates the unit into one file in Cargo's
   `OUT_DIR`, and tells Cargo to run it again when the unit, a unit it
   uses, or a Rust file it links (`{$L}`) changes. A Pascal error stops

@@ -6,6 +6,15 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["pascal", "turbo-pascal", "runtime"]
+categories = ["compilers"]
+
+# docs.rs builds without a display or the X11 libraries the `graph`
+# feature's window needs, so it documents the other two units.
+[package.metadata.docs.rs]
+features = ["crt", "dos"]
 
 [features]
 # Each feature corresponds to a Turbo Pascal unit. Codegen turns on exactly

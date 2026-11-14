@@ -60,7 +60,7 @@ for other old programs.)
 
 ```
 foo.pas (+ units)                                   out/foo/
-   │                                                 ├── Cargo.toml   (depends on ruscal_runtime by path)
+   │                                                 ├── Cargo.toml   (depends on ruscal_runtime: path or version)
    ▼                                                 └── src/
  lexer ──► tokens ──► parser ──► AST ──► sema ──► codegen ──► rustfmt ──►   ├── main.rs
                                           │                                 └── bstunit.rs, founit.rs, ...
@@ -99,6 +99,23 @@ foo.pas (+ units)                                   out/foo/
   `out/foo`, so the program starts in the user's current directory and
   relative file names and drive mappings mean what they'd expect. The
   driver also works out which source ranges `{$I-}` covers (§18).
+- **Where a generated project gets the runtime** (`driver::runtime_source`;
+  the user, 2026-11-13, `notes/crates_io.md`): `RUSCAL_RUNTIME` if set
+  and not empty;
+  else, for a `ruscal` built from a checkout, that checkout's
+  `crates/ruscal_runtime` by path, so our tests and examples see runtime
+  changes at once; else (installed from crates.io) `ruscal_runtime =
+  "=X.Y.Z"` from crates.io, the translator's own version exactly, since
+  the code it writes calls that runtime. `crates/ruscal/build.rs` decides
+  once, when Ruscal is built (a sibling `../ruscal_runtime`, and no
+  `Cargo.toml.orig`, which `cargo package` adds): deciding at each run
+  would quietly switch a moved checkout to an older crates.io runtime.
+  The script runs again when the runtime's `Cargo.toml` is gone, so a
+  checkout moved with its `target/` picks up its new path; a copied one
+  (the original still there) keeps the original's until `cargo clean -p
+  ruscal`.
+  A project made by a crates.io `ruscal` holds no absolute path, so it
+  can be moved or shared. Releases: `docs/releasing.md`.
 
 Whole-program compilation: the driver reads the program and every unit it
 uses (recursively) before emitting anything, so sema can see everything. Each

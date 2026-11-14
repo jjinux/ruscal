@@ -8,6 +8,13 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["pascal", "turbo-pascal", "transpiler", "compiler", "retro"]
+categories = ["compilers", "command-line-utilities", "development-tools::build-utils"]
+# Ruscal's own tests reach outside this crate (into the repository's
+# `tests/`), so they aren't published; nor is the parser's example.
+exclude = ["tests/", "examples/"]
 
 [features]
 # The command-line tools. A Rust project that uses Ruscal only as a build
@@ -39,7 +46,9 @@ required-features = ["cli"]
 clap = { version = "4", features = ["derive"], optional = true }
 # `preserve_order` keeps a record's fields in their Pascal order.
 serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"], optional = true }
-ruscal_runtime = { path = "../ruscal_runtime", optional = true }
+# Here the checkout's runtime; on crates.io, the same version exactly
+# (bump it with the workspace version: see docs/releasing.md).
+ruscal_runtime = { path = "../ruscal_runtime", version = "=0.7.0", optional = true }
 
 [dev-dependencies]
 insta = { version = "1", features = ["glob"] }
