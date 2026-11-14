@@ -1079,6 +1079,18 @@ window meanwhile (§19).
     (`node = p.clone();`, which copies the `Rc` handle) when the body
     mentions `p` or the pointer is a longer path (`head^.next^`). So
     `with p^ do begin ...; p := next end` keeps meaning the first record.
+    A pointer from a function (`with Pick^ do`) is copied the same way.
+  - An index that calls a function (`with A[Slot] do`) goes into a new
+    variable first (`rsc_index = slot(&mut g);`), so the function runs
+    once, as in TP, however many statements the body has. In TP 7's order
+    (checked in DOSBox, `c/RUSCAL/WITHORD.PAS`): the indexes' calls from
+    right to left, the last index of the last array first, and only then
+    the pointer, so `with Pick^.Arr[Two] do` calls `Two` before `Pick`,
+    and a call that changes the pointer changes the record chosen. With a
+    call in any of a `with`'s records, every index that isn't a constant
+    and every pointer gets a variable, records left to right, so each is
+    read in its turn: `with B[Bump, I] do` reads `I` before `Bump`
+    changes it, and so does `with A[1, I], B[Bump, 1] do`.
   - An array index the body changes (`with a[i] do ... i := 2`) is an
     error. (A procedure the body calls that changes `i` as a global isn't
     caught.)

@@ -2147,20 +2147,34 @@ impl Checker {
     ///
     /// Turbo Pascal works out which record `with p^ do` means once, before
     /// the body runs. Writing `p^.x` at every use would look again, so if
-    /// the body might change `p` (it mentions `p`), or the pointer is a
-    /// longer path like `p^.next`, we copy the pointer into a new variable
-    /// first: `node := p; ... node^.x ...`. (Copying a `Ptr` only copies
-    /// the handle; both point to the same record.)
+    /// the body might change `p` (it mentions `p`), the pointer is a
+    /// longer path like `p^.next`, or it calls a function (`with Pick^ do`),
+    /// we copy the pointer into a new variable first: `node := p; ...
+    /// node^.x ...`. (Copying a `Ptr` only copies the handle; both point to
+    /// the same record.) An index that calls a function (`with A[Slot] do`)
+    /// goes into a new variable the same way, so `Slot` runs once.
     fn with_statement(&mut self, s: &Stmt, records: &[Expr], body: &Stmt) {
         let mut prelude = Vec::new();
         let mut selectors = HashSet::new();
         let depth = self.with_records.len();
+        // With a call in any of the records, every index and pointer is
+        // worked out before the body, each in its turn (records left to
+        // right): `with A[1, I], B[Bump, 1] do` reads `I` before `Bump`.
+        let with_call = records.iter().any(|record| self.calls_function(record));
         for record in records {
             // A later record may itself use the fields of an earlier one:
             // `with list, head^ do`.
             let mut record = self.rewrite_expr(record);
+            // TP 7 calls the functions in the indexes first, the last index
+            // first, and only then finds the pointer (checked in DOSBox:
+            // `with Pick^.Arr[Two] do` calls `Two`, then `Pick`;
+            // c/RUSCAL/WITHORD.PAS).
+            record = self.with_index_copies(&record, with_call, &mut prelude, s.span);
             if let Some(pointer) = last_deref_base(&record)
-                && (!matches!(pointer.kind, ExprKind::Name(_)) || mentions_name(body, pointer))
+                && (with_call
+                    || !matches!(pointer.kind, ExprKind::Name(_))
+                    || mentions_name(body, pointer)
+                    || self.calls_function(pointer))
             {
                 let pointer = pointer.clone();
                 let name = self.with_pointer_copy(&pointer, s.span);
@@ -2175,6 +2189,15 @@ impl Checker {
                 self.error(record.span, format!("`with` needs a record or object, found {ty}"));
             }
             self.index_variables(&record, &mut selectors);
+            // (The copies made above are set once, before the body, and
+            // nothing else can name them.)
+            for stmt in &prelude {
+                if let StmtKind::Assign { target: Expr { kind: ExprKind::Name(copy), .. }, .. } = &stmt.kind
+                    && let Some(sym) = self.lookup(&copy.key())
+                {
+                    selectors.remove(&sym);
+                }
+            }
             self.with_records.push((record, ty));
         }
         self.check_with_for_loops(body);
@@ -2190,6 +2213,87 @@ impl Checker {
         self.with_selectors.pop();
         self.with_records.truncate(depth);
         self.a.with_bodies.insert(s.span.start, rewritten);
+    }
+
+    /// `record` with each array index that calls a function (`A[Slot]`),
+    /// or (`every`) each one that isn't a constant, replaced by a new
+    /// variable, assigned in `prelude` before the body: `rsc_index := Slot;
+    /// ... A[rsc_index].x ...`. They're assigned from right to left, as
+    /// TP 7 works them out: the last index of the last array first
+    /// (checked in DOSBox, c/RUSCAL/WITHORD.PAS).
+    fn with_index_copies(&mut self, record: &Expr, every: bool, prelude: &mut Vec<Stmt>, span: Span) -> Expr {
+        let kind = match &record.kind {
+            ExprKind::Field(base, field) => {
+                ExprKind::Field(Box::new(self.with_index_copies(base, every, prelude, span)), field.clone())
+            }
+            ExprKind::Deref(base) => ExprKind::Deref(Box::new(self.with_index_copies(base, every, prelude, span))),
+            ExprKind::Index(base, indexes) => {
+                // (The indexes right to left, then the array they index.)
+                let mut indexes: Vec<Expr> = indexes
+                    .iter()
+                    .rev()
+                    .map(|index| {
+                        if !(self.calls_function(index) || every) {
+                            return index.clone();
+                        }
+                        let ty = self.expr(index).concrete();
+                        if self.a.consts.contains_key(&index.id) {
+                            return index.clone();
+                        }
+                        let name = self.with_copy_var(ty, "rsc_index".to_string(), span);
+                        self.next_synthetic_id -= 1;
+                        let copy = Expr { id: self.next_synthetic_id, kind: ExprKind::Name(name), span: index.span };
+                        prelude.push(Stmt {
+                            kind: StmtKind::Assign { target: copy.clone(), value: index.clone() },
+                            span: index.span,
+                        });
+                        copy
+                    })
+                    .collect();
+                indexes.reverse();
+                let base = Box::new(self.with_index_copies(base, every, prelude, span));
+                ExprKind::Index(base, indexes)
+            }
+            _ => return record.clone(),
+        };
+        Expr { id: record.id, kind, span: record.span }
+    }
+
+    /// Does `e` call a function: a call, or something called without
+    /// parentheses: a function (`Slot`, a method `Next` inside its object),
+    /// a standard one (`IOResult`, `ReadKey`), or a procedural variable or
+    /// field whose function takes no arguments (`FV`, `H.Fn`)?
+    fn calls_function(&self, e: &Expr) -> bool {
+        let no_argument_function = |ty: &Type| matches!(ty, Type::Proc(p) if p.params.is_empty() && p.ret.is_some());
+        match &e.kind {
+            ExprKind::Call { .. } => true,
+            ExprKind::Name(ident) => match self.resolve(&ident.key()) {
+                Some(Resolved::Sym(sym)) => match &self.a.sym(sym).kind {
+                    SymKind::Proc(_) | SymKind::Builtin(_) | SymKind::UnitRoutine(_) => true,
+                    SymKind::Var(var) => no_argument_function(&var.ty),
+                    _ => false,
+                },
+                Some(Resolved::SelfMethod { .. }) => true,
+                Some(Resolved::SelfField { ty, .. }) => no_argument_function(&ty),
+                None => false,
+            },
+            // A method through an object (`O.Next`), or a procedural
+            // field, element or pointer target (`H.Fn`, `Fns[1]`, `PF^`).
+            ExprKind::Field(base, field) => {
+                let method = matches!(self.place_type(base), Some(Type::Object(o)) if self.find_method(&o, &field.key()).is_some());
+                method || self.calls_function(base) || self.place_type(e).is_some_and(|ty| no_argument_function(&ty))
+            }
+            ExprKind::Index(..) | ExprKind::Deref(_)
+                if self.place_type(e).is_some_and(|ty| no_argument_function(&ty)) =>
+            {
+                true
+            }
+            _ => {
+                let mut found = false;
+                each_child(e, |child| found |= self.calls_function(child));
+                found
+            }
+        }
     }
 
     /// A new local variable for `New(PCircle, Init(2))` to make the record
@@ -2236,7 +2340,11 @@ impl Checker {
     /// reached through, named after the record's type (`node`). Its name
     /// isn't a Pascal identifier, so no Pascal code can refer to it.
     fn with_pointer_copy(&mut self, pointer: &Expr, span: Span) -> Ident {
-        let ty = self.place_type(pointer).unwrap_or(Type::Error);
+        // (A function's result, `Pick`, isn't a place.)
+        let ty = match self.place_type(pointer) {
+            Some(ty) => ty,
+            None => self.expr(pointer),
+        };
         let base = match &ty {
             Type::Pointer(p) => match p.target() {
                 Type::Record(r) => snake_case(&r.rust_name),
@@ -2245,6 +2353,12 @@ impl Checker {
             },
             _ => "record".to_string(),
         };
+        self.with_copy_var(ty, base, span)
+    }
+
+    /// A new local variable of type `ty` for a `with` statement to hold
+    /// its record's pointer or index in, named `base` (made unique).
+    fn with_copy_var(&mut self, ty: Type, base: String, span: Span) -> Ident {
         let owner = self.cur();
         let rust_name = self.unique_var_name(owner, base);
         let key = format!("with#{}", self.a.symbols.len());

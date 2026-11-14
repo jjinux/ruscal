@@ -730,6 +730,8 @@ impl<'a> Codegen<'a> {
             let params = self.signature_params(init);
             self.line(format!("pub fn {}({params}) {{", self.a.procs[init].rust_name));
             self.indent += 1;
+            // (No `var` of its own, but a `with` in it can make one.)
+            self.locals(init);
             self.stmts(&unit.init);
             let end_comment = self.block_end_comments(unit.end);
             self.indent -= 1;
@@ -2363,8 +2365,9 @@ impl<'a> Codegen<'a> {
             _ => (0, rewritten),
         };
         if copies > 0 && self.first_time("with_pointer") {
-            self.line("// TP finds a `with` record once, before the body runs: the pointer is");
-            self.line("// copied first, so the body means that record even if it changes the pointer.");
+            self.line("// TP finds a `with` record once, before the body runs: its pointer (or an");
+            self.line("// index that calls a function) is worked out first, so the body means that");
+            self.line("// record even if it changes the pointer, and the function runs once.");
         }
         // (Nothing to say when the body uses no field: `with r do goto L`.)
         if rewritten_body != body && self.first_time("with") {
@@ -3213,7 +3216,9 @@ impl<'a> Codegen<'a> {
         self.a.consts.contains_key(&e.id)
             || matches!(&e.kind, ExprKind::Nil)
             || matches!(&e.kind, ExprKind::Set(elems) if elems.is_empty())
-            || (matches!(&e.kind, ExprKind::Name(_)) && matches!(self.a.type_of(e.id), Type::Proc(_)))
+            || (matches!(&e.kind, ExprKind::Name(_))
+                && matches!(self.a.type_of(e.id), Type::Proc(_))
+                && matches!(self.a.refs.get(&e.id).map(|&sym| &self.a.sym(sym).kind), Some(SymKind::Proc(_))))
     }
 
     pub(super) fn assignment(&mut self, target: &Expr, value: &Expr) -> String {
