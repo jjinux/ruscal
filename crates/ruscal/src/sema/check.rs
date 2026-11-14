@@ -2260,8 +2260,16 @@ impl Checker {
                 Some(Resolved::SelfField { ty, .. }) => no_argument_function(&ty),
                 None => false,
             },
-            ExprKind::Field(base, _) => {
-                self.calls_function(base) || self.place_type(e).is_some_and(|ty| no_argument_function(&ty))
+            // A method through an object (`O.Next`), or a procedural
+            // field, element or pointer target (`H.Fn`, `Fns[1]`, `PF^`).
+            ExprKind::Field(base, field) => {
+                let method = matches!(self.place_type(base), Some(Type::Object(o)) if self.find_method(&o, &field.key()).is_some());
+                method || self.calls_function(base) || self.place_type(e).is_some_and(|ty| no_argument_function(&ty))
+            }
+            ExprKind::Index(..) | ExprKind::Deref(_)
+                if self.place_type(e).is_some_and(|ty| no_argument_function(&ty)) =>
+            {
+                true
             }
             _ => {
                 let mut found = false;

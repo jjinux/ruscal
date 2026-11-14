@@ -32,6 +32,7 @@ var
    Order: string;
    Box: PBox;
    FV: TSlotFn;
+   Fns: array[1..2] of TSlotFn;
    F: Text;
 
 function Slot: Integer;
@@ -133,6 +134,21 @@ begin
       Y := 2;
    end;
    WriteLn(G, ' ', A[1].X, ' ', A[1].Y, ' ', A[2].Y);
+   G := 0;
+   Fns[1] := Slot;
+   with A[Fns[1]] do
+   begin
+      X := 3;
+      Y := 4;
+   end;
+   WriteLn(G, ' ', A[1].X, ' ', A[1].Y, ' ', A[2].Y);
+   L.Count := 1;
+   with A[L.Next] do
+   begin
+      X := 5;
+      Y := 6;
+   end;
+   WriteLn(L.Count, ' ', A[2].X, ' ', A[2].Y, ' ', A[3].Y);
    Assign(F, 'no_such_dir_here/x.txt');
    {$I-}
    Reset(F);
