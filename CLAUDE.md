@@ -113,10 +113,10 @@ stays a name, not a number worked out ahead of time.
 Every change goes through a pull request on GitHub (the user, 2026-11-13);
 nothing is committed straight to `main`.
 
-1. Branch from `main` (a `git worktree add ../ruscal-<name>` keeps the
-   main checkout free), commit as you go, and push the branch. (A new
-   worktree has no `c/TP`, which is git-ignored: run Turbo Pascal checks
-   in DOSBox from the main checkout.)
+1. Branch from `main` (`git worktree add ../ruscal-<name> -b <name>`
+   keeps the main checkout free), commit as you go, and push the branch.
+   (A new worktree has no `c/TP`, which is git-ignored: for Turbo Pascal
+   checks in DOSBox, link it with `ln -s ../../ruscal/c/TP c/TP`.)
 2. For a non-trivial feature, write a plan first (`notes/<name>.md`) and
    have Fable check it before building.
 3. Open the PR with `gh pr create`: what it does and why, how it was
@@ -145,9 +145,10 @@ nothing is committed straight to `main`.
    git push origin --delete <name>
    ```
 
-   For stacked PRs, merge the bottom one first, and check the next was
-   retargeted to `main` (`gh pr edit <n> --base main` if not) before
-   deleting its base branch. Don't rewrite a pushed branch (rebase,
+   If `git worktree remove` refuses, look at what's left before using
+   `--force`. For stacked PRs, merge the bottom one first, then retarget
+   the next (`gh pr edit <next> --base main`) before deleting the merged
+   branch. Don't rewrite a pushed branch (rebase,
    force-push): add commits, or merge `main` into it. A change that needs
    the user (publishing, a decision) waits for them.
 

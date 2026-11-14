@@ -48,7 +48,8 @@ asks for exactly that runtime version.
    `ruscal` then fails, fix the cause (in a PR, if it needs a change, as
    long as the runtime doesn't change) and `cargo publish -p ruscal` from
    `main`: the same version, not a new one. The tag then goes on that
-   later commit.
+   later commit. If the fix needs the runtime to change, it's a new patch
+   version of both crates.
 7. Tag it: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 8. Check it as a user would, in an empty directory outside any clone:
    `cargo install ruscal --force`, then `ruscal run` a program that uses
