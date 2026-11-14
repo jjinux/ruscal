@@ -7,16 +7,17 @@
 #
 # Usage: tests/packaged_install.sh   (from the repository root)
 set -eu
-root=$(pwd)
+cd "$(dirname "$0")/.."
 version=$(cargo pkgid -p ruscal | sed 's/.*[#@]//')
 cargo package --workspace --allow-dirty --quiet
+packages=${CARGO_TARGET_DIR:-target}/package
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
 # Laid out as `cargo vendor` does, the runtime as `ruscal_runtime/` beside
 # `ruscal/`, so `build.rs` must tell a published crate from a checkout by
 # its `Cargo.toml.orig`, not by the missing sibling.
-cp -R "target/package/ruscal-$version" "$scratch/ruscal"
-cp -R "target/package/ruscal_runtime-$version" "$scratch/ruscal_runtime"
+cp -R "$packages/ruscal-$version" "$scratch/ruscal"
+cp -R "$packages/ruscal_runtime-$version" "$scratch/ruscal_runtime"
 mkdir "$scratch/.cargo" "$scratch/prog"
 cat > "$scratch/.cargo/config.toml" <<CONFIG
 [patch.crates-io]
@@ -33,8 +34,8 @@ grep -q "^ruscal_runtime = { version = \"=$version\", features = \[\"crt\"\] }$"
     cat out/greet/Cargo.toml >&2
     exit 1
 }
-if grep -q "$root" out/greet/Cargo.toml; then
-    echo "the generated Cargo.toml names the checkout" >&2
+if grep -q "path =" out/greet/Cargo.toml; then
+    echo "the generated Cargo.toml takes something by path" >&2
     exit 1
 fi
 echo "packaged ruscal $version writes ruscal_runtime = \"=$version\": ok"
