@@ -98,20 +98,20 @@ writes UNIX line endings, or DOS ones with `--crlf`).
 
 Or install the tools once, which puts `ruscal` and `tpc` (below) in
 `~/.cargo/bin` (put it on your `PATH` if it isn't already), and use
-`ruscal run foo.pas`. There are two ways:
+`ruscal run foo.pas`:
 
 ```sh
-# From your clone. The installed `ruscal` still needs the clone: each
-# generated project depends on its `crates/ruscal_runtime` by path, so keep
-# the clone where it is.
-cargo install --path crates/ruscal
-
-# Straight from GitHub, without a clone (the latest `main`; run it again
-# with `--force` to update). Generated projects then depend on the copy of
-# the runtime in Cargo's download cache (`~/.cargo/git/checkouts`), which
-# Cargo may clean up after it's gone unused for a while; if a build can't
-# find `ruscal_runtime`, run the install again with `--force`.
+# To use Ruscal: straight from GitHub, without a clone (the latest `main`;
+# run it again with `--force` to update). Generated projects depend on the
+# copy of the runtime in Cargo's download cache (`~/.cargo/git/checkouts`),
+# which Cargo may clean up after it's gone unused for a while; if a build
+# can't find `ruscal_runtime`, run the install again with `--force`.
 cargo install --git https://github.com/jjinux/ruscal ruscal
+
+# To work on Ruscal itself: from your clone, so the installed `ruscal` has
+# your changes. Each generated project depends on the clone's
+# `crates/ruscal_runtime` by path, so keep the clone where it is.
+cargo install --path crates/ruscal
 ```
 
 Either way, `RUSCAL_RUNTIME` can point at the `crates/ruscal_runtime` of
