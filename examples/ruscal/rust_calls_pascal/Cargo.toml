@@ -4,16 +4,14 @@
 # all it takes.
 #
 # To start a project of your own from it, copy this directory and change
-# the two `path` dependencies below to Ruscal's repository, the same way
+# the two `path` dependencies below to crates.io ones, the same version
 # for both, so the translator and the runtime always match:
 #
-#   ruscal_runtime = { git = "https://github.com/jjinux/ruscal", branch = "main" }
-#   ruscal = { git = "https://github.com/jjinux/ruscal", branch = "main", default-features = false }
+#   ruscal_runtime = "=0.7.0"
+#   ruscal = { version = "=0.7.0", default-features = false }
 #
-# Cargo.lock keeps the commit the first build used, until `cargo update`.
-# To pin one yourself, write `rev = "<commit>"` instead of `branch = "main"`.
 # The empty `[workspace]` table and the comments about Ruscal's repository
-# can go too.
+# can go too. (docs/embedding.md has more.)
 [package]
 name = "rust_calls_pascal"
 version = "0.1.0"

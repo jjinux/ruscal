@@ -40,6 +40,13 @@ cargo run -p ruscal -- run examples/life.pas
 That translates `life.pas`, a 1997 Game of Life, into a small Rust project,
 builds it and runs it. To see the Rust, use `emit` instead of `run`.
 
+To run your own programs, you don't need the clone:
+
+```sh
+cargo install ruscal
+ruscal run myprog.pas
+```
+
 ## Inspiration
 
 My first programming language was Borland's Turbo Pascal running in DOS or
@@ -101,12 +108,12 @@ Or install the tools once, which puts `ruscal` and `tpc` (below) in
 `ruscal run foo.pas`:
 
 ```sh
-# To use Ruscal: straight from GitHub, without a clone (the latest `main`;
-# run it again to update). Generated projects depend on the copy of the
-# runtime in Cargo's download cache (`~/.cargo/git/checkouts`), which Cargo
-# deletes about a month after the install, even if you use `ruscal` every
-# day; `ruscal` then says so, and you run the install again with `--force`.
-cargo install --git https://github.com/jjinux/ruscal ruscal
+# To use Ruscal: from crates.io. Generated projects depend on the
+# `ruscal_runtime` of the same version, from crates.io too (so their
+# first build needs the network; Cargo keeps a copy after that). Run it
+# again to update; projects you generated before keep the version they
+# were made with.
+cargo install ruscal
 
 # To work on Ruscal itself: from your clone, so the installed `ruscal` has
 # your changes. Each generated project depends on the clone's
@@ -114,9 +121,9 @@ cargo install --git https://github.com/jjinux/ruscal ruscal
 cargo install --path crates/ruscal
 ```
 
-Either way, `RUSCAL_RUNTIME` can point at the `crates/ruscal_runtime` of
-another copy of the whole checkout instead (the crate takes its edition
-and version from the workspace around it).
+`RUSCAL_RUNTIME` can point generated projects at another
+`crates/ruscal_runtime` instead (in a checkout, the crate takes its
+edition and version from the workspace around it).
 
 ## Examples
 
@@ -188,10 +195,10 @@ To start a project of your own from one of them, copy it out of a clone
 - `calls_rust.pas` with `calls_rust.rs` beside it, run with
   `ruscal run calls_rust.pas`.
 - The whole `rust_calls_pascal` directory (without `target/`, if you've
-  built it), run with `cargo run`, changing
-  the two `path` dependencies in its `Cargo.toml` to Ruscal's repository,
-  as the comment at its top shows (`git = "https://github.com/jjinux/ruscal",
-  branch = "main"`; see [Calling Turbo Pascal from Rust](docs/embedding.md)).
+  built it), run with `cargo run`, changing the two `path` dependencies
+  in its `Cargo.toml` to crates.io ones, as the comment at its top shows
+  (`ruscal_runtime = "=0.7.0"`; see
+  [Calling Turbo Pascal from Rust](docs/embedding.md)).
 
 `ruscal run` and `build` put the Cargo project in `out/` in the directory
 you run them from, so add `out/` to your `.gitignore` (and `target/` for
@@ -328,7 +335,7 @@ too, or under `$XDG_CACHE_HOME`), so only the program appears beside the
 source.
 
 ```sh
-cargo install --path crates/ruscal      # once; or use target/debug/tpc
+cargo install ruscal                    # once (or --path crates/ruscal in a clone)
 
 tpc life                                  # life.pas -> ./life
 tpc -Ebin '-Uunits;lib' game              # executable in bin/, units also in units/ and lib/
@@ -361,7 +368,7 @@ file. The standard units `Crt`, `Dos` and `Graph` are built into the runtime.
 | `RUSCAL_GRAPH=headless` | Draw `Graph` output without opening a window: for a script, a test, or a machine without a display (over SSH). `ReadKey` then reads standard input; with `RUSCAL_GRAPH_SAVE` you still get the picture. |
 | `RUSCAL_GRAPH_SAVE=screen.bmp` | Save the graphics screen to a BMP file at `CloseGraph` or `Halt`. |
 | `RUSCAL_DRIVE_C=/some/dir` | Where the DOS drive `C:` lives for file names like `C:\DATA\X.DAT`. Without it, `C:` is the file system's root, `/`, so `C:\DATA\X.DAT` is `/DATA/X.DAT` and `GetDir` shows where you really are. Any other drive letter (`RUSCAL_DRIVE_A=/Volumes/USB` for a stick standing in for a floppy) exists only if you set it; a file name on an unset drive isn't found. Names match files on disk ignoring case, `A:X` is relative to the current directory when `ChDir` went somewhere on drive A, and `..` stops at the drive's root, as in DOS. A file name without a drive is relative to the current directory. |
-| `RUSCAL_RUNTIME=/some/dir` | Where generated projects find the `ruscal_runtime` crate. By default it's `crates/ruscal_runtime` in the checkout `ruscal` was built from. |
+| `RUSCAL_RUNTIME=/some/dir` | Where generated projects find the `ruscal_runtime` crate. By default it's `crates/ruscal_runtime` in the checkout `ruscal` was built from, or, for a `ruscal` installed from crates.io, `ruscal_runtime` from crates.io at the same version. |
 | `RUSCAL_PRINTER=...` | Where the `Printer` unit's `Lst` prints: a file name (default `printer.txt`), or `\|command` to pipe to a command such as `\|lp`. See [Printing](docs/printing.md). |
 
 ## More documentation

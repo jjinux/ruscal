@@ -14,6 +14,10 @@ implementation. The opening prompt is in `README.md` before it was removed
 - `notes/`: research (p2c, Free Pascal) and answered questions for the user.
 - `README.md`: what a user needs: what Ruscal is, how to run it (`ruscal`,
   `tpc`, `fmt`), the environment variables, what's supported, the examples.
+- `docs/releasing.md`: publishing `ruscal` and `ruscal_runtime` on
+  crates.io (the user does the publishing). Remind the user a release is
+  due when generated code needs something new in the runtime, or after a
+  major change.
 - `docs/`: longer user documentation the README links to (printing, timer
   interrupts), so the README stays short. `docs/rust_limits.md` explains
   each error caused by a limit of Rust, with a worked rewrite; such an

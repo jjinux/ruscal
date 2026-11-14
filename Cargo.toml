@@ -7,4 +7,5 @@ edition = "2024"
 rust-version = "1.88"
 license = "MIT"
 authors = ["JJ Behrens"]
+repository = "https://github.com/jjinux/ruscal"
 version = "0.7.0"
