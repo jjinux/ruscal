@@ -37,10 +37,11 @@ asks for exactly that runtime version.
    `cargo clippy --workspace --all-targets -- -D warnings`, and
    `tests/packaged_install.sh` (a `ruscal` installed from the packages
    writes projects that take the runtime from crates.io).
-4. Commit ("Version X.Y.Z"), push, and wait for CI.
-5. Check the packages: `cargo publish --workspace --dry-run` (it wants a
-   clean working tree, hence after the commit). It builds `ruscal`
-   against the packaged runtime; nothing is uploaded.
+4. Commit ("Version X.Y.Z") on a branch, open a PR, and merge it once
+   CI is green (CLAUDE.md, "Pull requests and reviews"). Then pull `main`.
+5. Check the packages, on `main`: `cargo publish --workspace --dry-run`
+   (it wants a clean working tree). It builds `ruscal` against the
+   packaged runtime; nothing is uploaded.
 6. Publish: `cargo publish --workspace` (the runtime first, then `ruscal`;
    Cargo does the order). This can't be undone. If the runtime goes up and
    `ruscal` then fails, fix the cause and `cargo publish -p ruscal`: the

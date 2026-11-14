@@ -108,14 +108,31 @@ stays a name, not a number worked out ahead of time.
   new test program.
 - Commit as you go, with focused commits.
 
-## Reviews
+## Pull requests and reviews
 
-Have Claude Fable review all the work, the way you'd review every PR:
-after each major feature, or every few commits, give a Fable subagent (the
-Agent tool with `model: "fable"`) the commits since the last review (every
-commit must be covered by one), with the project's goals, and ask it to
-reproduce each finding with a small
-Pascal program (compared with `fpc -Mtp` where FPC matches TP). Its scratch
-files go in `out/review/`, and it must not read or search anything outside
-the project. Fix the straightforward findings in follow-up commits (each
-with a test that fails without the fix), and ask the user about the rest.
+Every change goes through a pull request on GitHub (the user, 2026-11-13);
+nothing is committed straight to `main`.
+
+1. Branch from `main` (a `git worktree add ../ruscal-<name>` keeps the
+   main checkout free), commit as you go, and push the branch.
+2. For a non-trivial feature, write a plan first (`notes/<name>.md`) and
+   have Fable check it before building.
+3. Open the PR with `gh pr create`: what it does and why, how it was
+   tested, and anything the user should decide.
+4. Have Claude Fable review the PR, the way you'd review any PR: a Fable
+   subagent (the Agent tool with `model: "fable"`) gets the PR's diff
+   (`gh pr diff`, or the exact commits), with the project's goals, and
+   reproduces each finding with a small Pascal program (compared with
+   `fpc -Mtp` where FPC matches TP). Its scratch files go in
+   `out/review/`, and it must not read or search anything outside the
+   project.
+5. Fix the straightforward findings on the branch (each with a test that
+   fails without the fix), and ask the user about the rest (or put them
+   in `TODO.md`). Post a short summary of the review and the fixes as a
+   PR comment.
+6. Merge when the review's fixes are in and CI is green
+   (`gh pr merge --merge`, keeping the branch's commits), then delete the
+   branch and the worktree. A change that needs the user (publishing, a
+   decision) waits for them.
+
+Every commit on `main` must be covered by a Fable review.
