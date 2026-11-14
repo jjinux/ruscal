@@ -1,6 +1,17 @@
 # A Rust program that uses a Turbo Pascal unit: the binary search tree in
-# examples/database/bstunit.pas, written in 1997. `build.rs` runs Ruscal
-# on it whenever it changes, so `cargo run` is all it takes.
+# pascal/bstunit.pas (a copy of examples/database/bstunit.pas), written in
+# 1997. `build.rs` runs Ruscal on it whenever it changes, so `cargo run` is
+# all it takes.
+#
+# To start a project of your own from it, copy this directory and change
+# the two `path` dependencies below to Ruscal's repository, the same way
+# for both, so the translator and the runtime always match:
+#
+#   ruscal_runtime = { git = "https://github.com/jjinux/ruscal", branch = "main" }
+#   ruscal = { git = "https://github.com/jjinux/ruscal", branch = "main", default-features = false }
+#
+# Cargo.lock keeps the commit the first build used, until `cargo update`.
+# To pin one yourself, write `rev = "<commit>"` instead of `branch = "main"`.
 [package]
 name = "rust_calls_pascal"
 version = "0.1.0"
@@ -10,13 +21,11 @@ edition = "2024"
 [workspace]
 
 [dependencies]
-# From Ruscal's repository, a program would say
-# `ruscal_runtime = { git = "https://github.com/jjinux/ruscal", rev = "..." }`.
+# Inside Ruscal's repository, so the example uses this checkout.
 ruscal_runtime = { path = "../../../crates/ruscal_runtime" }
 
 [build-dependencies]
-# The same `rev` as the runtime; `default-features = false` leaves out the
-# command-line tools.
+# `default-features = false` leaves out the command-line tools.
 ruscal = { path = "../../../crates/ruscal", default-features = false }
 
 # Turbo Pascal's integer arithmetic wraps around; Rust's would stop with an

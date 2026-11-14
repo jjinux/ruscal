@@ -1,8 +1,8 @@
 //! A Rust program whose `build.rs` runs Ruscal (`ruscal::build`):
-//! `examples/ruscal/rust_calls_pascal`, which uses the user's
-//! `examples/database/bstunit.pas`. Cargo builds it, the build script
-//! translates the unit, and the program's output must match
-//! `tests/embed/rust_calls_pascal.out`.
+//! `examples/ruscal/rust_calls_pascal`, which uses a copy of the user's
+//! `examples/database/bstunit.pas` (so the example can be copied on its
+//! own). Cargo builds it, the build script translates the unit, and the
+//! program's output must match `tests/embed/rust_calls_pascal.out`.
 
 use std::path::Path;
 use std::process::Command;
@@ -36,6 +36,18 @@ fn a_build_script_translates_the_pascal() {
         .filter_map(|entry| std::fs::read_to_string(entry.path().join("output")).ok())
         .any(|output| output.lines().any(|l| l.starts_with("cargo:rerun-if-changed=") && l.ends_with("bstunit.pas")));
     assert!(told, "no rerun-if-changed for bstunit.pas in {}", build_dir.display());
+}
+
+/// The example's copy of the unit stays the same as the user's original.
+#[test]
+fn the_example_unit_matches_the_original() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let original = std::fs::read(root.join("examples/database/bstunit.pas")).unwrap();
+    let copy = std::fs::read(root.join("examples/ruscal/rust_calls_pascal/pascal/bstunit.pas")).unwrap();
+    assert!(
+        original == copy,
+        "examples/ruscal/rust_calls_pascal/pascal/bstunit.pas differs from examples/database/bstunit.pas"
+    );
 }
 
 /// Everything a build script must watch: the unit and the units it uses.

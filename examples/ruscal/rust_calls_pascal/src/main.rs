@@ -1,5 +1,5 @@
 //! A Rust program using a Turbo Pascal unit from 1997: `BSTUnit`, a binary
-//! search tree of people's IDs (examples/database/bstunit.pas). `build.rs`
+//! search tree of people's IDs (pascal/bstunit.pas). `build.rs`
 //! translates it; `include_library!` brings it in as the module `bstunit`.
 
 ruscal_runtime::include_library!(bstunit);

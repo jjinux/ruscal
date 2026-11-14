@@ -3,7 +3,9 @@
   The sort is in Rust, but asks a Pascal function which number comes
   first: Rust calling back into Pascal. See docs/calling_rust.md.
 
-  Run it with: cargo run -p ruscal -- run examples/ruscal/calls_rust.pas }
+  Run it with: ruscal run calls_rust.pas (from this directory, with
+  calls_rust.rs beside it), or, from a clone of Ruscal without installing
+  it: cargo run -p ruscal -- run examples/ruscal/calls_rust.pas }
 program Calls_Rust;
 
 {$L calls_rust.rs}

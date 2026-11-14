@@ -140,10 +140,17 @@ cargo run -p ruscal -- run examples/clock/tester.pas   # A clock whose hands run
 RUSCAL_DRIVE_A=examples cargo run -p ruscal -- run examples/tictac/tictac.pas
 ```
 
+The environment variable goes before `cargo`, so it applies to the whole
+command (and to the program it runs).
+
 `examples/ruscal/` holds examples written for Ruscal:
 
 ```sh
-# Turtle graphics with RscTurtle: a Koch snowflake, a tree and a spiral
+# Turtle graphics with RscTurtle: a Koch snowflake, a tree and a spiral,
+# each waiting for a key. Without a window, feed it the three keys and save
+# the last screen:
+#   printf 'xxx' | RUSCAL_GRAPH=headless RUSCAL_GRAPH_SAVE=screen.bmp \
+#     cargo run -p ruscal -- run examples/ruscal/turtles.pas
 cargo run -p ruscal -- run examples/ruscal/turtles.pas
 
 # Turbo Pascal calling Rust: calls_rust.pas links calls_rust.rs with {$L},
@@ -151,14 +158,24 @@ cargo run -p ruscal -- run examples/ruscal/turtles.pas
 cargo run -p ruscal -- run examples/ruscal/calls_rust.pas
 
 # Rust calling Turbo Pascal: a Rust project whose build.rs translates
-# examples/database/bstunit.pas (from 1997) as part of `cargo build`, then
+# pascal/bstunit.pas (from 1997) as part of `cargo build`, then
 # uses its binary search tree: it inserts four IDs, searches for one and
 # deletes one, printing each result (src/main.rs is the Rust side)
 cargo run --manifest-path examples/ruscal/rust_calls_pascal/Cargo.toml
 ```
 
-The environment variable goes before `cargo`, so it applies to the whole
-command (and to the program it runs).
+To start a project of your own from one of them, copy it anywhere:
+
+- `turtles.pas` on its own: units whose names start with `Rsc` are built
+  into Ruscal, so there's nothing else to copy.
+- `calls_rust.pas` with `calls_rust.rs` beside it.
+- The whole `rust_calls_pascal` directory, changing the two `path`
+  dependencies in its `Cargo.toml` to Ruscal's repository, as the comment
+  at its top shows (`git = "https://github.com/jjinux/ruscal", branch =
+  "main"`; see [Calling Turbo Pascal from Rust](docs/embedding.md)).
+
+`ruscal run` and `build` put the Cargo project in `out/` in the directory
+you run them from, so add `out/` to your `.gitignore`.
 
 ## What's supported
 
@@ -351,7 +368,8 @@ file. The standard units `Crt`, `Dos` and `Graph` are built into the runtime.
   build --lib unit.pas` makes a library of it), and
   `ruscal_runtime::call` turns its runtime errors into `Err`s.
 - Ruscal's own units, whose names start with `Rsc`, written in Turbo
-  Pascal and translated with the program that uses them:
+  Pascal, built into Ruscal (nothing to copy) and translated with the
+  program that uses them:
   [RscJson](docs/rsc_json.md), reading and writing JSON, and
   [RscTurtle](docs/rsc_turtle.md), turtle graphics on top of `Graph`, with
   Turbo Pascal 3.0's turtle routines ([an example](examples/ruscal/turtles.pas)).

@@ -9,20 +9,22 @@ Rust](calling_rust.md).)
 ## With a build script
 
 `examples/ruscal/rust_calls_pascal` is a whole Rust project that uses
-the user's `examples/database/bstunit.pas`, a binary search tree written
-in 1997 (`cargo run --manifest-path examples/ruscal/rust_calls_pascal/Cargo.toml`).
-It needs three things:
+`pascal/bstunit.pas` (a copy of the user's `examples/database/bstunit.pas`),
+a binary search tree written in 1997
+(`cargo run --manifest-path examples/ruscal/rust_calls_pascal/Cargo.toml`).
+To start a project of your own from it, copy the directory and change its
+two `path` dependencies to the `git` ones below. It needs three things:
 
 ```toml
 # Cargo.toml
 [dependencies]
-ruscal_runtime = { git = "https://github.com/jjinux/ruscal", rev = "..." }
+ruscal_runtime = { git = "https://github.com/jjinux/ruscal", branch = "main" }
 
 [build-dependencies]
-# The same `rev` as the runtime: replace `...` with the commit you want
-# (`git rev-parse HEAD` in a clone). Without the default features, it's
-# just the translator, without the command-line tools.
-ruscal = { git = "https://github.com/jjinux/ruscal", rev = "...", default-features = false }
+# Written the same way as the runtime, so both come from the same commit.
+# Without the default features, it's just the translator, without the
+# command-line tools.
+ruscal = { git = "https://github.com/jjinux/ruscal", branch = "main", default-features = false }
 
 # Turbo Pascal's integer arithmetic wraps around (32767 + 1 is -32768);
 # Rust's stops with an error in a debug build unless this is off.
@@ -45,6 +47,11 @@ use bstunit::{Bst, BstUnitContext, PeopleKey};
 use ruscal_runtime::{RuntimeError, call};
 ```
 
+- `Cargo.lock` keeps the commit of `main` the first build used, until
+  `cargo update` moves to the latest. To pin a commit yourself, write
+  `rev = "<commit>"` (`git rev-parse HEAD` in a clone) instead of
+  `branch = "main"`, in both lines: a translator and a runtime from
+  different commits may not fit together.
 - `ruscal::build::library` translates the unit into one file in Cargo's
   `OUT_DIR`, and tells Cargo to run it again when the unit, a unit it
   uses, or a Rust file it links (`{$L}`) changes. A Pascal error stops
