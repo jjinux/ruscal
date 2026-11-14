@@ -4,7 +4,7 @@
 //! own). Cargo builds it, the build script translates the unit, and the
 //! program's output must match `tests/embed/rust_calls_pascal.out`.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[test]
@@ -28,14 +28,35 @@ fn a_build_script_translates_the_pascal() {
     assert!(!String::from_utf8_lossy(&output.stderr).contains("overflow checks"));
 
     // The build script told Cargo to translate again when the unit changes.
+    // (Cargo keeps what a build script printed in a file:
+    // `build/rust_calls_pascal-<hash>/output` before Rust 1.100,
+    // `build/rust_calls_pascal/<hash>/run/stdout` since.)
     let build_dir = target.join("debug/build");
-    let told = std::fs::read_dir(&build_dir)
-        .unwrap()
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.file_name().to_string_lossy().starts_with("rust_calls_pascal-"))
-        .filter_map(|entry| std::fs::read_to_string(entry.path().join("output")).ok())
+    let told = ["output", "stdout"]
+        .iter()
+        .flat_map(|name| files_named(&build_dir, name))
+        .filter(|path| path.to_string_lossy().contains("rust_calls_pascal"))
+        .filter_map(|path| std::fs::read_to_string(path).ok())
         .any(|output| output.lines().any(|l| l.starts_with("cargo:rerun-if-changed=") && l.ends_with("bstunit.pas")));
     assert!(told, "no rerun-if-changed for bstunit.pas in {}", build_dir.display());
+}
+
+/// Every file called `name` under `dir`, at any depth.
+fn files_named(dir: &Path, name: &str) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    let mut dirs = vec![dir.to_path_buf()];
+    while let Some(dir) = dirs.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path.file_name().is_some_and(|n| n == name) {
+                found.push(path);
+            }
+        }
+    }
+    found
 }
 
 /// The example's copy of the unit stays the same as the user's original.
