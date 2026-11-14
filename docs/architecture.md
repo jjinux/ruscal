@@ -1389,9 +1389,12 @@ sense; only what can't be real is faked.
 - A temporary Ruscal adds to the Rust starts with `rsc_` (the user,
   2026-11-12): `let rsc_index = a.high(); a[rsc_index] = 1;`, a view of
   an untyped parameter `rsc_view`, a `for` loop's own variable `rsc_i`. So
-  it can't clash with a name from the Pascal (a function `Index`), and a
+  it doesn't clash with a name from the Pascal (a function `Index`), and a
   reader can tell the program's names from Ruscal's (`codegen::expr`'s
-  `temp_name`).
+  `temp_name`). A Pascal name can start with `Rsc_` too (a function
+  `Rsc_Index`), so `temp_name` also steps around every name in the
+  program (`rsc_index_arg`). (The pointer copy of `with p^ do`, made by
+  sema, is named after the record's type instead: `node = p.clone();`.)
 - Every generated declaration carries a `///` comment with the original
   Pascal header line.
 - The program's own comments are carried across as `//` comments

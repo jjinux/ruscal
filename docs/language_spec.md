@@ -276,7 +276,7 @@ own below.
 - Untyped `var` parameters (`procedure Dump(var Data; Size: Word)`): the
   routine sees the caller's variable as TP's bytes, through a typecast
   (`TBytes(Data)[i]`, read or written; `TRec(Data)` read, or assigned as a
-  whole), and can pass it on. An argument can start inside a variable
+  whole, or `with TRec(Data) do`), and can pass it on. An argument can start inside a variable
   (`Dump(s[1], 3)`, `Dump(buf[10], 5)`). The bytes are copied in and
   written back when the routine returns; nothing else can see the
   variable in between, so a program can't tell

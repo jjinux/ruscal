@@ -17,11 +17,18 @@ input_file: tests/translate/temp_names.pas
 use ruscal_runtime::prelude::*;
 
 // Ruscal's temporaries start with rsc_, so a function named Index or
-// Value doesn't clash with them. Output from fpc -Mtp.
+// Value doesn't clash with them; nor do Pascal names that start with
+// Rsc_ themselves (a function Rsc_Index, a variable Rsc_I beside a for
+// loop's I). Output from fpc -Mtp.
 
 /// Pascal: `function Index(N: Integer): Integer;`
 fn index(n: i16) -> i16 {
     n + 1
+}
+
+/// Pascal: `function Rsc_Index: Integer;`
+fn rsc_index() -> i16 {
+    2
 }
 
 /// Pascal: `function Value(N: Integer): Integer;`
@@ -33,13 +40,29 @@ fn value(n: i16) -> i16 {
 /// Its local variables are the Pascal program's global variables.
 fn pascal_main() {
     let mut a: PArray<i16, 0, 10> = PArray::default();
-    for i in 0_i16..=9 {
+    let mut i: i16 = 0;
+    let mut rsc_i: i16 = 0;
+    // `i` is also used outside this loop (Pascal leaves it holding the
+    // last value), so the loop updates it on every pass instead of declaring
+    // a fresh loop variable.
+    for rsc_i_arg in 0..=9 {
+        i = rsc_i_arg;
         a[i] = i;
     }
     let rsc_value = a[index(1)] + value(4);
-    let rsc_index = a[index(0)];
-    a[rsc_index] = rsc_value;
+    let rsc_index_arg = a[index(0)];
+    a[rsc_index_arg] = rsc_value;
     pwriteln!(a[1], " ", a[2]);
+    a[1] = 1;
+    let rsc_index_arg = a[1];
+    a[rsc_index_arg] = 3;
+    pwriteln!(rsc_index(), " ", a[1]);
+    rsc_i = 3;
+    for rsc_i_arg in 1..=rsc_i {
+        i = rsc_i_arg;
+        pwrite!(rsc_i, " ");
+    }
+    pwriteln!(i);
 }
 
 fn main() {

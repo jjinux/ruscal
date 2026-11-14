@@ -2313,8 +2313,9 @@ impl<'a> Codegen<'a> {
 
     /// A name for a temporary, based on `base` (a parameter's or field's
     /// name): `rsc_base`, unless that would shadow one of the caller's
-    /// variables (then `rsc_base_arg`) or another temporary already made for
-    /// the same statement (then `rsc_base_2`, `rsc_base_3`, ...).
+    /// variables or a name from the Pascal (then `rsc_base_arg`) or another
+    /// temporary already made for the same statement (then `rsc_base_2`,
+    /// `rsc_base_3`, ...).
     pub(super) fn temp_name(&self, base: &str) -> String {
         // Every temporary Ruscal adds starts with `rsc_` (`rsc_index`), so it
         // can't clash with a name from the Pascal (a function `Index`), and
@@ -2324,7 +2325,9 @@ impl<'a> Codegen<'a> {
         let base = &format!("rsc_{}", base.trim_end_matches('_'));
         let info = &self.a.procs[self.proc];
         let visible = info.locals.iter().chain(&info.params).chain(info.captures.iter().map(|c| &c.sym));
-        let base = if visible.into_iter().any(|sym| self.a.var_name(self.proc, *sym) == base) {
+        // (A Pascal name can start with `Rsc_` too: a function `Rsc_Index`.)
+        let pascal = |name: &str| self.a.symbols.iter().any(|sym| sym.rust_name == name);
+        let base = if pascal(base) || visible.into_iter().any(|sym| self.a.var_name(self.proc, *sym) == base) {
             format!("{base}_arg")
         } else {
             base.to_string()
@@ -2339,7 +2342,7 @@ impl<'a> Codegen<'a> {
         };
         let mut name = base.clone();
         let mut n = 1;
-        while taken(&name) {
+        while taken(&name) || pascal(&name) {
             n += 1;
             name = format!("{base}_{n}");
         }

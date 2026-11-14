@@ -313,6 +313,10 @@ impl<'a> Codegen<'a> {
         // Temporaries that the code on this line needs come first, and what
         // must happen after it last.
         self.lent.clear();
+        // A temporary lives for one statement. Sema's rewritten `with` body
+        // uses the record's expression in every statement (`TRec(Data)`),
+        // so a later statement must not find this one's temporary for it.
+        self.hoisted.clear();
         let after = std::mem::take(&mut self.after);
         for line in std::mem::take(&mut self.pending).iter().chain([&text.as_ref().to_string()]).chain(&after) {
             for _ in 0..self.indent {
@@ -2336,31 +2340,12 @@ impl<'a> Codegen<'a> {
                     None => self.line(format!("goto {};", label.name)),
                 }
             }
-            StmtKind::With { records, body } => {
-                // `with Rec(Data) do`: the untyped parameter's bytes are read
-                // into a variable for the whole body, and written back after
-                // it (not after each statement, which would lose the later
-                // statements' changes).
-                let mut write_backs = Vec::new();
-                for record in records {
-                    if let Some(bytes) = self.view_cast_guard(record) {
-                        let ty = self.a.type_of(record.id).clone();
-                        let name = self.temp_name("view");
-                        self.line(format!(
-                            "// `with` an untyped parameter seen as a `{}`: its bytes are read into",
-                            ty.rust()
-                        ));
-                        self.line(format!("// `{name}` for the body, and written back after it."));
-                        let (read, write) = Self::view_read_write(&ty);
-                        self.line(format!("let mut {name} = {bytes}.{read};"));
-                        write_backs.push(format!("{bytes}.{};", write.replace("{}", &name)));
-                        self.hoisted.insert(record.id, name);
-                    }
-                }
+            StmtKind::With { body, .. } => {
+                // (`with Rec(Data) do`: each statement of the body reads the
+                // untyped parameter's bytes and writes them back itself, as
+                // `Rec(Data).A := 1` does, so a call in the body that passes
+                // `Data` on sees the changes.)
                 self.with_body(s, body);
-                for line in write_backs {
-                    self.line(line);
-                }
             }
         }
     }
@@ -3027,9 +3012,8 @@ impl<'a> Codegen<'a> {
                 self.line("// a fresh loop variable.");
             }
             let label = self.loops.last().cloned().flatten().and_then(|l| l.loop_label).map(|l| format!("{l}: "));
-            // (`rsc_w`, not `rsc_w_`, for a variable renamed `w_`. The
-            // `rsc_` marks a name Ruscal added: see `temp_name`.)
-            let value = format!("rsc_{}", name.trim_end_matches('_'));
+            // (`rsc_i`: the `rsc_` marks a name Ruscal added; see `temp_name`.)
+            let value = self.temp_name(&name);
             self.line(format!("{}for {value} in {range} {{", label.unwrap_or_default()));
             self.line(format!("    {place} = {value};"));
             self.block_body(body);
@@ -3222,6 +3206,16 @@ impl<'a> Codegen<'a> {
         None
     }
 
+    /// A value nothing can change: a constant (`5`, `'q'`, `Tab`, `1.5`),
+    /// `nil`, `[]` or a routine (`Funcs[Bump(I)] := Twice`). It needn't be
+    /// worked out before the target's index.
+    fn fixed_value(&self, e: &Expr) -> bool {
+        self.a.consts.contains_key(&e.id)
+            || matches!(&e.kind, ExprKind::Nil)
+            || matches!(&e.kind, ExprKind::Set(elems) if elems.is_empty())
+            || (matches!(&e.kind, ExprKind::Name(_)) && matches!(self.a.type_of(e.id), Type::Proc(_)))
+    }
+
     pub(super) fn assignment(&mut self, target: &Expr, value: &Expr) -> String {
         // TP works the value out before the target's index: in
         // `R.A[R.N] := SetN(R)`, `SetN` changes `R.N` first, and in
@@ -3231,7 +3225,7 @@ impl<'a> Codegen<'a> {
         // (Otherwise Rust does the same itself: `r.a[r.n] = set_n(&mut r)`
         // calls `set_n` first.)
         if (self.has_call(value) || self.calls_in_target(target))
-            && !self.is_constant(value)
+            && !self.fixed_value(value)
             && !self.hoisted.contains_key(&value.id)
             && self.target_hoists(target)
         {
@@ -3299,7 +3293,9 @@ impl<'a> Codegen<'a> {
         // `p := p^.next` would borrow `p` (through `p.get()`) while assigning
         // to it, which the borrow checker rejects. Computing the value into
         // a temporary first ends that borrow before the assignment.
-        if borrows_while_writing(value, target) {
+        // (Not when the value is in a `let` already, worked out before the
+        // target's index: `P^.A[P^.N] := SetN(P^)`.)
+        if borrows_while_writing(value, target) && !self.hoisted.contains_key(&value.id) {
             // `p^.x := p^.x + 1` can still be `p.get_mut().x += 1`: only the
             // place reads the pointer, so there's one borrow. That needs the
             // added part to read no pointer itself.

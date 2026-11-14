@@ -1,7 +1,8 @@
 { The value of an assignment is worked out before the target's index, as
   in Turbo Pascal 7 (checked in DOSBox), also when the index goes into a
   let first; and an index that reads another field of the record, the
-  stack idiom St.Items[St.Top], needs no let. }
+  stack idiom St.Items[St.Top], needs no let. A constant value needs no
+  let either, and a value through a pointer gets just one. }
 program IndexOrder;
 type
    TArr = array[1..5] of Integer;
@@ -9,6 +10,7 @@ type
       N: Integer;
       A: TArr;
    end;
+   PRec = ^TRec;
    TStack = record
       Top: Integer;
       Items: array[1..10] of Char;
@@ -18,6 +20,8 @@ var
    R: TRec;
    St: TStack;
    I: Integer;
+   P: PRec;
+   Chars: array[1..4] of Char;
 
 function SetN(var X: TRec): Integer;
    begin
@@ -63,4 +67,15 @@ begin
    Inc(St.Top);
    St.Items[St.Top] := 'y';
    WriteLn(St.Items[1], St.Items[2], ' ', St.Top);
+   I := 1;
+   Chars[Bump(I)] := 'q';
+   Chars[Bump(I)] := #65;
+   WriteLn(Chars[2], Chars[3]);
+   New(P);
+   P^.N := 1;
+   for I := 1 to 5 do
+      P^.A[I] := 0;
+   P^.A[P^.N] := SetN(P^);
+   WriteLn(P^.A[1], ' ', P^.A[2], ' ', P^.N);
+   Dispose(P);
 end.

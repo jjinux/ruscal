@@ -19,7 +19,8 @@ use ruscal_runtime::prelude::*;
 // The value of an assignment is worked out before the target's index, as
 // in Turbo Pascal 7 (checked in DOSBox), also when the index goes into a
 // let first; and an index that reads another field of the record, the
-// stack idiom St.Items[St.Top], needs no let.
+// stack idiom St.Items[St.Top], needs no let. A constant value needs no
+// let either, and a value through a pointer gets just one.
 
 /// Pascal: `array[1..5] of Integer`
 type TArr = PArray<i16, 1, 5>;
@@ -30,6 +31,13 @@ struct TRec {
     n: i16,
     a: TArr,
 }
+
+/// Pascal: `^TRec`
+///
+/// A Pascal pointer becomes a `Ptr`, the runtime's safe handle to a shared
+/// heap record (an `Rc<RefCell<...>>` inside): using `nil` or a disposed
+/// record is a runtime error instead of undefined behaviour.
+type PRec = Ptr<TRec>;
 
 /// Pascal: `record Top: Integer; Items: array[1..10] of Char; end`
 #[derive(Clone, Copy, Debug, Default)]
@@ -67,7 +75,14 @@ fn pascal_main() {
     let mut a: TArr = TArr::default();
     let mut r: TRec = TRec::default();
     let mut st: TStack = TStack::default();
-    for i in 1_i16..=5 {
+    let mut i: i16 = 0;
+    let mut p: PRec = Ptr::nil();
+    let mut chars: PArray<u8, 1, 4> = PArray::default();
+    // `i` is also used outside this loop (Pascal leaves it holding the
+    // last value), so the loop updates it on every pass instead of declaring
+    // a fresh loop variable.
+    for rsc_i in 1..=5 {
+        i = rsc_i;
         a[i] = i;
         r.a[i] = i;
     }
@@ -94,6 +109,23 @@ fn pascal_main() {
     st.top += 1;
     st.items[st.top] = b'y';
     pwriteln!(st.items[1], st.items[2], " ", st.top);
+    i = 1;
+    let rsc_index = bump(&mut i);
+    chars[rsc_index] = b'q';
+    let rsc_index = bump(&mut i);
+    chars[rsc_index] = b'A';
+    pwriteln!(chars[2], chars[3]);
+    p = Ptr::alloc();
+    p.get_mut().n = 1;
+    for rsc_i in 1..=5 {
+        i = rsc_i;
+        p.get_mut().a[i] = 0;
+    }
+    let rsc_value = set_n(&mut *p.get_mut());
+    let rsc_index = p.get().n;
+    p.get_mut().a[rsc_index] = rsc_value;
+    pwriteln!(p.get().a[1], " ", p.get().a[2], " ", p.get().n);
+    p.dispose();
 }
 
 fn main() {

@@ -141,12 +141,14 @@ fn next_then_read(data: &mut dyn ByteView) -> u16 {
 /// Pascal: `procedure WithBoth(var Data);`
 fn with_both(data: &mut dyn ByteView) {
     let mut data = Bytes::of(data);
-    // `with` an untyped parameter seen as a `Rec`: its bytes are read into
-    // `rsc_view` for the body, and written back after it.
-    let mut rsc_view = data.read::<Rec>();
     // Pascal `with`: Rust has no equivalent, so each field is written out in full.
+    let mut rsc_view = data.read::<Rec>();
     next(&mut rsc_view.a);
+    data.write(&rsc_view);
+    let mut rsc_view = data.read::<Rec>();
     next(&mut rsc_view.b);
+    data.write(&rsc_view);
+    let mut rsc_view = data.read::<Rec>();
     rsc_view.b += 10;
     data.write(&rsc_view);
 }
