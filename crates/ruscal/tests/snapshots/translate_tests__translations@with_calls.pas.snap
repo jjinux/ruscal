@@ -27,8 +27,8 @@ use ruscal_runtime::prelude::*;
 // with Items[Next] do in a method, a procedural variable FV, IOResult, in a
 // unit's initialization) is found once, before the body, as in Turbo
 // Pascal: the function runs once, and every statement of the body means
-// that record; with Pick^.Arr[Slot] runs Pick first. Output from
-// fpc -Mtp.
+// that record. (The order of several calls is TP 7's, not Free Pascal's:
+// with_index_order.) Output from fpc -Mtp.
 
 /// Pascal: `record X, Y: Integer; end`
 #[derive(Clone, Copy, Debug, Default)]
@@ -145,7 +145,6 @@ fn pascal_main() {
     let mut rsc_index_4: i16 = 0;
     let mut rsc_index_5: i16 = 0;
     let mut rsc_index_6: i16 = 0;
-    let mut rsc_index_7: i16 = 0;
     // The initialization part of unit `WithUnit`.
     with_unit_init(&mut calls, &mut cells);
     for k in 1_i16..=5 {
@@ -180,11 +179,9 @@ fn pascal_main() {
     pwriteln!(l.count, " ", l.items[1].x, " ", l.items[1].y, " ", l.items[2].y);
     pwriteln!(calls, " ", cells[1].x, " ", cells[1].y);
     box_ = Ptr::alloc();
-    order = PString::new();
     t_box = pick_box(&mut order, &box_).clone();
-    rsc_index_3 = two(&mut order);
-    t_box.get_mut().arr[rsc_index_3].x = 1;
-    t_box.get_mut().arr[rsc_index_3].y = 2;
+    t_box.get_mut().arr[2].x = 1;
+    t_box.get_mut().arr[2].y = 2;
     pwriteln!(order, " ", box_.get().arr[2].x, " ", box_.get().arr[2].y);
     for k in 1_i16..=5 {
         a[k].x = 0;
@@ -192,28 +189,28 @@ fn pascal_main() {
     }
     g = 0;
     fv = TSlotFn::of(slot_2, "Slot");
-    rsc_index_4 = fv.get()(&mut g);
-    a[rsc_index_4].x = 1;
-    a[rsc_index_4].y = 2;
+    rsc_index_3 = fv.get()(&mut g);
+    a[rsc_index_3].x = 1;
+    a[rsc_index_3].y = 2;
     pwriteln!(g, " ", a[1].x, " ", a[1].y, " ", a[2].y);
     g = 0;
     fns[1] = TSlotFn::of(slot_2, "Slot");
-    rsc_index_5 = fns[1].get()(&mut g);
-    a[rsc_index_5].x = 3;
-    a[rsc_index_5].y = 4;
+    rsc_index_4 = fns[1].get()(&mut g);
+    a[rsc_index_4].x = 3;
+    a[rsc_index_4].y = 4;
     pwriteln!(g, " ", a[1].x, " ", a[1].y, " ", a[2].y);
     l.count = 1;
-    rsc_index_6 = l.next();
-    a[rsc_index_6].x = 5;
-    a[rsc_index_6].y = 6;
+    rsc_index_5 = l.next();
+    a[rsc_index_5].x = 5;
+    a[rsc_index_5].y = 6;
     pwriteln!(l.count, " ", a[2].x, " ", a[2].y, " ", a[3].y);
     f.assign("no_such_dir_here/x.txt");
     // `{$I-}`: an I/O error in `io_unchecked` sets `IOResult` instead of
     // stopping the program.
     io_unchecked(|| f.reset());
-    rsc_index_7 = io_result() - 1;
-    a[rsc_index_7].x = 3;
-    a[rsc_index_7].y = 4;
+    rsc_index_6 = io_result() - 1;
+    a[rsc_index_6].x = 3;
+    a[rsc_index_6].y = 4;
     pwriteln!(a[1].x, " ", a[1].y, " ", a[4].x, " ", a[4].y);
 }
 

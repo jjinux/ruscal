@@ -2,8 +2,8 @@
   with Items[Next] do in a method, a procedural variable FV, IOResult, in a
   unit's initialization) is found once, before the body, as in Turbo
   Pascal: the function runs once, and every statement of the body means
-  that record; with Pick^.Arr[Slot] runs Pick first. Output from
-  fpc -Mtp. }
+  that record. (The order of several calls is TP 7's, not Free Pascal's:
+  with_index_order.) Output from fpc -Mtp. }
 program WithCalls;
 {$F+}
 uses WithUnit;
@@ -114,8 +114,7 @@ begin
    WriteLn(L.Count, ' ', L.Items[1].X, ' ', L.Items[1].Y, ' ', L.Items[2].Y);
    WriteLn(Calls, ' ', Cells[1].X, ' ', Cells[1].Y);
    New(Box);
-   Order := '';
-   with PickBox^.Arr[Two] do
+   with PickBox^.Arr[2] do
    begin
       X := 1;
       Y := 2;

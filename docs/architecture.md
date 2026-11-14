@@ -1082,7 +1082,11 @@ window meanwhile (§19).
     A pointer from a function (`with Pick^ do`) is copied the same way.
   - An index that calls a function (`with A[Slot] do`) goes into a new
     variable first (`rsc_index = slot(&mut g);`), so the function runs
-    once, as in TP, however many statements the body has.
+    once, as in TP, however many statements the body has. In TP 7's order
+    (checked in DOSBox, `c/RUSCAL/WITHORD.PAS`): the indexes' calls from
+    right to left, the last index of the last array first, and only then
+    the pointer, so `with Pick^.Arr[Two] do` calls `Two` before `Pick`,
+    and a call that changes the pointer changes the record chosen.
   - An array index the body changes (`with a[i] do ... i := 2`) is an
     error. (A procedure the body calls that changes `i` as a global isn't
     caught.)

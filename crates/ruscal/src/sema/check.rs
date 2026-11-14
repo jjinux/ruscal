@@ -2161,6 +2161,11 @@ impl Checker {
             // A later record may itself use the fields of an earlier one:
             // `with list, head^ do`.
             let mut record = self.rewrite_expr(record);
+            // TP 7 calls the functions in the indexes first, the last index
+            // first, and only then finds the pointer (checked in DOSBox:
+            // `with Pick^.Arr[Two] do` calls `Two`, then `Pick`;
+            // c/RUSCAL/WITHORD.PAS).
+            record = self.with_index_copies(&record, &mut prelude, s.span);
             if let Some(pointer) = last_deref_base(&record)
                 && (!matches!(pointer.kind, ExprKind::Name(_))
                     || mentions_name(body, pointer)
@@ -2174,8 +2179,6 @@ impl Checker {
                     .push(Stmt { kind: StmtKind::Assign { target: copy.clone(), value: pointer }, span: record.span });
                 record = replace_last_deref_base(&record, copy);
             }
-            // (After the pointer, as TP goes left to right: `Pick^.A[Slot]`.)
-            record = self.with_index_copies(&record, &mut prelude, s.span);
             let ty = self.place(&record, false);
             if !matches!(ty, Type::Record(_) | Type::Object(_) | Type::Error) {
                 self.error(record.span, format!("`with` needs a record or object, found {ty}"));
@@ -2209,7 +2212,9 @@ impl Checker {
 
     /// `record` with each array index that calls a function (`A[Slot]`)
     /// replaced by a new variable, assigned in `prelude` before the body:
-    /// `rsc_index := Slot; ... A[rsc_index].x ...`.
+    /// `rsc_index := Slot; ... A[rsc_index].x ...`. They're assigned from
+    /// right to left, as TP 7 works them out: the last index of the last
+    /// array first.
     fn with_index_copies(&mut self, record: &Expr, prelude: &mut Vec<Stmt>, span: Span) -> Expr {
         let kind = match &record.kind {
             ExprKind::Field(base, field) => {
@@ -2217,9 +2222,10 @@ impl Checker {
             }
             ExprKind::Deref(base) => ExprKind::Deref(Box::new(self.with_index_copies(base, prelude, span))),
             ExprKind::Index(base, indexes) => {
-                let base = Box::new(self.with_index_copies(base, prelude, span));
-                let indexes = indexes
+                // (The indexes right to left, then the array they index.)
+                let mut indexes: Vec<Expr> = indexes
                     .iter()
+                    .rev()
                     .map(|index| {
                         if !self.calls_function(index) {
                             return index.clone();
@@ -2235,6 +2241,8 @@ impl Checker {
                         copy
                     })
                     .collect();
+                indexes.reverse();
+                let base = Box::new(self.with_index_copies(base, prelude, span));
                 ExprKind::Index(base, indexes)
             }
             _ => return record.clone(),
