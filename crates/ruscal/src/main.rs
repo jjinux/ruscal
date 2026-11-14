@@ -185,6 +185,7 @@ fn project(file: &Path, out: Option<PathBuf>) -> Result<(PathBuf, String), Strin
     let generated = ruscal::driver::transpile_file(file)?;
     warn(&generated);
     let dir = out.unwrap_or_else(|| Path::new("out").join(&generated.name));
+    ruscal::driver::check_runtime()?;
     ruscal::driver::write_project(&dir, &generated).map_err(|e| format!("cannot write {}: {e}", dir.display()))?;
     Ok((dir, generated.name))
 }
@@ -194,6 +195,7 @@ fn library(file: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
     let generated = ruscal::driver::transpile_library(file, &ruscal::driver::Options::default())?;
     warn(&generated);
     let dir = out.unwrap_or_else(|| Path::new("out").join(&generated.name));
+    ruscal::driver::check_runtime()?;
     ruscal::driver::write_project(&dir, &generated).map_err(|e| format!("cannot write {}: {e}", dir.display()))?;
     Ok(dir)
 }

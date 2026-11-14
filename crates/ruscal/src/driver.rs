@@ -578,6 +578,22 @@ pub fn runtime_path() -> PathBuf {
     }
 }
 
+/// Check that the runtime is where generated projects will look for it,
+/// with advice if it isn't: after `cargo install --git`, it's in Cargo's
+/// download cache, which Cargo cleans up about a month later.
+pub fn check_runtime() -> Result<(), String> {
+    let runtime = runtime_path();
+    if runtime.join("Cargo.toml").is_file() {
+        return Ok(());
+    }
+    Err(format!(
+        "Ruscal's runtime isn't at {} any more (after `cargo install --git`, \
+         Cargo cleans up its copy about a month later): install Ruscal again, \
+         or set RUSCAL_RUNTIME to the crates/ruscal_runtime of a clone",
+        runtime.display()
+    ))
+}
+
 /// The `Cargo.toml` of a generated project.
 pub fn cargo_toml(name: &str, features: &[String]) -> String {
     cargo_toml_with(name, features, &[])

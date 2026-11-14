@@ -46,7 +46,7 @@ fn the_example_unit_matches_the_original() {
     let copy = std::fs::read(root.join("examples/ruscal/rust_calls_pascal/pascal/bstunit.pas")).unwrap();
     assert!(
         original == copy,
-        "examples/ruscal/rust_calls_pascal/pascal/bstunit.pas differs from examples/database/bstunit.pas"
+        "examples/ruscal/rust_calls_pascal/pascal/bstunit.pas differs from examples/database/bstunit.pas: copy the original over it"
     );
 }
 

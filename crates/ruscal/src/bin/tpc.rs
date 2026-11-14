@@ -132,6 +132,7 @@ fn compile(args: &Args) -> Result<(), String> {
         eprintln!("{warning}\n");
     }
     let dir = build_dir(&generated.name);
+    driver::check_runtime()?;
     driver::write_project(&dir, &generated).map_err(|e| format!("cannot write {}: {e}", dir.display()))?;
     let built = driver::build(&dir, &generated)?;
     let exe_dir = match &args.exe_dir {

@@ -102,10 +102,10 @@ Or install the tools once, which puts `ruscal` and `tpc` (below) in
 
 ```sh
 # To use Ruscal: straight from GitHub, without a clone (the latest `main`;
-# run it again with `--force` to update). Generated projects depend on the
-# copy of the runtime in Cargo's download cache (`~/.cargo/git/checkouts`),
-# which Cargo may clean up after it's gone unused for a while; if a build
-# can't find `ruscal_runtime`, run the install again with `--force`.
+# run it again to update). Generated projects depend on the copy of the
+# runtime in Cargo's download cache (`~/.cargo/git/checkouts`), which Cargo
+# deletes about a month after the install, even if you use `ruscal` every
+# day; `ruscal` then says so, and you run the install again with `--force`.
 cargo install --git https://github.com/jjinux/ruscal ruscal
 
 # To work on Ruscal itself: from your clone, so the installed `ruscal` has
@@ -179,15 +179,16 @@ cargo run -p ruscal -- run examples/ruscal/calls_rust.pas
 cargo run --manifest-path examples/ruscal/rust_calls_pascal/Cargo.toml
 ```
 
-To start a project of your own from one of them, install `ruscal` (see
-above) and copy the example anywhere:
+To start a project of your own from one of them, copy it out of a clone
+(for the two `.pas` examples, install `ruscal` first, as above):
 
 - `turtles.pas` on its own, run with `ruscal run turtles.pas`: units whose
   names start with `Rsc` are built into Ruscal, so there's nothing else
   to copy.
 - `calls_rust.pas` with `calls_rust.rs` beside it, run with
   `ruscal run calls_rust.pas`.
-- The whole `rust_calls_pascal` directory, run with `cargo run`, changing
+- The whole `rust_calls_pascal` directory (without `target/`, if you've
+  built it), run with `cargo run`, changing
   the two `path` dependencies in its `Cargo.toml` to Ruscal's repository,
   as the comment at its top shows (`git = "https://github.com/jjinux/ruscal",
   branch = "main"`; see [Calling Turbo Pascal from Rust](docs/embedding.md)).
