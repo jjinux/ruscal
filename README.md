@@ -167,18 +167,31 @@ has the rest.
 
 ### Try the examples
 
-Clone the repository to run its examples, such as a Game of Life written
-in Turbo Pascal in 1997, which runs in the terminal (follow its menu; to
-quit while it runs, press `p`, then `5`, then Enter):
+Clone the repository to run its examples:
 
 ```sh
 git clone https://github.com/jjinux/ruscal.git
 cd ruscal
+```
+
+If you've already installed the [requirements](#requirements) (on Linux,
+the packages a window needs too), you can run the graphics example,
+turtle graphics in a window (press a key after each drawing):
+
+```sh
+cargo run -p ruscal -- run examples/ruscal/turtles.pas
+```
+
+Otherwise, you can try the text-based example, a Game of Life written in
+Turbo Pascal in 1997, which runs in the terminal (follow its menu; to
+quit while it runs, press `p`, then `5`, then Enter):
+
+```sh
 cargo run -p ruscal -- run examples/life.pas
 ```
 
-[Examples](#examples) lists the rest: turtle graphics, an airport
-simulation, a clock, tic-tac-toe and more.
+[Examples](#examples) lists the rest: an airport simulation, a clock,
+tic-tac-toe and more.
 
 ## Inspiration
 
