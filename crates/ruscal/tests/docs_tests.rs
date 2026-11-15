@@ -54,7 +54,8 @@ fn docs_name_this_version() {
 }
 
 /// The README's Pascal examples are formatted the way `ruscal fmt` formats
-/// them, as the project's own programs are.
+/// them, as the project's own programs are. (Each must be a whole program,
+/// a unit or declarations: bare statements format differently on their own.)
 #[test]
 fn readme_pascal_is_formatted() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -62,7 +63,9 @@ fn readme_pascal_is_formatted() {
     let blocks: Vec<&str> = readme.split("```pascal\n").skip(1).map(|rest| rest.split("```").next().unwrap()).collect();
     assert!(!blocks.is_empty(), "the README has no Pascal examples");
     for block in blocks {
-        let formatted = ruscal::fmt::format_files(&[block.as_bytes()]).unwrap().remove(0);
+        let formatted = ruscal::fmt::format_files(&[block.as_bytes()])
+            .unwrap_or_else(|(_, d)| panic!("a Pascal example in README.md doesn't parse: {d:?}"))
+            .remove(0);
         assert_eq!(String::from_utf8(formatted).unwrap(), block, "a Pascal example in README.md isn't formatted");
     }
 }
