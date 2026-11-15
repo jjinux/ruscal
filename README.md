@@ -168,7 +168,8 @@ has the rest.
 ### Try the examples
 
 Clone the repository to run its examples, such as a Game of Life written
-in Turbo Pascal in 1997, which runs in the terminal (follow its menu):
+in Turbo Pascal in 1997, which runs in the terminal (follow its menu; to
+quit while it runs, press `p`, then `5`, then Enter):
 
 ```sh
 git clone https://github.com/jjinux/ruscal.git
