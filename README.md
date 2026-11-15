@@ -174,17 +174,17 @@ git clone https://github.com/jjinux/ruscal.git
 cd ruscal
 ```
 
-If you've already installed the [requirements](#requirements) (on Linux,
-the packages a window needs too), you can run the graphics example,
-turtle graphics in a window (press a key after each drawing):
+If you can open a window (on Linux, that needs the packages under
+[Requirements](#requirements)), try turtle graphics (press a key after
+each drawing):
 
 ```sh
 cargo run -p ruscal -- run examples/ruscal/turtles.pas
 ```
 
-Otherwise, you can try the text-based example, a Game of Life written in
-Turbo Pascal in 1997, which runs in the terminal (follow its menu; to
-quit while it runs, press `p`, then `5`, then Enter):
+Or, needing only a terminal, try a Game of Life written in Turbo Pascal
+in 1997 (follow its menu; to quit while it runs, press `p`, then `5`,
+then Enter):
 
 ```sh
 cargo run -p ruscal -- run examples/life.pas
