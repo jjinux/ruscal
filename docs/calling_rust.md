@@ -71,7 +71,7 @@ examples/ruscal/calls_rust.pas`.
 | `Real`, `Single`, `Double`, `Extended` | `f64` |
 | `Boolean` | `bool` |
 | `Char` | `u8` (a byte, as in TP) |
-| `string`, `string[n]` | `PString` (`ruscal_runtime::PString`) |
+| `string`, `string[n]` | `PString` (`ruscal_runtime::prelude::PString`) |
 | an enum, record or object of the program | its Rust type, `super::TPoint` |
 | `array[1..10] of T` | `PArray<T, 1, 10>` |
 | `^T` | `Ptr<T>` |

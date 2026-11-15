@@ -25,7 +25,7 @@ fn rewrite_links_have_sections() {
     }
 }
 
-/// Every `=X.Y.Z` in the docs that tell a Rust program which Ruscal to
+/// Every `=X.Y.Z` (or `@=X.Y.Z`) in the docs that tell a Rust program which Ruscal to
 /// depend on is this version (`CARGO_PKG_VERSION`, the workspace's), and so
 /// is `ruscal`'s own dependency on the runtime.
 #[test]
@@ -36,7 +36,10 @@ fn docs_name_this_version() {
         ["README.md", "docs/embedding.md", "examples/ruscal/rust_calls_pascal/Cargo.toml", "crates/ruscal/Cargo.toml"];
     for file in files {
         let text = std::fs::read_to_string(root.join(file)).unwrap();
-        let pinned: Vec<&str> = text.split("\"=").skip(1).map(|rest| rest.split('"').next().unwrap()).collect();
+        // `"=0.7.0"` in a Cargo.toml, `@=0.7.0` in a `cargo add` command.
+        let quoted = text.split("\"=").skip(1).map(|rest| rest.split('"').next().unwrap());
+        let added = text.split("@=").skip(1).map(|rest| rest.split(|c: char| c.is_whitespace()).next().unwrap());
+        let pinned: Vec<&str> = quoted.chain(added).collect();
         assert!(!pinned.is_empty(), "{file} names no `=X.Y.Z` version");
         for found in pinned {
             assert_eq!(found, version, "{file} says ={found}; Ruscal is {version} (see docs/releasing.md)");
