@@ -57,8 +57,8 @@ ruscal run hello.pas       # translate it to Rust, build it and run it
 ruscal emit hello.pas      # just print the Rust
 ```
 
-`run` puts a small Cargo project in `out/hello/` and runs it. A program
-with units finds them next to it (see [Usage](#usage)).
+`run` puts a small Cargo project in `out/hello/` and runs it (see
+[Usage](#usage)). A program finds its units' source files next to it.
 
 ### Call Rust from your Turbo Pascal program
 
@@ -116,20 +116,20 @@ unit Greeter;
 
 interface
 
-procedure SayHello(const Name: string);
-function Square(N: Integer): Integer;
+   procedure SayHello(const Name: string);
+   function Square(N: Integer): Integer;
 
 implementation
 
-procedure SayHello(const Name: string);
-   begin
-      WriteLn('Hello, ', Name, ', from Turbo Pascal!');
-   end;
+   procedure SayHello(const Name: string);
+      begin
+         WriteLn('Hello, ', Name, ', from Turbo Pascal!');
+      end;
 
-function Square(N: Integer): Integer;
-   begin
-      Square := N * N;
-   end;
+   function Square(N: Integer): Integer;
+      begin
+         Square := N * N;
+      end;
 
 end.
 ```
@@ -168,7 +168,8 @@ has the rest.
 ### Try the examples
 
 Clone the repository to run its examples, such as turtle graphics in a
-window (press a key after each drawing):
+window (press a key after each drawing; on Linux, a window needs the
+packages under [Requirements](#requirements)):
 
 ```sh
 git clone https://github.com/jjinux/ruscal.git
