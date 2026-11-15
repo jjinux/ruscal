@@ -25,7 +25,7 @@ fn rewrite_links_have_sections() {
     }
 }
 
-/// Every `=X.Y.Z` in the docs that tell a Rust program which Ruscal to
+/// Every `=X.Y.Z` (or `@=X.Y.Z`) in the docs that tell a Rust program which Ruscal to
 /// depend on is this version (`CARGO_PKG_VERSION`, the workspace's), and so
 /// is `ruscal`'s own dependency on the runtime.
 #[test]
@@ -36,7 +36,13 @@ fn docs_name_this_version() {
         ["README.md", "docs/embedding.md", "examples/ruscal/rust_calls_pascal/Cargo.toml", "crates/ruscal/Cargo.toml"];
     for file in files {
         let text = std::fs::read_to_string(root.join(file)).unwrap();
-        let pinned: Vec<&str> = text.split("\"=").skip(1).map(|rest| rest.split('"').next().unwrap()).collect();
+        // `"=0.7.0"` in a Cargo.toml, `@=0.7.0` in a `cargo add` command.
+        let quoted = text.split("\"=").skip(1).map(|rest| rest.split('"').next().unwrap());
+        let added = text.split("@=").skip(1).map(|rest| {
+            let end = rest.find(|c: char| !(c.is_ascii_digit() || c == '.')).unwrap_or(rest.len());
+            &rest[..end]
+        });
+        let pinned: Vec<&str> = quoted.chain(added).collect();
         assert!(!pinned.is_empty(), "{file} names no `=X.Y.Z` version");
         for found in pinned {
             assert_eq!(found, version, "{file} says ={found}; Ruscal is {version} (see docs/releasing.md)");
@@ -45,4 +51,21 @@ fn docs_name_this_version() {
     let readme = std::fs::read_to_string(root.join("README.md")).unwrap();
     let short = version.rsplit_once('.').unwrap().0;
     assert!(readme.contains(&format!("Ruscal is version {short}:")), "README's status doesn't say version {short}");
+}
+
+/// The README's Pascal examples are formatted the way `ruscal fmt` formats
+/// them, as the project's own programs are. (Each must be a whole program,
+/// a unit or declarations: bare statements format differently on their own.)
+#[test]
+fn readme_pascal_is_formatted() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let readme = std::fs::read_to_string(root.join("README.md")).unwrap();
+    let blocks: Vec<&str> = readme.split("```pascal\n").skip(1).map(|rest| rest.split("```").next().unwrap()).collect();
+    assert!(!blocks.is_empty(), "the README has no Pascal examples");
+    for block in blocks {
+        let formatted = ruscal::fmt::format_files(&[block.as_bytes()])
+            .unwrap_or_else(|(_, d)| panic!("a Pascal example in README.md doesn't parse: {d:?}"))
+            .remove(0);
+        assert_eq!(String::from_utf8(formatted).unwrap(), block, "a Pascal example in README.md isn't formatted");
+    }
 }

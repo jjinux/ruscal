@@ -29,23 +29,156 @@ By the way, Ruscal is pronounced "rust-CAL", with the stress on "CAL", as in
 
 ## Quick start
 
-With a Rust toolchain installed (see [Requirements](#requirements)):
+You need a Rust toolchain (see [Requirements](#requirements)).
+
+### Run your Turbo Pascal program
+
+Install Ruscal from crates.io; you don't need this repository:
+
+```sh
+cargo install ruscal
+```
+
+Then, next to your program (`hello.pas` here):
+
+```pascal
+program Hello;
+var
+   Name: string;
+begin
+   Write('What is your name? ');
+   ReadLn(Name);
+   WriteLn('Hello, ', Name, '!');
+end.
+```
+
+```sh
+ruscal run hello.pas       # translate it to Rust, build it and run it
+ruscal emit hello.pas      # just print the Rust
+```
+
+`run` puts a small Cargo project in `out/hello/` and runs it (see
+[Usage](#usage)). A program finds its units' source files next to it.
+
+### Call Rust from your Turbo Pascal program
+
+Declare the routine `external`, and name the Rust file that has it with
+`{$L ...}`, as Turbo Pascal linked assembly. `greet.pas`:
+
+```pascal
+program Greet;
+{$L greet.rs}
+
+procedure SayHello(const Name: string); external;
+
+begin
+   SayHello('Turbo Pascal');
+end.
+```
+
+and `greet.rs`, next to it:
+
+```rust
+use ruscal_runtime::prelude::*;
+
+pub fn say_hello(name: &PString) {
+    pwriteln!("Hello, ", name, ", from Rust!");
+}
+```
+
+`ruscal run greet.pas` prints `Hello, Turbo Pascal, from Rust!`. A
+Pascal `string` is a `PString` in Rust; `ruscal emit greet.pas` shows
+the signature each `external` routine needs.
+[Calling Rust from Turbo Pascal](docs/calling_rust.md) has the rest.
+
+### Call Turbo Pascal from your Rust project
+
+In your Rust project, add Ruscal's runtime, and Ruscal itself to translate
+the Pascal when it builds (both the same version):
+
+```sh
+cargo add ruscal_runtime@=0.7.0
+cargo add --build ruscal@=0.7.0 --no-default-features
+```
+
+and in `Cargo.toml`, let Pascal's integer arithmetic wrap around, as it
+did in Turbo Pascal:
+
+```toml
+[profile.dev]
+overflow-checks = false
+```
+
+Write the Pascal as a unit, `pascal/greeter.pas`:
+
+```pascal
+unit Greeter;
+
+interface
+
+   procedure SayHello(const Name: string);
+   function Square(N: Integer): Integer;
+
+implementation
+
+   procedure SayHello(const Name: string);
+      begin
+         WriteLn('Hello, ', Name, ', from Turbo Pascal!');
+      end;
+
+   function Square(N: Integer): Integer;
+      begin
+         Square := N * N;
+      end;
+
+end.
+```
+
+translate it in `build.rs`:
+
+```rust
+fn main() {
+    ruscal::build::library("pascal/greeter.pas").unwrap();
+}
+```
+
+and call it from `src/main.rs`:
+
+```rust
+ruscal_runtime::include_library!(greeter);
+
+use ruscal_runtime::prelude::PString;
+use ruscal_runtime::{RuntimeError, call};
+
+fn main() -> Result<(), RuntimeError> {
+    // Runs the units' initialization parts.
+    let _units = call(greeter::GreeterContext::new)?;
+    // `call` turns a Pascal runtime error into an `Err`.
+    call(|| greeter::say_hello(&PString::from("Rust")))?;
+    let n = call(|| greeter::square(12))?;
+    println!("12 squared is {n}, says Pascal");
+    Ok(())
+}
+```
+
+`cargo run` prints `Hello, Rust, from Turbo Pascal!` and `12 squared is
+144, says Pascal`. [Calling Turbo Pascal from Rust](docs/embedding.md)
+has the rest.
+
+### Try the examples
+
+Clone the repository to run its examples, such as turtle graphics in a
+window (press a key after each drawing; on Linux, a window needs the
+packages under [Requirements](#requirements)):
 
 ```sh
 git clone https://github.com/jjinux/ruscal.git
 cd ruscal
-cargo run -p ruscal -- run examples/life.pas
+cargo run -p ruscal -- run examples/ruscal/turtles.pas
 ```
 
-That translates `life.pas`, a 1997 Game of Life, into a small Rust project,
-builds it and runs it. To see the Rust, use `emit` instead of `run`.
-
-To run your own programs, you don't need the clone:
-
-```sh
-cargo install ruscal
-ruscal run myprog.pas
-```
+[Examples](#examples) lists the rest: a 1997 Game of Life, an airport
+simulation, a clock, tic-tac-toe and more.
 
 ## Inspiration
 
