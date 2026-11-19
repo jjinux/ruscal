@@ -36,15 +36,16 @@ Turbo Pascal. These need you; tell Claude what you find, and it fixes it.
 - [x] Ruscal's own units' names start with `Rsc`, not `PR` (the user, 2026-11-07; `PR` was left over from the old project name): `PRTurtle` is `RscTurtle` and `PRJson` is `RscJson`, with their docs (`docs/rsc_turtle.md`, `docs/rsc_json.md`) and tests renamed to match. Older items below keep the old names.
 - [x] Add DOSBox and the Turbo Pascal 7 copy the user runs in it (https://archive.org/details/tp_20240418) to the README's Acknowledgements (the user, 2026-11-07: "at some point").
 - [ ] Announce Ruscal to the Pascal community (the user, 2026-11-06: theirs to do): find which Pascal compiler projects are still alive (Free Pascal, Lazarus, and others), their mailing lists or forums and what each allows for announcements, and send a short announcement to each (what Ruscal is, that it's MIT, a link to the repository). Claude can help draft them if asked.
-  Announced by 2026-11-18 (the user, in their own words), and told friends:
+  Announced by 2026-11-18 (the user, in their own words):
   - Hacker News: https://news.ycombinator.com/item?id=50553568
   - The user's blog: https://www.jjinux.com/2026/11/ruscal-turbo-pascal-to-rust-transpiler.html
   - X: https://x.com/jjinux/status/2123192823453524011
   - Bluesky: https://bsky.app/profile/did:plc:wh7b4yiao23lbketmyg7tvvp/post/3n2mox4ipkk2k
   - Reddit: r/rust (https://www.reddit.com/r/rust/comments/1xzu31f/ruscal_a_turbo_pascal_to_rust_transpiler), r/coolgithubprojects (https://www.reddit.com/r/coolgithubprojects/comments/1xzu4q4/ruscal_a_turbo_pascal_to_rust_transpiler/), r/pascal (https://www.reddit.com/r/pascal/comments/1xzu5fn/ruscal_a_turbo_pascal_to_rust_transpiler/)
   - Lazarus/FPC forum: https://forum.lazarus.freepascal.org/index.php/topic,75267.0.html
-  - users.rust-lang.org announcements: posted, waiting while the new account is on hold.
+  - users.rust-lang.org announcements: posted, waiting while the account is on hold.
   - Delphi-PRAXiS: not for now (the user's call).
+  - Friends: told.
   Plan (researched by a subagent, 2026-11-12; links checked then, some places couldn't be read by a bot):
   - [x] Before posting: tag a release (v0.7.0 on crates.io; see docs/releasing.md). Say plainly that Claude wrote the code (the README does): Hacker News asks for human-written posts ("Don't post generated text"), and users.rust-lang.org is tired of low-quality LLM crates, so write each post in your own words. Tell the story: your own 1996-97 programs are the acceptance test, `fpc -Mtp` gives expected output, TP 7 in DOSBox settles disagreements; say what's missing (macOS/Linux only). Expect comparisons with Ferropascal (another Pascal → Rust transpiler) and Ben Hoyt's pas2go (TP → Go, https://benhoyt.com/writings/zzt-in-go/); unverified.
   - [ ] Smaller, friendlier places first, to catch problems: the Lazarus/FPC forum's "Third party announcements" board (done, above), then the fpc-pascal mailing list (https://www.freepascal.org/maillist.html; third-party release notes appear there, e.g. https://lists.freepascal.org/fpc-pascal/2026-February/063108.html; not yet). Credit FPC as the source of expected output.
