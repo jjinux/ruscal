@@ -63,6 +63,8 @@ Turbo Pascal. These need you; tell Claude what you find, and it fixes it.
   - [ ] Maybe: a blog post of your own ("What I learned translating TP to Rust"), which This Week in Rust takes by PR (https://github.com/rust-lang/this-week-in-rust; no project updates, no LLM-written articles). The announcement post on the user's blog (above) is done and sent to TWiR; whether they take it is open. Skip Lobsters unless you're a member (invite only, no self-promotion for 70 days).
   - Alive in 2026: Free Pascal (3.2.4 at RC), Lazarus (4.8, June 2026), Delphi (RAD Studio 13.2), Oxygene/Elements (talk.remobjects.com), DWScript. PascalABC.NET's last release found was Sept 2025. GNU Pascal is dead (2007).
 
+- [ ] Turbo Vision programs, through Free Pascal's `Objects` and Free Vision units (the user, 2026-11-21, after someone asked about the Turbo Vision demo): see the plan in `notes/fpc_units.md`. Step 1 (measure what's left after the dialect, and how `@Self` re-entrancy would translate) decides whether to go on.
+
 ## Check with a real Turbo Pascal
 
 Free Pascal (`fpc -Mtp`) gives most expected outputs, but it works in 32 or
